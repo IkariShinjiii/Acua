@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   ACUA ATELIER — GLOBAL DESIGN SYSTEM & BORDER-FREE "CLOUD" UI
+   Enforcing the Dribbble-inspired soft minimalist aesthetic:
+   - Zero solid borders on containers, form fields, and cards
+   - Warm cream/sand base canvas (#F6F1EB)
+   - Exaggerated diffused shadows for depth & elevation
+   - Large rounded organic radii (rounded-3xl / rounded-[32px])
+   ========================================================================== */
+
+@layer base {
+  html {
+    @apply scroll-smooth antialiased;
+    background-color: #F6F1EB;
+  }
+
+  body {
+    @apply font-sans text-espresso bg-sand-100 min-h-screen selection:bg-terracotta-100 selection:text-terracotta-700;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight font-normal text-espresso;
+  }
+
+  /* Universal reset for form inputs: enforce clean borderless cloud appearance */
+  input, select, textarea {
+    @apply border-none outline-none focus:outline-none focus:ring-0;
+  }
+}
+
+@layer components {
+  /* Border-Free "Cloud" Card Component */
+  .cloud-card {
+    @apply border-none rounded-[32px] sm:rounded-[40px] bg-white/90 backdrop-blur-md shadow-cloud-lg transition-all duration-300;
+  }
+
+  /* Cloud Input Field: Zero borders, soft white/cream background, inset depth */
+  .cloud-input {
+    @apply w-full border-none outline-none rounded-2xl bg-sand-50/80 px-4 py-3.5 text-sm text-espresso placeholder:text-sand-400 shadow-input-inset focus:bg-white focus:shadow-cloud-sm transition-all duration-200;
+  }
+
+  /* Primary High-Impact Terracotta Action Button */
+  .btn-terracotta {
+    @apply inline-flex items-center justify-center border-none rounded-full bg-terracotta-gradient px-8 py-4 text-sm font-semibold tracking-wide text-white shadow-terracotta-glow hover:opacity-95 hover:shadow-xl active:scale-[0.98] transition-all duration-300;
+  }
+
+  /* Palette Strip: Elegant multi-color accent bar seen in mockup */
+  .palette-strip {
+    height: 4px;
+    background: linear-gradient(
+      to right,
+      #9B3B1C 0%,
+      #9B3B1C 25%,
+      #D48B47 25%,
+      #D48B47 50%,
+      #8A8E75 50%,
+      #8A8E75 75%,
+      #EDE4D8 75%,
+      #EDE4D8 100%
+    );
+    border-radius: 9999px;
+  }
+}
+
+/* Hide native scrollbars for seamless horizontal carousels */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
