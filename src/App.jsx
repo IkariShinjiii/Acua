@@ -10,7 +10,7 @@ import Navbar from './components/Navbar';
  */
 export default function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'commission' | 'story'
-  const [cartCount, setCartCount] = useState(2);
+  const [cartCount] = useState(2);
 
   return (
     <div className="min-h-screen bg-sand-100 text-espresso font-sans">

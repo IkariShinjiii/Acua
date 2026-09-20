@@ -2,469 +2,383 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Plus, Check } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import ReviewReel from "../components/ReviewReel";
 
-// Animation presets
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (custom = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: custom },
-  }),
+// Image Fallback Handler
+const handleImageError = (
+  e: React.SyntheticEvent<HTMLImageElement, Event>,
+  fallbackUrl: string
+) => {
+  if (e.currentTarget.src !== fallbackUrl) {
+    e.currentTarget.src = fallbackUrl;
+  }
 };
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-// Data Models
 interface Product {
   id: string;
   title: string;
   category: "Necklaces" | "Bracelets" | "Rings" | "Earrings";
-  price: string;
+  material: string;
   description: string;
+  price: string;
   image: string;
-  badge?: string;
+  fallback: string;
 }
 
-const NEW_ARRIVALS = [
-  {
-    id: "na-1",
-    title: "Azure Drop Pendant",
-    material: "Sterling Silver & Sea Glass",
-    price: "$260",
-    image:
-      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "na-2",
-    title: "Dune Texture Ring",
-    material: "18k Gold Vermeil",
-    price: "$180",
-    image:
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "na-3",
-    title: "Tidal Wave Cuff",
-    material: "Hand-Forged Silver",
-    price: "$320",
-    image:
-      "https://images.unsplash.com/photo-1611591475887-f8232bfdf1fb?auto=format&fit=crop&w=1000&q=80",
-  },
-];
-
+// Curated Available Pieces for Bento Catalog
 const AVAILABLE_PIECES: Product[] = [
   {
     id: "ap-1",
-    title: "Pearl Woven Choker",
+    title: "Pearl Drop Chain",
     category: "Necklaces",
-    description: "Baroque freshwater pearls linked with recycled gold wire.",
-    price: "$395",
+    material: "14k Gold Fill & Baroque Pearl",
+    description:
+      "A single, luminous baroque freshwater pearl suspended on an ethically forged 14k gold fill chain.",
+    price: "$180",
     image:
       "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1000&q=80",
+    fallback:
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1000&q=80",
   },
   {
     id: "ap-2",
-    title: "Contoured Stacking Band",
+    title: "Hammered Stacking Set",
     category: "Rings",
-    description: "Solid 14k yellow gold band shaped like rolling ocean swell.",
-    price: "$210",
+    material: "Recycled Sterling Silver",
+    description:
+      "Trio of slim, organically textured bands sculpted to evoke gentle coastal tide lines.",
+    price: "$150",
     image:
       "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=1000&q=80",
+    fallback:
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
   },
   {
     id: "ap-3",
-    title: "Woven Strand Bracelet",
+    title: "Woven Sand Bracelet",
     category: "Bracelets",
-    description: "Intricately braided chain with molten organic clasp.",
-    price: "$340",
+    material: "18k Gold Vermeil",
+    description:
+      "Intricately braided chain with a molten sculptural clasp inspired by windswept coastal grass.",
+    price: "$290",
     image:
       "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=1000&q=80",
+    fallback:
+      "https://images.unsplash.com/photo-1611591475887-f8232bfdf1fb?auto=format&fit=crop&w=1000&q=80",
   },
   {
     id: "ap-4",
     title: "Solitary Tidal Ear Cuff",
     category: "Earrings",
-    description: "Molten textured silver designed to hug the upper ear curve.",
+    material: "Sterling Silver",
+    description:
+      "Molten textured silver designed to hug the upper ear curve comfortably without piercing.",
     price: "$145",
     image:
       "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=1000&q=80",
+    fallback:
+      "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=1000&q=80",
   },
   {
     id: "ap-5",
-    title: "Nautical Horizon Choker",
-    category: "Necklaces",
-    description: "Fine cable link necklace featuring a genuine tumbled sea gem.",
-    price: "$285",
+    title: "Dune Texture Ring",
+    category: "Rings",
+    material: "14k Solid Gold",
+    description:
+      "Substantially weighted band handcrafted with natural hammered facets that catch the ocean light.",
+    price: "$480",
     image:
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
+    fallback:
+      "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=1000&q=80",
   },
   {
     id: "ap-6",
-    title: "Crag Textured Signet",
-    category: "Rings",
-    description: "Chunky signet sculpted to evoke weathered ocean bluff stone.",
-    price: "$310",
+    title: "Azure Drop Pendant",
+    category: "Necklaces",
+    material: "Recycled Silver & Aquamarine",
+    description:
+      "Raw uncut ocean aquamarine encased in hand-shaped molten silver settings.",
+    price: "$240",
     image:
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1000&q=80",
+    fallback:
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80",
   },
 ];
 
 const ARCHIVE_ITEMS = [
   {
     id: "arch-1",
-    title: "Nocturne Sapphire Solitaire",
-    era: "Winter 2024",
+    aspect: "aspect-square",
+    mt: "",
     image:
       "https://images.unsplash.com/photo-1603561596112-0a132b757442?auto=format&fit=crop&w=800&q=80",
+    alt: "Custom ring featuring an uncut raw sapphire set in rough, textured silver on dark slate rock",
   },
   {
     id: "arch-2",
-    title: "Molten Gold Relic Pendant",
-    era: "Autumn 2024",
+    aspect: "aspect-[3/4]",
+    mt: "mt-0 md:mt-8",
     image:
       "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80",
+    alt: "Sculptural gold pendant looking like melted wax or molten metal",
   },
   {
     id: "arch-3",
-    title: "Aquamarine Tidal Drop",
-    era: "Spring 2025",
+    aspect: "aspect-square",
+    mt: "",
     image:
       "https://images.unsplash.com/photo-1598560917505-59a3ad559071?auto=format&fit=crop&w=800&q=80",
+    alt: "Delicate silver chain with sea-green seaglass charm resting on textured linen",
   },
   {
     id: "arch-4",
-    title: "Baroque Cluster Cascades",
-    era: "Summer 2025",
+    aspect: "aspect-[3/4]",
+    mt: "mt-0 md:mt-8",
     image:
       "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80",
+    alt: "Statement earrings made of hammered brass and irregular freshwater pearls on warm sand",
   },
 ];
 
-const CATEGORIES = ["All", "Necklaces", "Bracelets", "Rings", "Earrings"] as const;
-type Category = (typeof CATEGORIES)[number];
+const FILTER_TABS = ["All", "Necklaces", "Bracelets", "Rings", "Earrings"] as const;
+type FilterTab = (typeof FILTER_TABS)[number];
 
 export default function HomePage() {
-  const [selectedCategory, setSelectedCategory] = useState<Category>("All");
-  const [cartCount, setCartCount] = useState(2);
-  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
-
-  const handleAddToCart = (id: string) => {
-    setCartCount((prev) => prev + 1);
-    setAddedIds((prev) => ({ ...prev, [id]: true }));
-    setTimeout(() => {
-      setAddedIds((prev) => ({ ...prev, [id]: false }));
-    }, 1800);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("All");
+  const [addedItem, setAddedItem] = useState<string | null>(null);
+  const handleAdd = (id: string) => {
+    setAddedItem(id);
+    setTimeout(() => setAddedItem(null), 1600);
   };
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? AVAILABLE_PIECES.slice(0, 3)
-      : AVAILABLE_PIECES.filter((p) => p.category === selectedCategory);
+  const filteredPieces =
+    activeFilter === "All"
+      ? AVAILABLE_PIECES
+      : AVAILABLE_PIECES.filter((p) => p.category === activeFilter);
 
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-[#261C14] font-sans antialiased selection:bg-[#9B3B1C] selection:text-white">
-      {/* 1. STICKY NAVBAR */}
-      <Navbar cartCount={cartCount} />
+    <div className="bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased min-h-screen flex flex-col selection:bg-[#ae431e] selection:text-white">
+      {/* 1. Single Luxury Sticky Navigation */}
+      <Navbar />
 
-      <main className="w-full">
-        {/* 2. HERO SECTION */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-16 md:pb-24">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full h-[540px] sm:h-[620px] md:h-[720px] rounded-[32px] sm:rounded-[40px] overflow-hidden shadow-[0_20px_50px_-15px_rgba(38,28,20,0.12)] group"
-          >
-            {/* Background Model Image */}
-            <div className="absolute inset-0 w-full h-full">
-              <img
-                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85"
-                alt="Model on golden coastal beach wearing Acua jewelry"
-                className="w-full h-full object-cover object-center transform scale-100 group-hover:scale-105 transition-transform duration-1000 ease-out"
-              />
+      <main className="flex-grow pt-20">
+        {/* 2. Hero Section */}
+        <section className="relative w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto mt-6 mb-24 sm:mb-32">
+          <div className="relative w-full h-[620px] md:h-[820px] rounded-[28px] sm:rounded-[40px] overflow-hidden shadow-[0_20px_60px_-15px_rgba(38,28,20,0.08)] group">
+            <div
+              className="absolute inset-0 bg-cover bg-center w-full h-full transition-transform duration-1000 group-hover:scale-105"
+              style={{
+                backgroundImage:
+                  "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85')",
+              }}
+            />
+            {/* Warm Terracotta Bottom Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#ae431e]/85 via-black/25 to-transparent pointer-events-none" />
+
+            <div className="absolute bottom-12 left-8 md:left-16 max-w-xl z-10">
+              <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl text-white mb-6 drop-shadow-md font-normal leading-[1.1] tracking-normal">
+                Tides &amp; Time
+              </h1>
+              <p className="font-sans text-base sm:text-lg text-white/90 mb-8 max-w-md hidden md:block leading-relaxed">
+                The new coastal collection. Forged by hand, shaped by the sea.
+              </p>
+              <a
+                href="#available-pieces"
+                className="bg-[#ae431e] hover:bg-[#8d2c06] text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none"
+              >
+                SHOP NEW COLLECTION
+              </a>
             </div>
-
-            {/* Warm Terracotta Gradient Overlay at the bottom for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#9B3B1C]/90 via-[#9B3B1C]/35 to-transparent pointer-events-none" />
-
-            {/* Subtle top vignette */}
-            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
-
-            {/* Bottom Left Content Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 md:p-16 z-10">
-              <div className="max-w-xl space-y-4 sm:space-y-5">
-                <motion.h1
-                  variants={fadeInUp}
-                  initial="hidden"
-                  animate="visible"
-                  custom={0.2}
-                  className="font-serif text-4xl sm:text-6xl md:text-7xl font-normal text-white tracking-normal leading-[1.1]"
-                >
-                  Tides & Time
-                </motion.h1>
-
-                <motion.p
-                  variants={fadeInUp}
-                  initial="hidden"
-                  animate="visible"
-                  custom={0.35}
-                  className="text-white/90 text-sm sm:text-base md:text-lg font-light leading-relaxed max-w-md"
-                >
-                  Our new summer collection. Completely hand sculpted by the sea.
-                </motion.p>
-
-                <motion.div
-                  variants={fadeInUp}
-                  initial="hidden"
-                  animate="visible"
-                  custom={0.5}
-                  className="pt-2"
-                >
-                  <a
-                    href="#new-arrivals"
-                    className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#9B3B1C] text-white text-xs sm:text-sm font-medium tracking-wide shadow-lg hover:bg-[#852E15] hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-none"
-                  >
-                    Discover the Collection
-                  </a>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
+          </div>
         </section>
 
-        {/* 3. NEW ARRIVALS */}
-        <section id="new-arrivals" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-          {/* Header Row */}
-          <div className="flex items-baseline justify-between mb-8 sm:mb-12">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#261C14] font-normal tracking-tight">
-              New Arrivals
-            </h2>
+        {/* 3. New Arrivals: Framer ReviewReel Infinite Marquee Carousel */}
+        <section className="w-full mb-28 sm:mb-36 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
+            <div>
+              <h2 className="font-serif text-3xl sm:text-4xl text-[#1d1c16] font-normal tracking-tight">
+                New Arrivals
+              </h2>
+              <p className="font-sans text-xs sm:text-sm text-[#57423b] mt-1.5 hidden sm:block">
+                Seasonal artifacts hand-sculpted in limited batches — hover to inspect
+              </p>
+            </div>
+
             <a
-              href="#shop"
-              className="text-xs uppercase tracking-[0.2em] font-semibold text-[#625448] hover:text-[#9B3B1C] transition-colors flex items-center gap-1 group"
+              className="font-sans text-xs font-semibold text-[#ae431e] hover:text-[#d68224] transition-colors underline underline-offset-4 tracking-wider uppercase"
+              href="#available-pieces"
             >
-              <span>View All</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+              VIEW ALL
             </a>
           </div>
 
-          {/* 3-Column Tall Portrait Grid */}
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8"
-          >
-            {NEW_ARRIVALS.map((item, idx) => (
-              <motion.article
-                key={item.id}
-                variants={fadeInUp}
-                custom={idx * 0.15}
-                className="group cursor-pointer flex flex-col"
-              >
-                {/* Tall Portrait Image Container */}
-                <div className="relative aspect-[3/4] w-full rounded-[28px] sm:rounded-[32px] overflow-hidden bg-[#EDE4D8] shadow-[0_10px_30px_-10px_rgba(38,28,20,0.06)] group-hover:shadow-[0_20px_40px_-12px_rgba(38,28,20,0.12)] transition-all duration-500">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-[#261C14]/0 group-hover:bg-[#261C14]/5 transition-colors duration-300 pointer-events-none" />
-                </div>
-
-                {/* Info Beneath Image */}
-                <div className="mt-4 px-1">
-                  <div className="flex items-baseline justify-between">
-                    <h3 className="text-base font-normal text-[#261C14] group-hover:text-[#9B3B1C] transition-colors">
-                      {item.title}
-                    </h3>
-                    <span className="text-sm font-semibold text-[#261C14]">
-                      {item.price}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#857568] mt-1 font-light">
-                    {item.material}
-                  </p>
-                </div>
-              </motion.article>
-            ))}
-          </motion.div>
+          <ReviewReel
+            onSelectProduct={() => {
+              const el = document.getElementById("available-pieces");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
         </section>
 
-        {/* 4. AVAILABLE PIECES */}
-        <section id="available" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          {/* Header Row & Pill Filter Tabs */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10 sm:mb-12">
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#261C14] font-normal tracking-tight">
-              Available Pieces
-            </h2>
+        {/* 4. Available Pieces: Filter Tabs & Cloud UI Product Cards */}
+        <section
+          id="available-pieces"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-28 sm:mb-36"
+        >
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <div>
+              <h2 className="font-serif text-3xl sm:text-4xl text-[#1d1c16] font-normal tracking-tight">
+                Available Pieces
+              </h2>
+              <p className="font-sans text-xs sm:text-sm text-[#57423b] mt-1.5">
+                Singular artifacts forged for modern permanence
+              </p>
+            </div>
 
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {CATEGORIES.map((cat) => {
-                const isActive = selectedCategory === cat;
+            {/* Clean Pill Filter Tabs */}
+            <div className="flex flex-wrap gap-2.5">
+              {FILTER_TABS.map((tab) => {
+                const isActive = activeFilter === tab;
                 return (
                   <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.16em] transition-all duration-300 border-none outline-none ${
+                    key={tab}
+                    onClick={() => setActiveFilter(tab)}
+                    className={`px-6 py-2.5 rounded-full font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer border-none ${
                       isActive
-                        ? "bg-[#38332B] text-white shadow-md shadow-[#38332B]/15"
-                        : "bg-[#EDE4D8]/80 text-[#261C14] hover:bg-[#E2D5C3]"
+                        ? "bg-[#38332B] text-white shadow-md active:scale-95"
+                        : "bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] hover:bg-[#eac891]/30 hover:border-[#d68224]/40"
                     }`}
                   >
-                    {cat}
+                    {tab}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 3-Column Cloud UI Product Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {/* 3-Column Bento Cloud Product Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => {
-                const isAdded = addedIds[product.id];
-                return (
-                  <motion.div
-                    key={product.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ duration: 0.4 }}
-                    className="bg-white rounded-[28px] sm:rounded-[32px] p-5 shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_50px_-10px_rgba(38,28,20,0.1)] transition-all duration-500 flex flex-col justify-between group"
-                  >
-                    <div>
-                      {/* Square Product Image */}
-                      <div className="relative aspect-square w-full rounded-[22px] overflow-hidden bg-[#F9F6F0] mb-5">
-                        <img
-                          src={product.image}
-                          alt={product.title}
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                        />
-                      </div>
+              {filteredPieces.map((piece) => (
+                <motion.div
+                  key={piece.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.35 }}
+                  className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-white shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
+                >
+                  {/* Square Aspect Ratio Product Thumbnail */}
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f8f3ea] mb-5">
+                    <img
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      src={piece.image}
+                      alt={piece.title}
+                      onError={(e) => handleImageError(e, piece.fallback)}
+                    />
+                  </div>
 
-                      {/* Product Content */}
-                      <div className="px-1">
-                        <h3 className="font-medium text-base text-[#261C14] group-hover:text-[#9B3B1C] transition-colors">
-                          {product.title}
-                        </h3>
-                        <p className="text-xs text-[#857568] mt-1.5 line-clamp-2 leading-relaxed font-light">
-                          {product.description}
-                        </p>
-                      </div>
+                  {/* Card Description & Action Row */}
+                  <div className="flex-grow flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-sans text-base sm:text-lg text-[#1d1c16] font-medium mb-1.5 group-hover:text-[#ae431e] transition-colors">
+                        {piece.title}
+                      </h3>
+                      <p className="font-sans text-xs text-[#57423b] line-clamp-2 mb-4 leading-relaxed font-light">
+                        {piece.description}
+                      </p>
                     </div>
 
-                    {/* Bottom Row: Price & Action */}
-                    <div className="mt-6 pt-4 border-t border-[#F5EFE6] flex items-center justify-between px-1">
-                      <span className="text-sm font-semibold text-[#261C14]">
-                        {product.price}
+                    <div className="flex justify-between items-center pt-3 border-t border-[#f2ede4]">
+                      <span className="font-sans text-base text-[#d68224] font-semibold">
+                        {piece.price}
                       </span>
                       <button
-                        onClick={() => handleAddToCart(product.id)}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 border-none ${
-                          isAdded
-                            ? "bg-[#38332B] text-white"
-                            : "bg-[#F9F6F0] text-[#261C14] hover:bg-[#9B3B1C] hover:text-white"
+                        onClick={() => handleAdd(piece.id)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
+                          addedItem === piece.id
+                            ? "bg-[#ae431e] text-white"
+                            : "bg-[#f8f3ea] text-[#ae431e] hover:bg-[#ae431e] hover:text-white"
                         }`}
-                        aria-label={`Add ${product.title} to cart`}
+                        aria-label={`Add ${piece.title} to cart`}
                       >
-                        {isAdded ? (
-                          <Check className="w-4 h-4" />
+                        {addedItem === piece.id ? (
+                          <Check className="w-5 h-5 stroke-[2]" />
                         ) : (
-                          <Plus className="w-4 h-4 stroke-[2]" />
+                          <Plus className="w-5 h-5 stroke-[2]" />
                         )}
                       </button>
                     </div>
-                  </motion.div>
-                );
-              })}
+                  </div>
+                </motion.div>
+              ))}
             </AnimatePresence>
           </div>
 
-          {/* Centered Load More CTA Button */}
-          <div className="mt-12 sm:mt-16 text-center">
+          <div className="mt-14 text-center">
             <button
-              onClick={() => setSelectedCategory("All")}
-              className="px-8 py-3.5 rounded-full bg-[#EDE4D8]/90 hover:bg-[#E2D5C3] text-[#261C14] text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-300 border-none shadow-sm hover:shadow"
+              onClick={() => setActiveFilter("All")}
+              className="px-8 py-3.5 rounded-full bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] font-sans text-xs font-semibold tracking-widest uppercase hover:bg-[#ece8df] hover:border-[#d68224]/50 transition-colors shadow-sm cursor-pointer"
             >
-              Load More
+              LOAD MORE
             </button>
           </div>
         </section>
 
-        {/* 5. THE ARCHIVE */}
-        <section id="archive" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          {/* Centered Header & Subtext */}
-          <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-            <h2 className="font-serif text-3xl sm:text-5xl text-[#261C14] font-normal tracking-tight">
-              The Archive
-            </h2>
-            <p className="text-xs sm:text-sm text-[#857568] mt-3 sm:mt-4 leading-relaxed font-light">
-              Sold out or bespoke creations that live on in our memory. Explore the
-              catalog of past pieces or commission a bespoke creation for your own collection.
-            </p>
-          </div>
+        {/* 5. The Archive: Bespoke Creations Showcase */}
+        <section className="bg-[#f8f3ea] py-24 sm:py-32 border-t border-[#dec0b7]/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="font-serif text-3xl sm:text-5xl text-[#1d1c16] mb-4 font-normal tracking-tight">
+                The Archive
+              </h2>
+              <p className="font-sans text-sm sm:text-base text-[#57423b] leading-relaxed font-light">
+                Past 1-of-1 creations. Sold out, but forever inspiring. Browse the
+                archive to spark ideas for your custom coastal piece.
+              </p>
+            </div>
 
-          {/* 4-Column Square Image Grid */}
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12 sm:mb-16"
-          >
-            {ARCHIVE_ITEMS.map((item, idx) => (
-              <motion.div
-                key={item.id}
-                variants={fadeInUp}
-                custom={idx * 0.1}
-                className="group relative aspect-square rounded-[22px] sm:rounded-[28px] overflow-hidden bg-[#EDE4D8] shadow-[0_8px_25px_-6px_rgba(38,28,20,0.06)]"
-              >
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-700 ease-out"
-                />
-                {/* Hover Reveal Subtle Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#261C14]/75 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
-                  <p className="text-xs font-medium line-clamp-1">{item.title}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-white/70">
-                    {item.era}
-                  </p>
+            {/* 4-Column Asymmetric Staggered Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-16">
+              {ARCHIVE_ITEMS.map((item) => (
+                <div
+                  key={item.id}
+                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] cursor-pointer bg-[#ede4d8]`}
+                >
+                  <img
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 filter grayscale-[20%] group-hover:grayscale-0"
+                    src={item.image}
+                    alt={item.alt}
+                    onError={(e) => handleImageError(e, item.fallback)}
+                  />
+                  <div className="absolute inset-0 bg-[#ae431e]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                    <span className="bg-[#d68224] text-white font-sans text-xs font-semibold px-4 py-2 rounded-full tracking-wider shadow-sm">
+                      1-OF-1
+                    </span>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
+              ))}
+            </div>
 
-          {/* Centered Terracotta CTA Button */}
-          <div className="text-center">
-            <a
-              href="#custom-request"
-              className="inline-flex items-center justify-center px-9 py-4 rounded-full bg-[#9B3B1C] text-white text-xs sm:text-sm font-medium tracking-wide shadow-lg hover:bg-[#852E15] hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-none"
-            >
-              Request Archival Bespoke
-            </a>
+            <div className="text-center">
+              <a
+                href="#custom-request"
+                className="bg-[#ae431e] hover:bg-[#8d2c06] text-white font-sans text-xs uppercase font-semibold tracking-wider h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none"
+              >
+                START A CUSTOM REQUEST
+              </a>
+            </div>
           </div>
         </section>
       </main>
 
-      {/* 6. DEEP TERRACOTTA FOOTER */}
+      {/* 6. Deep Terracotta Footer */}
       <Footer />
     </div>
   );

@@ -22,11 +22,7 @@ export default function Navbar({
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -42,13 +38,14 @@ export default function Navbar({
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         isScrolled
-          ? "bg-[#F9F6F0]/90 backdrop-blur-md shadow-[0_4px_20px_-2px_rgba(38,28,20,0.04)] py-3"
-          : "bg-[#F9F6F0]/70 backdrop-blur-sm py-5"
+          ? "bg-[#F9F6F0]/95 backdrop-blur-md shadow-[0_4px_20px_-2px_rgba(38,28,20,0.04)] py-3"
+          : "bg-[#F9F6F0]/85 backdrop-blur-sm py-5"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Left: Navigation Links */}
+          
+          {/* Left: Editorial Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => {
               const isActive = activeLink === link.name;
@@ -60,7 +57,7 @@ export default function Navbar({
                   className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium ${
                     isActive
                       ? "text-[#9B3B1C] font-semibold"
-                      : "text-[#625448] hover:text-[#9B3B1C]"
+                      : "text-[#57423b] hover:text-[#9B3B1C]"
                   }`}
                 >
                   {link.name}
@@ -76,11 +73,11 @@ export default function Navbar({
             })}
           </nav>
 
-          {/* Mobile Hamburger Toggle (Left on mobile) */}
+          {/* Mobile Menu Toggle */}
           <div className="flex items-center md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#261C14] hover:text-[#9B3B1C] transition-colors focus:outline-none"
+              className="p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors focus:outline-none border-none bg-transparent"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? (
@@ -91,42 +88,32 @@ export default function Navbar({
             </button>
           </div>
 
-          {/* Center: Brand Wordmark / Logo */}
+          {/* Center: Serif Brand Wordmark */}
           <div className="flex-1 md:flex-initial text-center">
             <Link
               href="/"
               className="inline-block group focus:outline-none"
               aria-label="ACUA Home"
             >
-              <span className="font-serif text-2xl sm:text-3xl lg:text-4xl tracking-[0.22em] uppercase font-normal text-[#261C14] group-hover:text-[#9B3B1C] transition-colors duration-300">
+              <span className="font-serif text-2xl sm:text-3xl lg:text-4xl tracking-[0.24em] uppercase font-normal text-[#1d1c16] group-hover:text-[#9B3B1C] transition-colors duration-300">
                 ACUA
               </span>
             </Link>
           </div>
 
-          {/* Right: Action Utilities (Search, User, Cart) */}
+          {/* Right: Action Utilities (Search, Cart, Profile) */}
           <div className="flex items-center space-x-4 sm:space-x-6">
-            {/* Search Icon */}
             <button
               onClick={onOpenSearch}
-              className="p-2 text-[#261C14] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none"
+              className="p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none border-none bg-transparent cursor-pointer"
               aria-label="Search Catalog"
             >
               <Search className="w-[18px] h-[18px] stroke-[1.5]" />
             </button>
 
-            {/* Profile / Account Icon */}
-            <button
-              className="hidden sm:block p-2 text-[#261C14] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none"
-              aria-label="Account Profile"
-            >
-              <User className="w-[18px] h-[18px] stroke-[1.5]" />
-            </button>
-
-            {/* Cart Icon / Button */}
             <button
               onClick={onOpenCart}
-              className="relative p-2 text-[#261C14] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none group"
+              className="relative p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none group border-none bg-transparent cursor-pointer"
               aria-label={`Cart with ${cartCount} items`}
             >
               <ShoppingBag className="w-[18px] h-[18px] stroke-[1.5]" />
@@ -135,6 +122,13 @@ export default function Navbar({
                   {cartCount}
                 </span>
               )}
+            </button>
+
+            <button
+              className="hidden sm:block p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none border-none bg-transparent cursor-pointer"
+              aria-label="Account Profile"
+            >
+              <User className="w-[18px] h-[18px] stroke-[1.5]" />
             </button>
           </div>
         </div>
@@ -148,7 +142,7 @@ export default function Navbar({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="md:hidden bg-[#F9F6F0] border-b border-[#EDE4D8] px-6 py-6 shadow-lg"
+            className="md:hidden bg-[#F9F6F0] border-b border-[#dec0b7]/30 px-6 py-6 shadow-lg"
           >
             <div className="flex flex-col space-y-4">
               {navLinks.map((link) => (
@@ -162,16 +156,16 @@ export default function Navbar({
                   className={`text-sm uppercase tracking-[0.18em] py-2 transition-colors ${
                     activeLink === link.name
                       ? "text-[#9B3B1C] font-semibold"
-                      : "text-[#261C14] hover:text-[#9B3B1C]"
+                      : "text-[#1d1c16] hover:text-[#9B3B1C]"
                   }`}
                 >
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-[#EDE4D8] flex items-center space-x-6 text-[#625448]">
+              <div className="pt-4 border-t border-[#dec0b7]/30 flex items-center space-x-6 text-[#57423b]">
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 text-xs uppercase tracking-wider text-[#261C14]"
+                  className="flex items-center gap-2 text-xs uppercase tracking-wider text-[#1d1c16] bg-transparent border-none"
                 >
                   <User className="w-4 h-4" /> Account
                 </button>
