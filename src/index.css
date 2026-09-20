@@ -14,15 +14,15 @@
 @layer base {
   html {
     @apply scroll-smooth antialiased;
-    background-color: #F6F1EB;
+    background-color: #F9F6F0;
   }
 
   body {
-    @apply font-sans text-espresso bg-sand-100 min-h-screen selection:bg-terracotta-100 selection:text-terracotta-700;
+    @apply font-sans text-[#1d1c16] bg-[#F9F6F0] min-h-screen selection:bg-chile-rojo selection:text-white;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight font-normal text-espresso;
+    @apply font-serif tracking-tight font-normal text-[#1d1c16];
   }
 
   /* Universal reset for form inputs: enforce clean borderless cloud appearance */
@@ -39,27 +39,27 @@
 
   /* Cloud Input Field: Zero borders, soft white/cream background, inset depth */
   .cloud-input {
-    @apply w-full border-none outline-none rounded-2xl bg-sand-50/80 px-4 py-3.5 text-sm text-espresso placeholder:text-sand-400 shadow-input-inset focus:bg-white focus:shadow-cloud-sm transition-all duration-200;
+    @apply w-full border-none outline-none rounded-2xl bg-[#f8f3ea]/80 px-4 py-3.5 text-sm text-[#1d1c16] placeholder:text-[#1d1c16]/40 shadow-input-inset focus:bg-white focus:shadow-cloud-sm transition-all duration-200;
   }
 
-  /* Primary High-Impact Terracotta Action Button */
+  /* Primary High-Impact Brand Action Button */
   .btn-terracotta {
-    @apply inline-flex items-center justify-center border-none rounded-full bg-terracotta-gradient px-8 py-4 text-sm font-semibold tracking-wide text-white shadow-terracotta-glow hover:opacity-95 hover:shadow-xl active:scale-[0.98] transition-all duration-300;
+    @apply inline-flex items-center justify-center border-none rounded-full bg-chile-rojo px-8 py-4 text-sm font-semibold tracking-wide text-white shadow-terracotta-glow hover:brightness-90 active:scale-[0.98] transition-all duration-300;
   }
 
-  /* Palette Strip: Elegant multi-color accent bar seen in mockup */
+  /* Palette Strip: ACUA brand accent bar (Chile Rojo / Terracota / Olive / Sunset) */
   .palette-strip {
     height: 4px;
     background: linear-gradient(
       to right,
-      #9B3B1C 0%,
-      #9B3B1C 25%,
-      #D48B47 25%,
-      #D48B47 50%,
-      #8A8E75 50%,
-      #8A8E75 75%,
-      #EDE4D8 75%,
-      #EDE4D8 100%
+      #AE431E 0%,
+      #AE431E 25%,
+      #D68224 25%,
+      #D68224 50%,
+      #8A8B35 50%,
+      #8A8B35 75%,
+      #EAC891 75%,
+      #EAC891 100%
     );
     border-radius: 9999px;
   }

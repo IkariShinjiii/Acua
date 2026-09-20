@@ -1,135 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check } from 'lucide-react';
-import ReviewReel from './ReviewReel';
+import { InstagramIcon, FacebookIcon } from '../components/SocialIcons';
+import ReviewReel from '../components/ReviewReel';
+import { handleImageError } from '../lib/imageFallback';
+import { AVAILABLE_PIECES, FILTER_TABS } from '../data/products';
+import { ARCHIVE_ITEMS } from '../data/archive';
 
-// Image Fallback Handler
-const handleImageError = (e, fallbackUrl) => {
-  if (e.currentTarget.src !== fallbackUrl) {
-    e.currentTarget.src = fallbackUrl;
-  }
-};
-
-// Curated Available Pieces for Bento Catalog
-const AVAILABLE_PIECES = [
-  {
-    id: 'ap-1',
-    title: 'Pearl Drop Chain',
-    category: 'Necklaces',
-    material: '14k Gold Fill & Baroque Pearl',
-    description:
-      'A single, luminous baroque freshwater pearl suspended on an ethically forged 14k gold fill chain.',
-    price: '$180',
-    image:
-      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1000&q=80',
-    fallback:
-      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'ap-2',
-    title: 'Hammered Stacking Set',
-    category: 'Rings',
-    material: 'Recycled Sterling Silver',
-    description:
-      'Trio of slim, organically textured bands sculpted to evoke gentle coastal tide lines.',
-    price: '$150',
-    image:
-      'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=1000&q=80',
-    fallback:
-      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'ap-3',
-    title: 'Woven Sand Bracelet',
-    category: 'Bracelets',
-    material: '18k Gold Vermeil',
-    description:
-      'Intricately braided chain with a molten sculptural clasp inspired by windswept coastal grass.',
-    price: '$290',
-    image:
-      'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=1000&q=80',
-    fallback:
-      'https://images.unsplash.com/photo-1611591475887-f8232bfdf1fb?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'ap-4',
-    title: 'Solitary Tidal Ear Cuff',
-    category: 'Earrings',
-    material: 'Sterling Silver',
-    description:
-      'Molten textured silver designed to hug the upper ear curve comfortably without piercing.',
-    price: '$145',
-    image:
-      'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=1000&q=80',
-    fallback:
-      'https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'ap-5',
-    title: 'Dune Texture Ring',
-    category: 'Rings',
-    material: '14k Solid Gold',
-    description:
-      'Substantially weighted band handcrafted with natural hammered facets that catch the ocean light.',
-    price: '$480',
-    image:
-      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80',
-    fallback:
-      'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=1000&q=80',
-  },
-  {
-    id: 'ap-6',
-    title: 'Azure Drop Pendant',
-    category: 'Necklaces',
-    material: 'Recycled Silver & Aquamarine',
-    description:
-      'Raw uncut ocean aquamarine encased in hand-shaped molten silver settings.',
-    price: '$240',
-    image:
-      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1000&q=80',
-    fallback:
-      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80',
-  },
-];
-
-const ARCHIVE_ITEMS = [
-  {
-    id: 'arch-1',
-    aspect: 'aspect-square',
-    mt: '',
-    image:
-      'https://images.unsplash.com/photo-1603561596112-0a132b757442?auto=format&fit=crop&w=800&q=80',
-    alt: 'Custom ring featuring an uncut raw sapphire set in rough, textured silver on dark slate rock',
-  },
-  {
-    id: 'arch-2',
-    aspect: 'aspect-[3/4]',
-    mt: 'mt-0 md:mt-8',
-    image:
-      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80',
-    alt: 'Sculptural gold pendant looking like melted wax or molten metal',
-  },
-  {
-    id: 'arch-3',
-    aspect: 'aspect-square',
-    mt: '',
-    image:
-      'https://images.unsplash.com/photo-1598560917505-59a3ad559071?auto=format&fit=crop&w=800&q=80',
-    alt: 'Delicate silver chain with sea-green seaglass charm resting on textured linen',
-  },
-  {
-    id: 'arch-4',
-    aspect: 'aspect-[3/4]',
-    mt: 'mt-0 md:mt-8',
-    image:
-      'https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=800&q=80',
-    alt: 'Statement earrings made of hammered brass and irregular freshwater pearls on warm sand',
-  },
-];
-
-const FILTER_TABS = ['All', 'Necklaces', 'Bracelets', 'Rings', 'Earrings'];
-
-export default function HomeView({ setCurrentView }) {
+export default function HomeView({ setCurrentView, onRequestSimilar }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
   const handleAdd = (id) => {
@@ -143,39 +21,61 @@ export default function HomeView({ setCurrentView }) {
       : AVAILABLE_PIECES.filter((p) => p.category === activeFilter);
 
   return (
-    <div className="bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased min-h-screen flex flex-col selection:bg-[#ae431e] selection:text-white">
-      <main className="flex-grow pt-6 sm:pt-8">
-        
-        {/* 1. Hero Section */}
-        <section className="relative w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto mt-4 mb-24 sm:mb-32">
-          <div className="relative w-full h-[620px] md:h-[820px] rounded-[28px] sm:rounded-[40px] overflow-hidden shadow-[0_20px_60px_-15px_rgba(38,28,20,0.08)] group">
-            <div
-              className="absolute inset-0 bg-cover bg-center w-full h-full transition-transform duration-1000 group-hover:scale-105"
-              style={{
-                backgroundImage:
-                  "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85')",
-              }}
-            />
-            {/* Warm Terracotta Bottom Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#ae431e]/85 via-black/25 to-transparent pointer-events-none" />
+    <div className="bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased min-h-screen flex flex-col selection:bg-chile-rojo selection:text-white">
+      <main className="flex-grow">
 
-            <div className="absolute bottom-12 left-8 md:left-16 max-w-xl z-10">
-              <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl text-white mb-6 drop-shadow-md font-normal leading-[1.1] tracking-normal">
-                Tides &amp; Time
-              </h1>
-              <p className="font-sans text-base sm:text-lg text-white/90 mb-8 max-w-md hidden md:block leading-relaxed">
-                The new coastal collection. Forged by hand, shaped by the sea.
-              </p>
+        {/* 1. Hero Section */}
+        <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#1d1c16]">
+          <div
+            className="absolute inset-0 bg-cover bg-center w-full h-full"
+            style={{
+              backgroundImage:
+                "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85')",
+            }}
+          />
+          {/* Warm Overlay Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1d1c16]/70 via-[#1d1c16]/40 to-[#1d1c16]" />
+
+          <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
+            <h1 className="font-serif text-white text-[2.75rem] leading-[1.05] sm:text-6xl md:text-7xl tracking-tight max-w-3xl drop-shadow-[0_2px_20px_rgba(0,0,0,0.25)]">
+              Naturally rooted,
+              <br />
+              intentionally <span className="italic text-sunset">designed</span>.
+            </h1>
+
+            <p className="mt-7 max-w-md text-white/80 text-base sm:text-lg font-sans font-light drop-shadow-[0_1px_12px_rgba(0,0,0,0.3)]">
+              Handcrafted jewelry inspired by the tides — cast in gold, silver, and
+              salvaged sea glass for coastal permanence.
+            </p>
+
+            <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
               <button
                 onClick={() => {
                   const el = document.getElementById('available-pieces');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="bg-[#ae431e] hover:bg-[#8d2c06] text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer"
+                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-[#1d1c16]"
               >
                 SHOP NEW COLLECTION
               </button>
+              <button
+                onClick={() => setCurrentView('commission')}
+                className="border border-white/40 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full hover:border-sunset hover:text-sunset transition-colors duration-300 inline-flex items-center justify-center bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-[#1d1c16]"
+              >
+                CUSTOM REQUEST
+              </button>
             </div>
+          </div>
+
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+            <span className="text-white/60 text-[0.65rem] uppercase tracking-[0.3em] font-sans">
+              Scroll
+            </span>
+            <motion.span
+              className="h-8 w-px bg-sunset/60 origin-top"
+              animate={{ scaleY: [1, 0.4, 1] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: [0.65, 0, 0.35, 1] }}
+            />
           </div>
         </section>
 
@@ -192,7 +92,7 @@ export default function HomeView({ setCurrentView }) {
             </div>
 
             <a
-              className="font-sans text-xs font-semibold text-[#ae431e] hover:text-[#d68224] transition-colors underline underline-offset-4 tracking-wider uppercase"
+              className="font-sans text-xs font-semibold text-chile-rojo hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase"
               href="#available-pieces"
             >
               VIEW ALL
@@ -232,8 +132,8 @@ export default function HomeView({ setCurrentView }) {
                     onClick={() => setActiveFilter(tab)}
                     className={`px-6 py-2.5 rounded-full font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer border-none ${
                       isActive
-                        ? 'bg-[#38332B] text-white shadow-md active:scale-95'
-                        : 'bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] hover:bg-[#eac891]/30 hover:border-[#d68224]/40'
+                        ? 'bg-[#1d1c16] text-white shadow-md active:scale-95'
+                        : 'bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] hover:bg-sunset/30 hover:border-terracota/40'
                     }`}
                   >
                     {tab}
@@ -269,7 +169,7 @@ export default function HomeView({ setCurrentView }) {
                   {/* Card Description & Action Row */}
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="font-sans text-base sm:text-lg text-[#1d1c16] font-medium mb-1.5 group-hover:text-[#ae431e] transition-colors">
+                      <h3 className="font-sans text-base sm:text-lg text-[#1d1c16] font-medium mb-1.5 group-hover:text-chile-rojo transition-colors">
                         {piece.title}
                       </h3>
                       <p className="font-sans text-xs text-[#57423b] line-clamp-2 mb-4 leading-relaxed font-light">
@@ -278,15 +178,15 @@ export default function HomeView({ setCurrentView }) {
                     </div>
 
                     <div className="flex justify-between items-center pt-3 border-t border-[#f2ede4]">
-                      <span className="font-sans text-base text-[#d68224] font-semibold">
+                      <span className="font-sans text-base text-terracota font-semibold">
                         {piece.price}
                       </span>
                       <button
                         onClick={() => handleAdd(piece.id)}
                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
                           addedItem === piece.id
-                            ? 'bg-[#ae431e] text-white'
-                            : 'bg-[#f8f3ea] text-[#ae431e] hover:bg-[#ae431e] hover:text-white'
+                            ? 'bg-chile-rojo text-white'
+                            : 'bg-[#f8f3ea] text-chile-rojo hover:bg-chile-rojo hover:text-white'
                         }`}
                         aria-label={`Add ${piece.title} to cart`}
                       >
@@ -306,7 +206,7 @@ export default function HomeView({ setCurrentView }) {
           <div className="mt-14 text-center">
             <button
               onClick={() => setActiveFilter('All')}
-              className="px-8 py-3.5 rounded-full bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] font-sans text-xs font-semibold tracking-widest uppercase hover:bg-[#ece8df] hover:border-[#d68224]/50 transition-colors shadow-sm cursor-pointer"
+              className="px-8 py-3.5 rounded-full bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] font-sans text-xs font-semibold tracking-widest uppercase hover:bg-[#ece8df] hover:border-terracota/50 transition-colors shadow-sm cursor-pointer"
             >
               LOAD MORE
             </button>
@@ -331,7 +231,7 @@ export default function HomeView({ setCurrentView }) {
               {ARCHIVE_ITEMS.map((item) => (
                 <div
                   key={item.id}
-                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] cursor-pointer bg-[#ede4d8]`}
+                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] bg-[#ede4d8]`}
                 >
                   <img
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 filter grayscale-[20%] group-hover:grayscale-0"
@@ -339,10 +239,21 @@ export default function HomeView({ setCurrentView }) {
                     alt={item.alt}
                     onError={(e) => handleImageError(e, item.fallback)}
                   />
-                  <div className="absolute inset-0 bg-[#ae431e]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                    <span className="bg-[#d68224] text-white font-sans text-xs font-semibold px-4 py-2 rounded-full tracking-wider shadow-sm">
+                  <div className="absolute inset-0 bg-chile-rojo/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4 text-center backdrop-blur-[2px]">
+                    <span className="bg-terracota text-white font-sans text-xs font-semibold px-4 py-2 rounded-full tracking-wider shadow-sm">
                       1-OF-1
                     </span>
+                    {item.title && (
+                      <p className="font-serif text-white text-base sm:text-lg leading-tight">
+                        {item.title}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => onRequestSimilar?.(item)}
+                      className="bg-white text-chile-rojo font-sans text-[11px] font-semibold uppercase tracking-wider px-4 py-2 rounded-full shadow-sm hover:bg-sunset transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
+                    >
+                      Request Similar Piece
+                    </button>
                   </div>
                 </div>
               ))}
@@ -351,7 +262,7 @@ export default function HomeView({ setCurrentView }) {
             <div className="text-center">
               <button
                 onClick={() => setCurrentView('commission')}
-                className="bg-[#ae431e] hover:bg-[#8d2c06] text-white font-sans text-xs uppercase font-semibold tracking-wider h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer"
+                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-wider h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f3ea]"
               >
                 START A CUSTOM REQUEST
               </button>
@@ -361,15 +272,15 @@ export default function HomeView({ setCurrentView }) {
       </main>
 
       {/* 5. Deep Terracotta Footer */}
-      <footer className="w-full mt-auto bg-[#ae431e] text-white">
+      <footer className="w-full mt-auto bg-chile-rojo text-white">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="bg-[#fef9f0] px-4 py-2 rounded-lg shadow-sm inline-flex items-center justify-center">
+            <div className="bg-[#F9F6F0] px-4 py-2 rounded-lg shadow-sm inline-flex items-center justify-center">
               <span className="font-serif text-2xl tracking-[0.22em] text-[#1d1c16] font-normal uppercase">
                 ACUA
               </span>
             </div>
-            <span className="text-xs uppercase tracking-widest text-[#eac891] opacity-95 font-medium mt-1 font-sans">
+            <span className="text-xs uppercase tracking-widest text-sunset opacity-95 font-medium mt-1 font-sans">
               NATURALLY ROOTED. INTENTIONALLY DESIGNED.
             </span>
           </div>
@@ -384,13 +295,38 @@ export default function HomeView({ setCurrentView }) {
             <a className="text-white/80 hover:text-white transition-colors" href="#returns">
               Returns
             </a>
-            <a className="text-white/80 hover:text-white transition-colors" href="#contact">
+            <a
+              className="text-white/80 hover:text-white transition-colors"
+              href="mailto:acuavibe@gmail.com"
+            >
               Contact
             </a>
           </nav>
 
-          <div className="text-xs font-sans uppercase tracking-wider text-white/70 text-center md:text-right">
-            © 2024 ACUA. HANDCRAFTED BY THE COAST.
+          <div className="flex flex-col items-center md:items-end gap-3">
+            <div className="flex items-center gap-4">
+              <a
+                href="https://www.instagram.com/acua_ph/"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="ACUA on Instagram"
+                className="text-white/80 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+              >
+                <InstagramIcon className="w-[18px] h-[18px]" />
+              </a>
+              <a
+                href="https://www.facebook.com/profile.php?id=61577296311917"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="ACUA on Facebook"
+                className="text-white/80 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+              >
+                <FacebookIcon className="w-[18px] h-[18px]" />
+              </a>
+            </div>
+            <div className="text-xs font-sans uppercase tracking-wider text-white/70 text-center md:text-right">
+              © 2024 ACUA. HANDCRAFTED BY THE COAST.
+            </div>
           </div>
         </div>
       </footer>

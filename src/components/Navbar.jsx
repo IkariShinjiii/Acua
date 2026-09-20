@@ -14,35 +14,58 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Translucent over the hero image (home, unscrolled); solid everywhere else.
+  const isTransparent = currentView === 'home' && !isScrolled;
+  const textBase = isTransparent ? 'text-white/85' : 'text-[#57423b]';
+  const textStrong = isTransparent ? 'text-white' : 'text-[#1d1c16]';
+  const accent = isTransparent ? 'text-sunset' : 'text-chile-rojo';
+  const accentHover = isTransparent ? 'hover:text-sunset' : 'hover:text-chile-rojo';
+  const accentBar = isTransparent ? 'bg-sunset' : 'bg-chile-rojo';
+  const groupAccentHover = isTransparent ? 'group-hover:text-sunset' : 'group-hover:text-chile-rojo';
+  const ringOffset = isTransparent ? 'focus-visible:ring-offset-[#1d1c16]' : 'focus-visible:ring-offset-[#F9F6F0]';
+
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        isScrolled
-          ? 'bg-[#F9F6F0]/95 backdrop-blur-md shadow-[0_4px_20px_-2px_rgba(38,28,20,0.04)] py-3'
-          : 'bg-[#F9F6F0]/85 backdrop-blur-sm py-5'
+      className={`fixed top-0 inset-x-0 z-50 w-full transition-all duration-500 ${
+        isTransparent
+          ? 'bg-transparent py-6'
+          : 'bg-[#F9F6F0]/95 backdrop-blur-md shadow-[0_4px_20px_-2px_rgba(38,28,20,0.04)] py-3'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          
-          {/* Left: Editorial Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-8">
+
+          {/* Left: Serif Brand Wordmark */}
+          <button
+            onClick={() => {
+              setCurrentView('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`group flex items-center gap-2.5 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full bg-transparent border-none cursor-pointer`}
+            aria-label="ACUA Home"
+          >
+            {/* TODO: swap for the exported ACUA icon mark once provided (transparent PNG/SVG) */}
+            <span className={`font-serif text-2xl sm:text-3xl tracking-[0.24em] uppercase font-normal transition-colors duration-300 ${textStrong} ${groupAccentHover}`}>
+              ACUA
+            </span>
+          </button>
+
+          {/* Center: Editorial Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8">
             <button
               onClick={() => {
                 setCurrentView('home');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium bg-transparent border-none cursor-pointer ${
-                currentView === 'home'
-                  ? 'text-[#9B3B1C] font-semibold'
-                  : 'text-[#57423b] hover:text-[#9B3B1C]'
+                currentView === 'home' ? `${accent} font-semibold` : `${textBase} ${accentHover}`
               }`}
             >
               Shop
               {currentView === 'home' && (
                 <motion.div
                   layoutId="activeNavIndicatorVite"
-                  className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#9B3B1C] rounded-full"
+                  className={`absolute bottom-0 left-0 right-0 h-[1.5px] rounded-full ${accentBar}`}
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -54,7 +77,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                 const el = document.getElementById('available-pieces');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="text-xs uppercase tracking-[0.2em] transition-colors py-1 font-medium text-[#57423b] hover:text-[#9B3B1C] bg-transparent border-none cursor-pointer"
+              className={`text-xs uppercase tracking-[0.2em] transition-colors py-1 font-medium bg-transparent border-none cursor-pointer ${textBase} ${accentHover}`}
             >
               Collections
             </button>
@@ -62,58 +85,25 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
             <button
               onClick={() => setCurrentView('commission')}
               className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium bg-transparent border-none cursor-pointer ${
-                currentView === 'commission'
-                  ? 'text-[#9B3B1C] font-semibold'
-                  : 'text-[#57423b] hover:text-[#9B3B1C]'
+                currentView === 'commission' ? `${accent} font-semibold` : `${textBase} ${accentHover}`
               }`}
             >
               Custom Request
               {currentView === 'commission' && (
                 <motion.div
                   layoutId="activeNavIndicatorVite"
-                  className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#9B3B1C] rounded-full"
+                  className={`absolute bottom-0 left-0 right-0 h-[1.5px] rounded-full ${accentBar}`}
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
             </button>
           </nav>
 
-          {/* Mobile Menu Toggle */}
-          <div className="flex items-center md:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors focus:outline-none border-none bg-transparent"
-              aria-label="Toggle Navigation Menu"
-            >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5 stroke-[1.5]" />
-              ) : (
-                <Menu className="w-5 h-5 stroke-[1.5]" />
-              )}
-            </button>
-          </div>
-
-          {/* Center: Serif Brand Wordmark */}
-          <div className="flex-1 md:flex-initial text-center">
-            <button
-              onClick={() => {
-                setCurrentView('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="inline-block group focus:outline-none bg-transparent border-none cursor-pointer"
-              aria-label="ACUA Home"
-            >
-              <span className="font-serif text-2xl sm:text-3xl lg:text-4xl tracking-[0.24em] uppercase font-normal text-[#1d1c16] group-hover:text-[#9B3B1C] transition-colors duration-300">
-                ACUA
-              </span>
-            </button>
-          </div>
-
           {/* Right: Action Utilities (Search, Cart, Profile) */}
-          <div className="flex items-center space-x-4 sm:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <button
               onClick={() => alert("Search catalog")}
-              className="p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none border-none bg-transparent cursor-pointer"
+              className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label="Search Catalog"
             >
               <Search className="w-[18px] h-[18px] stroke-[1.5]" />
@@ -121,22 +111,35 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
 
             <button
               onClick={onOpenCart}
-              className="relative p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none group border-none bg-transparent cursor-pointer"
+              className={`relative p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full group border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label={`Cart with ${cartCount} items`}
             >
               <ShoppingBag className="w-[18px] h-[18px] stroke-[1.5]" />
               {cartCount > 0 && (
-                <span className="absolute top-1 right-0.5 min-w-[15px] h-[15px] px-1 bg-[#9B3B1C] text-white text-[9px] font-medium rounded-full flex items-center justify-center leading-none shadow-sm">
+                <span className="absolute top-1 right-0.5 min-w-[15px] h-[15px] px-1 bg-chile-rojo text-white text-[9px] font-medium rounded-full flex items-center justify-center leading-none shadow-sm">
                   {cartCount}
                 </span>
               )}
             </button>
 
             <button
-              className="hidden sm:block p-2 text-[#1d1c16] hover:text-[#9B3B1C] transition-colors duration-200 focus:outline-none border-none bg-transparent cursor-pointer"
+              className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label="Account Profile"
             >
               <User className="w-[18px] h-[18px] stroke-[1.5]" />
+            </button>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`md:hidden p-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent ${textStrong} ${accentHover}`}
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5 stroke-[1.5]" />
+              ) : (
+                <Menu className="w-5 h-5 stroke-[1.5]" />
+              )}
             </button>
           </div>
         </div>
@@ -158,7 +161,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('home');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-[#9B3B1C] bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-chile-rojo bg-transparent border-none"
               >
                 Shop
               </button>
@@ -169,7 +172,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   const el = document.getElementById('available-pieces');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-[#9B3B1C] bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-chile-rojo bg-transparent border-none"
               >
                 Collections
               </button>
@@ -178,7 +181,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('commission');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-[#9B3B1C] bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-chile-rojo bg-transparent border-none"
               >
                 Custom Request
               </button>

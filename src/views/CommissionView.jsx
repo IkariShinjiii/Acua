@@ -1,55 +1,27 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  UploadCloud, 
-  CheckCircle2, 
-  Clock, 
-  ShieldCheck, 
-  X, 
-  ArrowRight
+import {
+  Sparkles,
+  UploadCloud,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
+  X,
+  ArrowRight,
 } from 'lucide-react';
+import { JEWELRY_CATEGORIES, METAL_OPTIONS, BUDGET_TIERS } from '../data/commissionOptions';
 
-/**
- * Palette Presets for Commission Customization
- */
-const JEWELRY_CATEGORIES = [
-  'Sculptural Ring',
-  'Necklace / Choker',
-  'Molten Cuff',
-  'Artisanal Earrings',
-  'Ceremonial / Suite',
-];
-
-const METAL_OPTIONS = [
-  { id: '18k-gold', label: '18k Fairmined Gold', note: 'Rich molten luster' },
-  { id: '14k-rose', label: '14k Warm Rose Gold', note: 'Subtle blush tone' },
-  { id: '925-silver', label: '925 Recycled Silver', note: 'Cool chiseled finish' },
-];
-
-const BUDGET_TIERS = [
-  { id: 'tier-1', range: '$400 – $800', label: 'Single Stone / Band' },
-  { id: 'tier-2', range: '$800 – $1,500', label: 'Molten Casting' },
-  { id: 'tier-3', range: '$1,500 – $3,000', label: 'Raw Pearl / Gem' },
-  { id: 'tier-4', range: '$3,000+', label: 'Heirloom Suite' },
-];
-
-/**
- * CommissionView (Layout 3)
- * Strictly adheres to the border-free "Cloud" UI, deep terracotta palette,
- * and warm cream/sand canvas (#F6F1EB) shown in the Figma/Dribbble specification.
- */
-export default function CommissionView() {
-  const [formData, setFormData] = useState({
+export default function CommissionView({ prefill }) {
+  const [formData, setFormData] = useState(() => ({
     fullName: '',
     email: '',
     phone: '',
     timeline: 'Flexible (4-6 Weeks)',
-    category: 'Sculptural Ring',
-    metal: '18k-gold',
+    category: prefill?.category ?? 'Sculptural Ring',
+    metal: prefill?.metal ?? '18k-gold',
     budget: '$800 – $1,500',
-    narrative: '',
-  });
+    narrative: prefill ? `Inspired by "${prefill.title}" from The Archive — ` : '',
+  }));
 
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -110,20 +82,20 @@ export default function CommissionView() {
   };
 
   return (
-    <div className="min-h-screen bg-sand-100 text-espresso font-sans antialiased relative selection:bg-terracotta-100 selection:text-terracotta-700">
-      
+    <div className="min-h-screen bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased relative selection:bg-chile-rojo selection:text-white">
+
       {/* ------------------------------------------------------------- */}
       {/* MAIN COMMISSION STAGE                                         */}
       {/* ------------------------------------------------------------- */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 sm:pb-32">
-        
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24 sm:pb-32">
+
         {/* Diffused Background Radial Warmth (Zero harsh edges) */}
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-gradient-to-b from-terracotta-100/35 via-ochre-light/15 to-transparent blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-gradient-to-b from-chile-rojo/20 via-sunset/15 to-transparent blur-3xl pointer-events-none -z-10" />
 
         {/* ----------------------------------------------------------- */}
         {/* THE "CLOUD" CARD (Border-free, large organic radius, shadow) */}
         {/* ----------------------------------------------------------- */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -145,25 +117,25 @@ export default function CommissionView() {
                 transition={{ duration: 0.4 }}
                 className="text-center py-12 sm:py-16 space-y-6 max-w-md mx-auto"
               >
-                <div className="w-16 h-16 rounded-full bg-terracotta-50 flex items-center justify-center mx-auto text-terracotta-500 shadow-cloud-sm">
+                <div className="w-16 h-16 rounded-full bg-chile-rojo/10 flex items-center justify-center mx-auto text-chile-rojo shadow-cloud-sm">
                   <CheckCircle2 className="w-8 h-8 stroke-[1.5]" />
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[11px] uppercase tracking-[0.25em] font-semibold text-terracotta-500">
+                  <span className="text-[11px] uppercase tracking-[0.25em] font-semibold text-chile-rojo">
                     Brief Received
                   </span>
-                  <h2 className="font-serif text-3xl text-espresso font-normal">
+                  <h2 className="font-serif text-3xl text-[#1d1c16] font-normal">
                     Sculpting Your Story
                   </h2>
-                  <p className="text-sm text-espresso-muted leading-relaxed">
-                    Thank you, <strong className="text-espresso font-semibold">{formData.fullName}</strong>. Our head artisan will review your design notes and reach out at <strong className="text-espresso font-semibold">{formData.email}</strong> with an initial concept sketch within 48 hours.
+                  <p className="text-sm text-[#57423b] leading-relaxed">
+                    Thank you, <strong className="text-[#1d1c16] font-semibold">{formData.fullName}</strong>. Our head artisan will review your design notes and reach out at <strong className="text-[#1d1c16] font-semibold">{formData.email}</strong> with a concept sketch and a fixed quote within 48 hours — no payment is due to submit a brief.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sand-50/80 shadow-input-inset text-xs text-espresso-muted flex items-center justify-center gap-2">
-                  <Clock className="w-4 h-4 text-terracotta-500 flex-shrink-0" />
-                  <span>Estimated Production: 3 – 5 Weeks</span>
+                <div className="p-4 rounded-2xl bg-[#f8f3ea]/80 shadow-input-inset text-xs text-[#57423b] flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4 text-chile-rojo flex-shrink-0" />
+                  <span>Next: concept sketch & quote within 48 hours</span>
                 </div>
 
                 <div className="pt-4">
@@ -172,7 +144,7 @@ export default function CommissionView() {
                       setIsSubmitted(false);
                       setUploadedImages([]);
                     }}
-                    className="px-6 py-2.5 rounded-full bg-sand-200/60 hover:bg-sand-200 text-xs font-semibold text-espresso transition-colors border-none"
+                    className="px-6 py-2.5 rounded-full bg-[#ece8df]/60 hover:bg-[#ece8df] text-xs font-semibold text-[#1d1c16] transition-colors border-none"
                   >
                     Submit Another Commission
                   </button>
@@ -183,31 +155,46 @@ export default function CommissionView() {
               /* BORDERLESS COMMISSION FORM                              */
               /* ======================================================= */
               <form onSubmit={handleSubmit} className="space-y-9 relative">
-                
+
                 {/* Form Header */}
                 <div className="text-center max-w-xl mx-auto space-y-2.5">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-terracotta-50 text-terracotta-500 mb-1">
+                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-chile-rojo/10 text-chile-rojo mb-1">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <h1 className="font-serif text-3xl sm:text-4xl lg:text-[42px] text-espresso font-normal leading-[1.15]">
+                  <h1 className="font-serif text-3xl sm:text-4xl lg:text-[42px] text-[#1d1c16] font-normal leading-[1.15]">
                     Custom Commissions
                   </h1>
-                  <p className="text-xs sm:text-sm text-espresso-muted leading-relaxed font-sans">
+                  <p className="text-xs sm:text-sm text-[#57423b] leading-relaxed font-sans">
                     Collaborate directly with our master jeweler. From molten recycled gold to raw ocean pearls, we craft a singular artifact sculpted around your story.
                   </p>
                 </div>
+
+                {/* Archive reference banner — only when arriving via "Request Similar Piece" */}
+                {prefill && (
+                  <div className="flex items-center gap-3 max-w-xl mx-auto p-3 rounded-2xl bg-[#f8f3ea]/80 shadow-input-inset">
+                    <img
+                      src={prefill.image}
+                      alt={prefill.alt}
+                      className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                    />
+                    <p className="text-xs text-[#57423b] leading-snug">
+                      Inspired by <span className="font-semibold text-[#1d1c16]">{prefill.title}</span> from The Archive.
+                      We've pre-filled the category and metal below — adjust anything you'd like.
+                    </p>
+                  </div>
+                )}
 
                 {/* --------------------------------------------------- */}
                 {/* Section 1: Client Information (Border-free Cloud)   */}
                 {/* --------------------------------------------------- */}
                 <div className="space-y-4">
-                  <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-espresso-muted block">
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#57423b] block">
                     01. Patron Details
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-espresso mb-1.5 block">
+                      <label className="text-xs font-medium text-[#1d1c16] mb-1.5 block">
                         Full Name *
                       </label>
                       <input
@@ -222,7 +209,7 @@ export default function CommissionView() {
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-espresso mb-1.5 block">
+                      <label className="text-xs font-medium text-[#1d1c16] mb-1.5 block">
                         Email Address *
                       </label>
                       <input
@@ -239,7 +226,7 @@ export default function CommissionView() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-espresso mb-1.5 block">
+                      <label className="text-xs font-medium text-[#1d1c16] mb-1.5 block">
                         Phone or Instagram Handle
                       </label>
                       <input
@@ -253,7 +240,7 @@ export default function CommissionView() {
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-espresso mb-1.5 block">
+                      <label className="text-xs font-medium text-[#1d1c16] mb-1.5 block">
                         Desired Timeline
                       </label>
                       <input
@@ -272,13 +259,13 @@ export default function CommissionView() {
                 {/* Section 2: Piece Category & Metal Preference       */}
                 {/* --------------------------------------------------- */}
                 <div className="space-y-4 pt-2">
-                  <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-espresso-muted block">
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#57423b] block">
                     02. Artifact Anatomy & Metals
                   </span>
 
                   {/* Category Pill Buttons (Zero borders, soft cloud states) */}
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-espresso block">
+                    <label className="text-xs font-medium text-[#1d1c16] block">
                       Jewelry Category
                     </label>
                     <div className="flex flex-wrap gap-2 sm:gap-2.5">
@@ -291,8 +278,8 @@ export default function CommissionView() {
                             onClick={() => setFormData((prev) => ({ ...prev, category: cat }))}
                             className={`px-4 py-2.5 rounded-full text-xs font-medium tracking-wide transition-all border-none ${
                               isSelected
-                                ? 'bg-terracotta-500 text-white shadow-terracotta-glow font-semibold'
-                                : 'bg-sand-50/90 text-espresso hover:bg-white shadow-input-inset'
+                                ? 'bg-chile-rojo text-white shadow-terracotta-glow font-semibold'
+                                : 'bg-[#f8f3ea]/90 text-[#1d1c16] hover:bg-white shadow-input-inset'
                             }`}
                           >
                             {cat}
@@ -304,7 +291,7 @@ export default function CommissionView() {
 
                   {/* Metal Options (Border-free tactile cloud cards) */}
                   <div className="space-y-2 pt-2">
-                    <label className="text-xs font-medium text-espresso block">
+                    <label className="text-xs font-medium text-[#1d1c16] block">
                       Precious Metal Selection
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -316,21 +303,21 @@ export default function CommissionView() {
                             onClick={() => setFormData((prev) => ({ ...prev, metal: metal.id }))}
                             className={`cursor-pointer p-4 rounded-2xl transition-all border-none ${
                               isSelected
-                                ? 'bg-white shadow-cloud text-espresso ring-2 ring-terracotta-500'
-                                : 'bg-sand-50/70 hover:bg-white/80 shadow-input-inset text-espresso'
+                                ? 'bg-white shadow-cloud text-[#1d1c16] ring-2 ring-chile-rojo'
+                                : 'bg-[#f8f3ea]/70 hover:bg-white/80 shadow-input-inset text-[#1d1c16]'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs font-semibold">{metal.label}</span>
                               <div
                                 className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${
-                                  isSelected ? 'bg-terracotta-500' : 'bg-sand-200'
+                                  isSelected ? 'bg-chile-rojo' : 'bg-[#ece8df]'
                                 }`}
                               >
                                 {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                               </div>
                             </div>
-                            <span className="text-[11px] text-espresso-muted block">{metal.note}</span>
+                            <span className="text-[11px] text-[#57423b] block">{metal.note}</span>
                           </div>
                         );
                       })}
@@ -343,10 +330,10 @@ export default function CommissionView() {
                 {/* --------------------------------------------------- */}
                 <div className="space-y-4 pt-2">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-espresso-muted block">
+                    <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#57423b] block">
                       03. Investment Scope
                     </span>
-                    <span className="text-[11px] text-espresso-muted">Non-binding guideline</span>
+                    <span className="text-[11px] text-[#57423b]">Non-binding guideline</span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -359,12 +346,12 @@ export default function CommissionView() {
                           onClick={() => setFormData((prev) => ({ ...prev, budget: tier.range }))}
                           className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all border-none ${
                             isSelected
-                              ? 'bg-terracotta-gradient text-white shadow-terracotta-glow font-semibold'
-                              : 'bg-sand-50/80 hover:bg-white text-espresso shadow-input-inset'
+                              ? 'bg-chile-rojo text-white shadow-terracotta-glow font-semibold'
+                              : 'bg-[#f8f3ea]/80 hover:bg-white text-[#1d1c16] shadow-input-inset'
                           }`}
                         >
                           <div className="text-xs sm:text-sm font-semibold">{tier.range}</div>
-                          <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/85' : 'text-espresso-muted'}`}>
+                          <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/85' : 'text-[#57423b]'}`}>
                             {tier.label}
                           </div>
                         </button>
@@ -377,12 +364,12 @@ export default function CommissionView() {
                 {/* Section 4: Inspiration Narrative & Image Upload     */}
                 {/* --------------------------------------------------- */}
                 <div className="space-y-4 pt-2">
-                  <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-espresso-muted block">
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#57423b] block">
                     04. Narrative & Reference Assets
                   </span>
 
                   <div>
-                    <label className="text-xs font-medium text-espresso mb-1.5 block">
+                    <label className="text-xs font-medium text-[#1d1c16] mb-1.5 block">
                       Concept Vision & Symbolism *
                     </label>
                     <textarea
@@ -398,7 +385,7 @@ export default function CommissionView() {
 
                   {/* Border-Free Cloud Upload Box */}
                   <div>
-                    <label className="text-xs font-medium text-espresso mb-1.5 block">
+                    <label className="text-xs font-medium text-[#1d1c16] mb-1.5 block">
                       Visual References or Sketches (Optional)
                     </label>
 
@@ -409,8 +396,8 @@ export default function CommissionView() {
                       onDrop={handleDrop}
                       className={`relative rounded-3xl p-6 sm:p-8 text-center transition-all border-none ${
                         dragActive
-                          ? 'bg-white shadow-cloud ring-2 ring-terracotta-500'
-                          : 'bg-sand-50/60 hover:bg-white/80 shadow-input-inset'
+                          ? 'bg-white shadow-cloud ring-2 ring-chile-rojo'
+                          : 'bg-[#f8f3ea]/60 hover:bg-white/80 shadow-input-inset'
                       }`}
                     >
                       <input
@@ -423,13 +410,13 @@ export default function CommissionView() {
                       />
 
                       <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                        <div className="w-10 h-10 rounded-full bg-white shadow-cloud-sm flex items-center justify-center text-terracotta-500">
+                        <div className="w-10 h-10 rounded-full bg-white shadow-cloud-sm flex items-center justify-center text-chile-rojo">
                           <UploadCloud className="w-5 h-5 stroke-[1.75]" />
                         </div>
-                        <div className="text-xs sm:text-sm font-medium text-espresso">
-                          <span className="text-terracotta-500 font-semibold underline underline-offset-2">Click to select files</span> or drag and drop
+                        <div className="text-xs sm:text-sm font-medium text-[#1d1c16]">
+                          <span className="text-chile-rojo font-semibold underline underline-offset-2">Click to select files</span> or drag and drop
                         </div>
-                        <p className="text-[10px] text-espresso-muted">
+                        <p className="text-[10px] text-[#57423b]">
                           JPEG, PNG, HEIC or sketches up to 15MB each
                         </p>
                       </div>
@@ -449,13 +436,13 @@ export default function CommissionView() {
                               className="w-9 h-9 rounded-lg object-cover"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-medium text-espresso truncate">{img.name}</p>
-                              <p className="text-[9px] text-espresso-muted">{img.size}</p>
+                              <p className="text-[11px] font-medium text-[#1d1c16] truncate">{img.name}</p>
+                              <p className="text-[9px] text-[#57423b]">{img.size}</p>
                             </div>
                             <button
                               type="button"
                               onClick={() => removeFile(idx)}
-                              className="p-1 rounded-full text-espresso-muted hover:text-terracotta-500 border-none bg-transparent"
+                              className="p-1 rounded-full text-[#57423b] hover:text-chile-rojo border-none bg-transparent"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -469,9 +456,9 @@ export default function CommissionView() {
                 {/* --------------------------------------------------- */}
                 {/* SUBMISSION FOOTER (Deep Terracotta Button)           */}
                 {/* --------------------------------------------------- */}
-                <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-sand-200/50">
-                  <div className="flex items-center gap-2 text-xs text-espresso-muted">
-                    <ShieldCheck className="w-4 h-4 text-terracotta-500 flex-shrink-0" />
+                <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-[#dec0b7]/30">
+                  <div className="flex items-center gap-2 text-xs text-[#57423b]">
+                    <ShieldCheck className="w-4 h-4 text-chile-rojo flex-shrink-0" />
                     <span>Complimentary consultation • Zero financial obligation</span>
                   </div>
 
@@ -502,9 +489,9 @@ export default function CommissionView() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-sand-200/50 border-none py-12 text-center text-xs text-espresso-muted">
+      <footer className="bg-[#ece8df]/50 border-none py-12 text-center text-xs text-[#57423b]">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <p className="font-serif text-base tracking-widest text-espresso uppercase">
+          <p className="font-serif text-base tracking-widest text-[#1d1c16] uppercase">
             A C U A
           </p>
           <p>© {new Date().getFullYear()} ACUA Artisanal Jewelry. All rights reserved.</p>
