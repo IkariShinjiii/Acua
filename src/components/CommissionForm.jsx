@@ -101,7 +101,7 @@ export default function CommissionForm() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate atelier brief submission
+    // Simulate brief submission
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
@@ -115,7 +115,7 @@ export default function CommissionForm() {
       <div className="text-center max-w-2xl mx-auto mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-terracotta-50 border border-terracotta-200/80 text-xs font-semibold text-terracotta-700 tracking-wider uppercase mb-3">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Atelier Commissions</span>
+          <span>Custom Commissions</span>
         </div>
         <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-espresso-900 font-normal tracking-tight">
           Bring your bespoke vision to life.
@@ -152,7 +152,7 @@ export default function CommissionForm() {
               </p>
               <div className="p-4 rounded-2xl bg-sand-100 border border-sand-200 text-xs text-espresso-600 flex items-center justify-center gap-2">
                 <Clock className="w-4 h-4 text-terracotta-600" />
-                <span>Estimated Atelier Timeline: 3-4 Weeks Upon Sketch Approval</span>
+                <span>Estimated Timeline: 3-4 Weeks Upon Sketch Approval</span>
               </div>
               <button
                 onClick={() => {
@@ -184,7 +184,7 @@ export default function CommissionForm() {
                   <span className="w-6 h-6 rounded-full bg-terracotta-100 text-terracotta-800 text-xs font-sans font-bold flex items-center justify-center">
                     1
                   </span>
-                  Your Atelier Details
+                  Your Contact Details
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

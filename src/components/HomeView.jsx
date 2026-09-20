@@ -98,11 +98,11 @@ export default function HomeView({ setCurrentView }) {
 
       </main>
       
-      {/* ATELIER FOOTER */}
+      {/* FOOTER */}
       <footer className="bg-sand-200/50 border-none py-12 text-center text-xs text-espresso-muted mt-auto">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
           <p className="font-serif text-base tracking-widest text-espresso uppercase">
-            A C U A &nbsp; A T E L I E R
+            A C U A
           </p>
           <p>© {new Date().getFullYear()} ACUA Artisanal Jewelry. All rights reserved.</p>
         </div>

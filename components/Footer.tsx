@@ -109,7 +109,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Atelier Values */}
+          {/* Studio Values */}
           <div className="md:col-span-3 space-y-4">
             <h4 className="text-xs uppercase tracking-[0.2em] font-semibold text-white/50">
               Studio & Ethics
@@ -141,7 +141,7 @@ export default function Footer() {
 
         {/* Bottom Utility Bar */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-[11px] text-white/60 gap-4">
-          <p>© {new Date().getFullYear()} ACUA Atelier. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ACUA. All rights reserved.</p>
           <div className="flex items-center space-x-6">
             <a href="#privacy" className="hover:text-white transition-colors">
               Privacy Policy

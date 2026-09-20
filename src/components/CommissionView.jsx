@@ -102,7 +102,7 @@ export default function CommissionView() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate brief submission to atelier
+    // Simulate brief submission
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
@@ -129,7 +129,7 @@ export default function CommissionView() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="cloud-card p-6 sm:p-12 lg:p-14 relative overflow-hidden"
         >
-          {/* Top Multi-Color Atelier Palette Accent Bar (From Mockup) */}
+          {/* Top Multi-Color Palette Accent Bar (From Mockup) */}
           <div className="palette-strip w-28 mx-auto mb-8" />
 
           <AnimatePresence mode="wait">
@@ -163,7 +163,7 @@ export default function CommissionView() {
 
                 <div className="p-4 rounded-2xl bg-sand-50/80 shadow-input-inset text-xs text-espresso-muted flex items-center justify-center gap-2">
                   <Clock className="w-4 h-4 text-terracotta-500 flex-shrink-0" />
-                  <span>Estimated Atelier Production: 3 – 5 Weeks</span>
+                  <span>Estimated Production: 3 – 5 Weeks</span>
                 </div>
 
                 <div className="pt-4">
@@ -231,7 +231,7 @@ export default function CommissionView() {
                         required
                         value={formData.email}
                         onChange={handleInputChange}
-                        placeholder="genevieve@atelier.com"
+                        placeholder="genevieve@example.com"
                         className="cloud-input"
                       />
                     </div>
@@ -501,13 +501,11 @@ export default function CommissionView() {
         </motion.div>
       </main>
 
-      {/* ------------------------------------------------------------- */}
-      {/* ATELIER FOOTER                                                */}
-      {/* ------------------------------------------------------------- */}
+      {/* FOOTER */}
       <footer className="bg-sand-200/50 border-none py-12 text-center text-xs text-espresso-muted">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
           <p className="font-serif text-base tracking-widest text-espresso uppercase">
-            A C U A &nbsp; A T E L I E R
+            A C U A
           </p>
           <p>© {new Date().getFullYear()} ACUA Artisanal Jewelry. All rights reserved.</p>
         </div>

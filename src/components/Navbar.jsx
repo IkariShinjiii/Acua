@@ -66,9 +66,6 @@ export default function Navbar({ currentView, setCurrentView, cartCount, onOpenC
             <span className="font-serif text-3xl sm:text-4xl tracking-widest uppercase font-normal text-espresso group-hover:text-terracotta-600 transition-colors">
               A C U A
             </span>
-            <span className="block text-[9px] tracking-[0.35em] uppercase text-sand-500 -mt-1 text-center font-sans font-medium">
-              Atelier
-            </span>
           </button>
         </div>
 
