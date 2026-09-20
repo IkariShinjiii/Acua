@@ -31,7 +31,7 @@ board implemented in an earlier pass.
 | Styling       | Tailwind CSS v4, custom CSS variables for the brand palette      |
 | Animation     | Framer Motion (page transitions, marquee carousels, fade-ins)    |
 | Icons         | lucide-react                                                     |
-| Database/Auth | Firebase (Firestore, Auth, Cloud Storage) or Supabase — prepared for, not yet implemented |
+| Database/Auth | **Supabase** (Postgres, Auth, Storage) — resolved; schema in progress, see §6 |
 | Deployment    | Vercel, connected to GitHub for continuous deployment            |
 
 ## 3. Directory & file structure map
@@ -207,7 +207,7 @@ The live codebase does **not** yet match this blueprint. Concretely:
 | Routing       | File-based routes under `app/`      | Single `App.jsx` swapping views via `useState` — no router, no real URLs |
 | Pages         | Home, `/collection`, `/commissions`, `/dashboard`, `/admin` | Home + a Commission view only; no collection, dashboard, or admin page |
 | Color palette | Single terracotta `#A04723` + white cards + sand bg | Four-color brand board (Chile Rojo/Terracota/Olive/Sunset), already wired through every component |
-| Data/Auth     | Firebase or Supabase                | No backend at all — mock arrays in-component               |
+| Data/Auth     | Supabase                            | Client installed + schema written (§6), but no project connected yet — mock arrays still in-component |
 | Commission form | Redirects to auth + saves to dashboard | Simulates a submit with `setTimeout`; no auth, no persistence |
 
 Getting from today's app to this plan is a framework migration (Vite → Next.js,
@@ -223,10 +223,9 @@ tweak. Recommended sequencing once the color conflict above is resolved:
    reachable via the dev quick-switcher, no auth) — port that rather than
    rebuilding from the spec in §4E. `/dashboard` still needs building from
    scratch. Both need real auth before either is meaningfully usable.
-4. Stand up Firebase or Supabase for auth, products, orders, and commission
-   briefs; replace the mock arrays under `src/data/` (see below) — they're
-   already isolated from the components that render them, so this step is a
-   swap, not a rewrite.
+4. Connect the Supabase project (§6) and replace the mock arrays under
+   `src/data/` with real queries — they're already isolated from the
+   components that render them, so this step is a swap, not a rewrite.
 5. Wire the full user journey in §5 end-to-end: cart → auth gate → checkout
    → dashboard, and archive → request-similar → commission form → auth gate
    → dashboard.
@@ -245,9 +244,9 @@ src/
 ├── data/                            # mock content: products.js, archive.js, reel.js,
 │                                     # commissionOptions.js, commissionBriefs.js, orders.js
 │                                     # — shaped like real API responses so swapping in
-│                                     # Firebase/Supabase later touches these files, not the
+│                                     # Supabase later (§6) touches these files, not the
 │                                     # views that render them
-└── lib/                             # small shared helpers (imageFallback.js, utils.js)
+└── lib/                             # supabaseClient.js + small shared helpers
 ```
 
 **AdminView.jsx** (front-end only, no auth — see §4E) covers all three
@@ -266,6 +265,65 @@ item's category and metal (via a `commissionPrefill` state lifted to
 branching in "Available Pieces" (sold-out → no cart, per §5.1) is not yet
 built — `AVAILABLE_PIECES` now has a `soldOut` field the admin can toggle,
 but `HomeView`'s product grid doesn't yet read it.
+
+### 5.2 1-of-1 inventory: no reservation, first-payment-wins
+
+A 1-of-1 piece has no quantity to decrement — only one successful order can
+ever exist for it. Resolved approach: **no checkout-time reservation.**
+Anyone can start checkout on a 1-of-1 piece right up until a payment
+succeeds for it; the item is marked sold only when a payment confirms. If
+two people happen to pay for the same piece near-simultaneously (rare), the
+first successful payment wins the piece and every other payment for that
+same item is automatically refunded with an apology/notification.
+
+This is simpler to build than a hold/expiry system (no background job to
+release abandoned locks), traded for a small, acceptable risk of an
+occasional double-sale-plus-refund on a unique item. When the backend is
+built, this means: the order-write that flips a piece to `soldOut` must be
+an atomic, conditional operation — implemented as the
+`claim_product_if_available()` Postgres function in §6's migration, which
+returns `false` (no-op) if the piece was already sold by another payment
+that landed first. That `false` result is what should trigger the refund
+path for the losing payment.
+
+## 6. Backend setup (Supabase)
+
+Status: schema written, not yet connected to a live project.
+
+- **Client**: `@supabase/supabase-js` is installed; `src/lib/supabaseClient.js`
+  reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from the environment
+  and exports a ready-to-use `supabase` client. It logs a clear error if
+  those env vars are missing rather than failing silently.
+- **Env vars**: copy `.env.example` to `.env.local` (already gitignored) and
+  fill in both values from Supabase Dashboard → Project Settings → API. The
+  anon key is safe to expose client-side by design (Row Level Security
+  scopes it) — never put the `service_role` key in client code.
+- **Schema**: `supabase/migrations/0001_init.sql` — run via `supabase db push`
+  (Supabase CLI) or pasted directly into the Dashboard's SQL Editor for a
+  fresh project. It implements every table this plan references:
+  - `profiles` — one row per authenticated user; `is_admin` gates the admin
+    dashboard (single-owner business, so a boolean is enough — no separate
+    roles table).
+  - `products` — the "Available Pieces" catalog; `is_one_of_one` +
+    `sold_out` drive the §5.1 storefront branch.
+  - `archive_items` — past sold 1-of-1 pieces; `category`/`metal` seed the
+    Commission form pre-fill.
+  - `commission_briefs` — mirrors `COMMISSION_STAGES` from
+    `src/data/commissionBriefs.js` via a Postgres enum, so the mock data's
+    status values carry over unchanged.
+  - `orders` — mirrors `ORDER_STAGES` from `src/data/orders.js` the same way.
+  - `claim_product_if_available(product_id)` — the atomic §5.2 claim function.
+  - `handle_new_user()` trigger — auto-creates a `profiles` row on signup
+    *and* auto-claims any `commission_briefs` matching that email with no
+    `user_id` yet, implementing §5.1's "linking a pre-auth brief to the
+    account created afterward" mechanism.
+  - RLS policies for all of the above: public read on products/archive,
+    public insert on commission_briefs (submission happens before login),
+    patrons scoped to their own rows, `is_admin` scoped to everything.
+- **Not yet done**: creating the actual Supabase project (needs your
+  login), running the migration against it, wiring the mock-data reads in
+  `src/data/*.js` over to real Supabase queries, and building real
+  auth/payment flows against this schema.
 
 Two dead file groups were removed as part of this pass: `CommissionForm.jsx`/
 `ProductCarousel.jsx` (unused duplicate/experimental components) and an
