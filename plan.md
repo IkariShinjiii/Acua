@@ -754,3 +754,48 @@ listed correctly, added a real test piece through the form (confirmed it
 appeared in both the UI and Postgres), removed it through the UI's Remove
 button, and confirmed via direct query that the table was back to exactly
 4 rows with zero leftovers.
+
+### 6.9 Real admin account provisioned + forgot/reset password flow
+
+The client asked for a real, permanent admin account (`acuavibe@gmail.com`)
+and, having noticed there was no way to recover a forgotten password, asked
+for that to be built and verified.
+
+**Account**: created directly via SQL (the standard provisioning path noted
+throughout §6 — admin accounts are never self-signup), email pre-confirmed,
+`profiles.is_admin = true`. Credentials handed to the client directly in
+chat, not committed anywhere.
+
+**Forgot/reset password** — the app has no router (everything is
+`currentView` state in `App.jsx`), which shapes the whole implementation:
+- `AuthContext` gained `requestPasswordReset(email)` (wraps
+  `resetPasswordForEmail`, `redirectTo` pointed at the site root since
+  there's nowhere else to send it), `updatePassword(password)` (wraps
+  `updateUser`), and a `passwordRecovery` boolean flipped to `true` by a
+  `PASSWORD_RECOVERY` event from `onAuthStateChange` — the only signal
+  available that a visitor just followed a reset-password email link
+  (Supabase's client parses the recovery token out of the URL fragment on
+  load and re-authenticates them under a special recovery session).
+- `AuthForm.jsx` gained a `'forgot'` mode: a "Forgot password?" link under
+  the password field in login mode, a dedicated email-only view, and a
+  "check your email" confirmation state.
+- `App.jsx` gained `ResetPasswordGate` — when `passwordRecovery` is true,
+  it overrides the *entire* screen (regardless of `currentView`) with a new
+  Set a New Password form, since there's no dedicated route to land the
+  visitor on instead.
+
+**Verified, with an explicit limit on how far that verification could go**:
+confirmed `requestPasswordReset` succeeds against the real
+`acuavibe@gmail.com` account (a request-only call — it queues an email, it
+doesn't touch the password, so this was safe to run against the real
+account); confirmed the forgot-mode UI correctly hides the password field
+and returns to login; and, using a disposable test account (never the real
+one), confirmed `updatePassword` genuinely rewrites the stored password —
+the old one was rejected and the new one worked on a fresh login
+afterward. What could **not** be verified end-to-end: actually clicking a
+real emailed link, since that requires a real inbox. That last mile
+depends on Supabase's Auth "Site URL" / redirect-URL allowlist being
+configured for the production domain — a dashboard setting outside what
+SQL or the available MCP tools can read or change (see §6's earlier note
+on the same limitation). If the reset email arrives but the link 404s or
+lands somewhere unexpected, that setting is the first thing to check.

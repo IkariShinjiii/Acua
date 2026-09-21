@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   // True while a logged-in user's profile row is being fetched — lets
   // callers avoid flashing a "not authorized" state before isAdmin is known.
   const [profileLoading, setProfileLoading] = useState(false);
+  // True once Supabase parses a password-recovery link from the URL (the
+  // app has no router, so this is the only signal that the visitor just
+  // followed a "reset your password" email — the whole app should show the
+  // reset form instead of whatever view they'd otherwise land on).
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
     supabase.auth
@@ -18,8 +23,9 @@ export function AuthProvider({ children }) {
       .catch(() => setSession(null)) // e.g. Supabase not configured — stay logged out, not stuck loading
       .finally(() => setLoading(false));
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
     });
 
     return () => listener.subscription.unsubscribe();
@@ -68,6 +74,14 @@ export function AuthProvider({ children }) {
       }),
     signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
     signOut: () => supabase.auth.signOut(),
+    passwordRecovery,
+    clearPasswordRecovery: () => setPasswordRecovery(false),
+    // redirectTo points back at the site root since there's no router to
+    // send it to a dedicated /reset-password path — AuthContext's listener
+    // above is what actually detects the recovery link on that reload.
+    requestPasswordReset: (email) =>
+      supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin }),
+    updatePassword: (password) => supabase.auth.updateUser({ password }),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

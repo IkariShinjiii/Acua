@@ -1,5 +1,5 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import CommissionView from './views/CommissionView';
 import HomeView from './views/HomeView';
 import ProductDetailView from './views/ProductDetailView';
@@ -93,6 +93,105 @@ function PatronGate({ setCurrentView }) {
   );
 }
 
+// Takes over the whole screen once Supabase parses a password-recovery link
+// from the URL — the visitor just followed a "reset your password" email
+// and should set a new one before doing anything else, regardless of
+// whatever view they'd otherwise land on (there's no router to send them to
+// a dedicated /reset-password path instead).
+function ResetPasswordGate() {
+  const { updatePassword, clearPasswordRecovery, signOut } = useAuth();
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (password !== confirm) {
+      setError("Passwords don't match.");
+      return;
+    }
+    setSubmitting(true);
+    const { error: updateError } = await updatePassword(password);
+    setSubmitting(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setDone(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-sand flex items-center justify-center px-4">
+      <div className="max-w-sm w-full">
+        {done ? (
+          <div className="text-center py-8 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-olive/15 text-olive flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h2 className="font-serif text-2xl text-on-surface">Password updated</h2>
+            <p className="text-sm text-on-surface-variant">You're all set — continue with your new password.</p>
+            <button onClick={clearPasswordRecovery} className="btn-terracotta w-full justify-center">
+              Continue
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="text-center mb-6">
+              <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto mb-3">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <h2 className="font-serif text-2xl text-on-surface">Set a New Password</h2>
+              <p className="text-xs text-on-surface-variant mt-1.5">
+                Choose a new password for your account.
+              </p>
+            </div>
+            <input
+              type="password"
+              required
+              minLength={6}
+              placeholder="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="cloud-input"
+            />
+            <input
+              type="password"
+              required
+              minLength={6}
+              placeholder="Confirm new password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="cloud-input"
+            />
+            {error && (
+              <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+            <button type="submit" disabled={submitting} className="btn-terracotta w-full justify-center">
+              {submitting ? 'Saving…' : 'Save New Password'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearPasswordRecovery();
+                signOut();
+              }}
+              className="block mx-auto text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-chile-rojo transition-colors bg-transparent border-none cursor-pointer"
+            >
+              Cancel and log out
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Root Architecture Shell
  * Supports distinct view architecture (AppView, ProductDetailView, CommissionView).
@@ -106,8 +205,12 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
+
+  if (passwordRecovery) {
+    return <ResetPasswordGate />;
+  }
 
   const navigateTo = (view) => {
     setCommissionPrefill(null);
