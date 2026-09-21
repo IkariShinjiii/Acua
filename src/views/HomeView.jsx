@@ -6,12 +6,15 @@ import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
 import { AVAILABLE_PIECES, FILTER_TABS } from '../data/products';
 import { ARCHIVE_ITEMS } from '../data/archive';
+import { useCart } from '../context/CartContext';
 
-export default function HomeView({ setCurrentView, onRequestSimilar }) {
+export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
+  const { addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
-  const handleAdd = (id) => {
-    setAddedItem(id);
+  const handleAdd = (piece) => {
+    addItem(piece);
+    setAddedItem(piece.id);
     setTimeout(() => setAddedItem(null), 1600);
   };
 
@@ -155,6 +158,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar }) {
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35 }}
                   className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-white shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
+                  onClick={() => onViewProduct?.(piece.id)}
                 >
                   {/* Square Aspect Ratio Product Thumbnail */}
                   <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f8f3ea] mb-5">
@@ -164,6 +168,13 @@ export default function HomeView({ setCurrentView, onRequestSimilar }) {
                       alt={piece.title}
                       onError={(e) => handleImageError(e, piece.fallback)}
                     />
+                    {piece.soldOut && (
+                      <div className="absolute inset-0 bg-[#1d1c16]/60 flex items-center justify-center">
+                        <span className="bg-white text-[#1d1c16] text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                          Sold Out
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card Description & Action Row */}
@@ -181,21 +192,36 @@ export default function HomeView({ setCurrentView, onRequestSimilar }) {
                       <span className="font-sans text-base text-terracota font-semibold">
                         {piece.price}
                       </span>
-                      <button
-                        onClick={() => handleAdd(piece.id)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
-                          addedItem === piece.id
-                            ? 'bg-chile-rojo text-white'
-                            : 'bg-[#f8f3ea] text-chile-rojo hover:bg-chile-rojo hover:text-white'
-                        }`}
-                        aria-label={`Add ${piece.title} to cart`}
-                      >
-                        {addedItem === piece.id ? (
-                          <Check className="w-5 h-5 stroke-[2]" />
-                        ) : (
-                          <Plus className="w-5 h-5 stroke-[2]" />
-                        )}
-                      </button>
+                      {piece.soldOut ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRequestSimilar?.(piece);
+                          }}
+                          className="text-[11px] font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
+                        >
+                          Request Similar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAdd(piece);
+                          }}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
+                            addedItem === piece.id
+                              ? 'bg-chile-rojo text-white'
+                              : 'bg-[#f8f3ea] text-chile-rojo hover:bg-chile-rojo hover:text-white'
+                          }`}
+                          aria-label={`Add ${piece.title} to cart`}
+                        >
+                          {addedItem === piece.id ? (
+                            <Check className="w-5 h-5 stroke-[2]" />
+                          ) : (
+                            <Plus className="w-5 h-5 stroke-[2]" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

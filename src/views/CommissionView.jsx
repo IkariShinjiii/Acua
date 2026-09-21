@@ -198,7 +198,7 @@ export default function CommissionView({ prefill }) {
                   <div className="flex items-center gap-3 max-w-xl mx-auto p-3 rounded-2xl bg-[#f8f3ea]/80 shadow-input-inset">
                     <img
                       src={prefill.image}
-                      alt={prefill.alt}
+                      alt={prefill.alt ?? prefill.title}
                       className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
                     />
                     <p className="text-xs text-[#57423b] leading-snug">

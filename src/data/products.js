@@ -38,7 +38,7 @@ export const AVAILABLE_PIECES = [
     description:
       'Intricately braided waxed cord with a sculptural non-tarnish gold-tone clasp inspired by windswept coastal grass.',
     price: '₱16,000',
-    soldOut: false,
+    soldOut: true,
     image:
       'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=1000&q=80',
     fallback:

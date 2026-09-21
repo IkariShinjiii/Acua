@@ -218,6 +218,39 @@ diagram and needs to be built into the commission data model (a
 commission needs its own lightweight order/payment record, distinct from
 a regular e-commerce order, once step 2 completes).
 
+### 5.3 Navbar buttons — search, cart, account, product detail
+
+All three previously-dead navbar buttons are wired now:
+
+- **Search** (`src/components/SearchOverlay.jsx`) — a modal over
+  `AVAILABLE_PIECES`, filtering client-side by title/category/material as
+  you type; selecting a result opens that product's detail page.
+- **Cart** (`src/context/CartContext.jsx` + `src/components/CartDrawer.jsx`)
+  — a real cart: add/remove/adjust quantity, persisted to `localStorage`
+  (`acua-cart-v1`) so it survives a reload. There's no payment processor
+  yet, so "checkout" is honest about that: the drawer's CTA opens a
+  pre-filled `mailto:` draft listing the cart contents instead of faking a
+  real checkout flow.
+- **Account** — already wired in the previous pass to `PatronGate` →
+  `PatronDashboardView`; unchanged here.
+- **Product detail** (`src/views/ProductDetailView.jsx`) — a dedicated page
+  per product (quantity selector, Add to Cart, material/shipping notes).
+  Built to a generic e-commerce layout since the reference image the
+  client attached couldn't be read (a session-wide image-viewing limit,
+  confirmed to be independent of file size) — revisit the layout once
+  they can describe or re-share it.
+- Closed a gap flagged back in the flowchart review (§ before 5.1
+  existed): `AVAILABLE_PIECES` items with `soldOut: true` now show
+  "Request Similar Piece" instead of a live Add-to-Cart button, both on
+  the grid card and the detail page — previously `soldOut` existed on the
+  data but nothing read it. One item (`Woven Sand Bracelet`) is flagged
+  sold out in the mock data so the path is actually reachable to test.
+
+Verified end-to-end with a real browser: searched, opened a result, added
+to cart, opened the cart drawer and confirmed the item, and confirmed the
+sold-out grid card and its detail page both show "Request Similar" instead
+of "Add to Cart."
+
 ## Current implementation vs. this plan
 
 The live codebase does **not** yet match this blueprint. Concretely:

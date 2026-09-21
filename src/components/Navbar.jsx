@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Menu, X } from 'lucide-react';
 
-export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart, onAccountClick }) {
+export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart, onOpenSearch, onAccountClick }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -102,7 +102,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
           {/* Right: Action Utilities (Search, Cart, Profile) */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button
-              onClick={() => alert("Search catalog")}
+              onClick={onOpenSearch}
               className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label="Search Catalog"
             >

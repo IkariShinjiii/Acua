@@ -4,11 +4,21 @@ import CommissionView from './views/CommissionView';
 import HomeView from './views/HomeView';
 import AdminView from './views/AdminView';
 import PatronDashboardView from './views/PatronDashboardView';
+import ProductDetailView from './views/ProductDetailView';
 import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
+import CartDrawer from './components/CartDrawer';
+import SearchOverlay from './components/SearchOverlay';
 import { useAuth } from './context/AuthContext';
+import { useCart } from './context/CartContext';
 
-const VIEW_LABELS = { home: 'Home', commission: 'Commission', admin: 'Admin', dashboard: 'Dashboard' };
+const VIEW_LABELS = {
+  home: 'Home',
+  commission: 'Commission',
+  admin: 'Admin',
+  dashboard: 'Dashboard',
+  product: 'Product',
+};
 
 // Real gate: only a signed-in account with profiles.is_admin = true sees
 // AdminView. Accounts are provisioned by hand (Supabase dashboard + a SQL
@@ -74,11 +84,14 @@ function PatronGate({ setCurrentView }) {
  */
 export default function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'commission' | 'story'
-  const [cartCount] = useState(2);
   // Set only via handleRequestSimilar below, so a plain nav click into the
   // Commission view never carries over a stale "inspired by" reference.
   const [commissionPrefill, setCommissionPrefill] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { count: cartCount } = useCart();
 
   const navigateTo = (view) => {
     setCommissionPrefill(null);
@@ -88,6 +101,11 @@ export default function App() {
   const handleRequestSimilar = (item) => {
     setCommissionPrefill(item);
     setCurrentView('commission');
+  };
+
+  const handleViewProduct = (productId) => {
+    setSelectedProductId(productId);
+    setCurrentView('product');
   };
 
   return (
@@ -122,16 +140,39 @@ export default function App() {
         currentView={currentView}
         setCurrentView={navigateTo}
         cartCount={cartCount}
-        onOpenCart={() => alert("Cart preview activated")}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenSearch={() => setIsSearchOpen(true)}
         onAccountClick={() => navigateTo('dashboard')}
       />
 
+      <CartDrawer
+        open={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onViewProduct={handleViewProduct}
+      />
+      <SearchOverlay
+        open={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectProduct={handleViewProduct}
+      />
+
       {currentView === 'home' && (
-        <HomeView setCurrentView={navigateTo} onRequestSimilar={handleRequestSimilar} />
+        <HomeView
+          setCurrentView={navigateTo}
+          onRequestSimilar={handleRequestSimilar}
+          onViewProduct={handleViewProduct}
+        />
       )}
       {currentView === 'commission' && <CommissionView prefill={commissionPrefill} />}
       {currentView === 'admin' && <AdminGate />}
       {currentView === 'dashboard' && <PatronGate setCurrentView={navigateTo} />}
+      {currentView === 'product' && (
+        <ProductDetailView
+          productId={selectedProductId}
+          setCurrentView={navigateTo}
+          onRequestSimilar={handleRequestSimilar}
+        />
+      )}
     </div>
   );
 }
