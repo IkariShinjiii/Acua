@@ -16,8 +16,12 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Translucent over the hero image (home, unscrolled); solid everywhere else.
-  const isTransparent = currentView === 'home' && !isScrolled;
+  // Translucent over the hero image (home, unscrolled); solid everywhere
+  // else — including while the mobile drawer is open, so the header
+  // doesn't sit as a translucent strip of hero photo directly above the
+  // drawer's own solid panel. It reverts to translucent as soon as the
+  // drawer closes (still on an unscrolled home view).
+  const isTransparent = currentView === 'home' && !isScrolled && !mobileMenuOpen;
   const textBase = isTransparent ? 'text-white/85' : 'text-on-surface-variant';
   const textStrong = isTransparent ? 'text-white' : 'text-on-surface';
   const accent = isTransparent ? 'text-sunset' : 'text-accent';

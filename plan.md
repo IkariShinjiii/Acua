@@ -1045,3 +1045,35 @@ resolved to `rgb(29, 28, 22)` — exactly the `ink` value — with white
 text, in a real dark-mode browser session) and visually via screenshot
 (the "Sold Out" badge and the dev nav pill both read correctly as dark
 pills with legible white text in dark mode).
+
+### 9.2 Mobile header didn't follow the drawer's color (user-reported)
+
+Screenshot from a real phone: with the mobile drawer open over the hero,
+the header strip above it stayed translucent — still showing the beach
+photo faintly through the logo/icon row — while the drawer itself was a
+solid panel directly underneath. The two looked like separate, mismatched
+pieces instead of one dropdown.
+
+`Navbar`'s translucent-vs-solid header treatment was previously driven
+only by `currentView === 'home' && !isScrolled` — it had no awareness of
+the mobile drawer's own open/closed state. Fixed with one added
+condition: `isTransparent` is now also `false` while `mobileMenuOpen` is
+true, regardless of scroll position or view. That flips the header into
+its existing "solid" treatment (`bg-sand/95 backdrop-blur-md`, the same
+one already used when scrolled) — which in dark mode resolves to the same
+near-black as the drawer's own `bg-sand` background, so the two now read
+as one cohesive panel. Everything else the transparent/solid switch
+already drove (text color, focus-ring offset, accent color) follows along
+correctly for free, with no separate logic needed. Closing the drawer
+reverts the header to fully transparent again, exactly as before — the
+translucent-over-hero treatment itself was explicitly not to be touched
+per the request, only made to yield while the drawer is open.
+
+Verified with a real mobile-viewport (390×844) dark-mode session:
+header background is `rgba(0,0,0,0)` (fully transparent) before opening,
+switches to `rgba(26,24,21,0.95)` — the same color as the drawer's own
+`rgb(26,24,21)`, just with the header's pre-existing blur/opacity
+treatment — while open, and reverts to `rgba(0,0,0,0)` on close. Confirmed
+visually too: a screenshot with the drawer open shows one continuous dark
+panel with no seam, and a screenshot with it closed shows the original
+translucent hero navbar, unchanged.
