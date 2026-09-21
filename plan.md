@@ -1197,3 +1197,43 @@ Verified live: all 8 new titles render with descriptions/prices, the two
 `is_one_of_one` badges show correctly, zero failed image requests, and a
 full-page screenshot was reviewed directly confirming every card matches
 its stated category.
+
+## 13. Global error boundary + social sharing meta tags
+
+Self-directed backend/frontend audit. Two real, independent gaps closed:
+
+**No React error boundary anywhere in the app.** A render-time throw in
+*any* component — a malformed Supabase row, a field the UI didn't expect
+to be null — would unmount the entire React tree to a blank white screen
+with zero recovery path and no message. This is the same failure class as
+the earlier "white screen on Vercel" bug (§ was fixed by hardening
+`supabaseClient.js` against a client-init throw), just triggered by a
+render error instead of a client-init error — and nothing had closed off
+that second path. Added `src/components/ErrorBoundary.jsx` (necessarily a
+class component — `getDerivedStateFromError`/`componentDidCatch` have no
+hook equivalent), wrapping the entire app in `main.jsx`, outside even
+`MotionConfig` and the context providers, so it catches errors from
+anywhere in the tree. Shows a friendly "Something went wrong" card with a
+reload button, matching the site's own design system, instead of a blank
+page.
+
+Verified with a real thrown error, not just a compile check: temporarily
+added a URL-flag-gated `throw` to `App.jsx`
+(`?__test_throw=1`), confirmed via Playwright that the friendly error UI
+renders instead of a blank screen, confirmed the normal page still works
+without the flag, then fully reverted the temporary test code (`git
+status` after confirms `App.jsx` has zero diff — the revert was clean).
+
+**No Open Graph / Twitter Card meta tags.** For a small business that
+sells primarily through social channels (Instagram, Facebook — the
+client's own accounts were referenced earlier in this project), a link
+shared in Messenger, Instagram DMs, WhatsApp, or iMessage was rendering as
+a bare, imageless link with no title or description card. Added
+`og:*`/`twitter:*` tags plus a `theme-color` meta (matching the primary
+brand accent) to `index.html`. The preview image reuses the existing hero
+photo at proper OG dimensions (1200×630) as a placeholder — noted in a
+code comment that it should be swapped for dedicated branded artwork once
+that exists, same caveat as the navbar's still-text-only wordmark.
+
+Verified live: all meta tag values read correctly from the rendered page
+(`og:title`, `og:image`, `twitter:card`, `theme-color`).
