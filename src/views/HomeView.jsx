@@ -195,27 +195,28 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35 }}
-                  className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
-                  onClick={() => onViewProduct?.(piece.id)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`View ${piece.title}`}
-                  onKeyDown={(e) => {
-                    // Ignore keydowns that bubbled up from the nested Add to
-                    // Cart / Request Similar buttons — those already handle
-                    // their own activation and stop the click from
-                    // navigating, but keydown bubbles regardless, so without
-                    // this guard pressing Enter on either button would also
-                    // fire this card's navigation.
-                    if (e.target !== e.currentTarget) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onViewProduct?.(piece.id);
-                    }
-                  }}
+                  className="group relative cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
                 >
+                  {/* A card that's itself a button, wrapping the real Add to
+                      Cart/Request Similar buttons, is an ARIA anti-pattern —
+                      nested interactive controls aren't reliably announced
+                      and can trap focus for assistive tech (flagged by an
+                      axe-core audit). This "stretched link" button instead
+                      sits as a sibling covering the whole card at the lowest
+                      z-index; the visual content above it is
+                      pointer-events-none so clicks fall through to it,
+                      except the two real action buttons below, which opt
+                      back in with pointer-events-auto so they still work
+                      independently. */}
+                  <button
+                    type="button"
+                    onClick={() => onViewProduct?.(piece.id)}
+                    aria-label={`View ${piece.title}`}
+                    className="absolute inset-0 z-0 rounded-[24px] sm:rounded-[32px] border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+                  />
+
                   {/* Square Aspect Ratio Product Thumbnail */}
-                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-surface-container-low mb-5">
+                  <div className="relative z-10 pointer-events-none w-full aspect-square rounded-2xl overflow-hidden bg-surface-container-low mb-5">
                     <img
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       src={piece.image}
@@ -238,7 +239,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   </div>
 
                   {/* Card Description & Action Row */}
-                  <div className="flex-grow flex flex-col justify-between">
+                  <div className="relative z-10 pointer-events-none flex-grow flex flex-col justify-between">
                     <div>
                       <h3 className="font-sans text-base sm:text-lg text-on-surface font-medium mb-1.5 group-hover:text-accent transition-colors">
                         {piece.title}
@@ -254,11 +255,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       </span>
                       {piece.soldOut ? (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRequestSimilar?.({ ...piece, source: 'catalog' });
-                          }}
-                          className="text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                          onClick={() => onRequestSimilar?.({ ...piece, source: 'catalog' })}
+                          className="pointer-events-auto text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         >
                           Request Similar
                         </button>
@@ -277,11 +275,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                         </span>
                       ) : (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAdd(piece);
-                          }}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
+                          onClick={() => handleAdd(piece)}
+                          className={`pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
                             addedItem === piece.id
                               ? 'bg-chile-rojo text-white'
                               : 'bg-surface-container-low text-accent hover:bg-chile-rojo hover:text-white'

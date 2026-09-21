@@ -21,8 +21,14 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
   };
 
   const linkClass =
-    'text-left text-sm text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo';
-  const headingClass = 'text-[11px] uppercase tracking-widest font-semibold text-sunset';
+    'text-left text-sm text-white/90 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo';
+  // Not the shared `sunset` token (#eac891) — at this small 11px size it
+  // measures 3.63:1 against the footer's chile-rojo background, short of
+  // WCAG AA's 4.5:1 for text. This is a one-off, slightly lighter tint
+  // scoped to just these footer labels; `sunset` itself is a flat brand
+  // hex used in ~20 other places (nav indicator, focus rings, buttons)
+  // that are non-text UI and not worth touching for this.
+  const headingClass = 'text-[11px] uppercase tracking-widest font-semibold text-[#f9e6c2]';
 
   return (
     <footer className="w-full mt-auto bg-chile-rojo text-white">
@@ -30,7 +36,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-10">
           <div className="col-span-2 sm:col-span-1 flex flex-col items-start gap-3">
             <img src={logoMarkCream} alt="ACUA" className="h-12 w-auto" loading="lazy" />
-            <p className="text-xs text-white/75 leading-relaxed max-w-[220px]">
+            <p className="text-xs text-white/90 leading-relaxed max-w-[220px]">
               Handmade coastal accessories, hand-assembled in Iloilo City, Philippines.
             </p>
             <div className="flex items-center gap-4 mt-1">
@@ -39,7 +45,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label="ACUA on Instagram"
-                className="text-white/80 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+                className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
               >
                 <InstagramIcon className="w-[18px] h-[18px]" />
               </a>
@@ -48,7 +54,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label="ACUA on Facebook"
-                className="text-white/80 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+                className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
               >
                 <FacebookIcon className="w-[18px] h-[18px]" />
               </a>
@@ -91,13 +97,13 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
             >
               @acua_ph
             </a>
-            <span className="text-sm text-white/70">Iloilo City, Philippines</span>
+            <span className="text-sm text-white/85">Iloilo City, Philippines</span>
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/70 uppercase tracking-wider">
+        <div className="mt-12 pt-6 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/85 uppercase tracking-wider">
           <span>© {new Date().getFullYear()} ACUA. Handcrafted by the coast.</span>
-          <span className="text-sunset/90 normal-case tracking-widest">
+          <span className="text-[#f9e6c2] normal-case tracking-widest">
             Naturally rooted. Intentionally designed.
           </span>
         </div>

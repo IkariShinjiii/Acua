@@ -1723,3 +1723,61 @@ just when text looks adjacent on screen) — confirmed it now correctly
 finds Full Name, Email Address, the narrative textarea, and the file
 upload field in Commission, and Email Address / Password in the login
 form.
+
+## 26. Automated axe-core audit: nested interactive controls + real contrast failures
+
+Ran a proper automated accessibility audit (`@axe-core/playwright`)
+across Home in both themes, Commission, the cart drawer, and search —
+a more systematic pass than manual spot-checking, on top of everything
+already covered in §19–§25. It surfaced two real, "serious"-impact
+findings:
+
+- **Nested interactive controls** on the Available Pieces product
+  cards: the whole card had `role="button"` while also containing two
+  real `<button>`s (Add to Cart, Request Similar) — the exact pattern
+  §19 flagged as a known, documented trade-off, but axe correctly rates
+  it "serious" since screen readers don't reliably announce or navigate
+  interactive elements nested inside other interactive elements.
+  Restructured properly instead of leaving it as accepted debt: the
+  card is no longer itself a button. A separate, absolutely-positioned
+  "stretched link" `<button>` now covers the whole card at the lowest
+  z-index (`aria-label="View {title}"`), the visual content sits above
+  it with `pointer-events-none` so clicks fall through to that button,
+  and the two real action buttons individually opt back into
+  `pointer-events-auto` so they keep working on their own. This also
+  made the earlier keydown-bubbling guard (§19) unnecessary — there's no
+  longer an ancestor click handler for a nested button's Enter/Space to
+  bubble into, so the whole class of bug is gone, not just guarded
+  against. (`ReviewReel`'s cards use the same `role="button"` pattern
+  but have no nested interactive children, so axe didn't flag them —
+  no change needed there.)
+- **Color contrast failures in the new Footer** (§18): the tagline,
+  social icons, and every text-link (`text-white/75`/`/80`/`/70`) fell
+  just short of WCAG AA's 4.5:1 against the footer's `chile-rojo`
+  background, and the section headings (`Shop`/`Account`/`Get in
+  Touch`, using the shared `sunset` brand hex at 11px) measured only
+  3.63:1. Bumped the white-based text to `/85`–`/90` opacity (all now
+  pass), and — rather than editing the shared `sunset` token itself,
+  which is a flat brand-color hex used in ~20 other places across the
+  app (nav indicator, focus rings, buttons) that are non-text UI and
+  not required to hit the same ratio — gave just these footer heading
+  labels a one-off, slightly lighter tint (`#f9e6c2`) scoped to that
+  single `headingClass`, arrived at by iterating against the live axe
+  check until it cleared 4.5:1.
+
+**Found but deliberately not changed**: every product price
+(`text-terracota`, `#d68224`) measures only ~2.75–2.96:1 against both
+white and sand backgrounds, on the Available Pieces grid and the "New
+Release" reel alike — a real, serious-impact failure, but on a flat
+brand accent color used for pricing everywhere, established well
+before this session, not something introduced by any of this session's
+work. Repainting the brand's price color is a visual-identity decision,
+not a bug fix, so it's flagged here rather than changed unilaterally.
+
+Verified live: the scoped axe audit against the footer alone dropped
+from 4 violating nodes to 0; the full Home (dark) page audit dropped to
+0 violations entirely; the restructured product cards were re-verified
+end-to-end — clicking the card body, and pressing Enter while it's
+focused, both still navigate to the product page, while clicking or
+Enter-ing the Add to Cart button still adds to cart without navigating
+away, with no console errors.
