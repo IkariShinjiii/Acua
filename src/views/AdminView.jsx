@@ -158,7 +158,8 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                     />
                   </div>
                   <p className="text-xs text-on-surface-variant mt-1">
-                    {brief.email} • {brief.category} • {brief.material}
+                    {brief.email} • {brief.category} •{' '}
+                    {MATERIAL_OPTIONS.find((m) => m.id === brief.material)?.label ?? brief.material}
                   </p>
                   {brief.narrative && (
                     <p className="text-sm text-on-surface/80 mt-3 leading-relaxed max-w-2xl">

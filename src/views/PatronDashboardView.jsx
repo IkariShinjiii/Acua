@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
+import { MATERIAL_OPTIONS } from '../data/commissionOptions';
 
 function stageIndex(stages, id) {
   const i = stages.findIndex((s) => s.id === id);
@@ -146,15 +147,25 @@ export default function PatronDashboardView({ setCurrentView }) {
               return (
                 <div key={order.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div>
-                      <h3 className="font-serif text-lg text-on-surface">
-                        {order.product?.title ?? 'Order'}
-                      </h3>
-                      <p className="text-xs text-on-surface-variant mt-0.5">
-                        ₱{(order.total_cents / 100).toLocaleString()} • Placed{' '}
-                        {new Date(order.created_at).toLocaleDateString()}
-                        {order.tracking_number && ` • Tracking: ${order.tracking_number}`}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {order.product?.image_url && (
+                        <img
+                          src={order.product.image_url}
+                          alt={order.product.title ?? 'Order'}
+                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="font-serif text-lg text-on-surface truncate">
+                          {order.product?.title ?? 'Order'}
+                        </h3>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          ₱{(order.total_cents / 100).toLocaleString()} • Placed{' '}
+                          {new Date(order.created_at).toLocaleDateString()}
+                          {order.tracking_number && ` • Tracking: ${order.tracking_number}`}
+                        </p>
+                      </div>
                     </div>
                     <StatusBadge
                       label={ORDER_STAGES[idx].label}
@@ -188,7 +199,8 @@ export default function PatronDashboardView({ setCurrentView }) {
                     <div>
                       <h3 className="font-serif text-lg text-on-surface">{brief.category}</h3>
                       <p className="text-xs text-on-surface-variant mt-0.5">
-                        {brief.material} • Submitted {new Date(brief.created_at).toLocaleDateString()}
+                        {MATERIAL_OPTIONS.find((m) => m.id === brief.material)?.label ?? brief.material} •
+                        Submitted {new Date(brief.created_at).toLocaleDateString()}
                         {brief.quote_price_cents &&
                           ` • Quote: ₱${(brief.quote_price_cents / 100).toLocaleString()}`}
                       </p>

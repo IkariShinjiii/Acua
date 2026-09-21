@@ -1,0 +1,23 @@
+{
+  "name": "ACUA | Handcrafted by the Coast",
+  "short_name": "ACUA",
+  "description": "Handmade coastal accessories — non-tarnish finishes, natural stones, and bespoke commissions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F6F0",
+  "theme_color": "#AE431E",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

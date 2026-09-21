@@ -1271,3 +1271,83 @@ Playwright session with Chrome DevTools Protocol network throttling
 confirmed the preloader is genuinely visible and rendered correctly
 during the load, and confirmed it's fully replaced once the real
 homepage content mounts afterward.
+
+## 15. Commission material shown as a raw id, order thumbnail unused
+
+Self-directed audit, two real display bugs in patron/admin-facing content:
+
+- **`commission_briefs.material` displayed as its raw stored value**
+  (e.g. `non-tarnish-gold-tone`) instead of its human-readable label
+  (`Non-Tarnish Gold-Tone Alloy`), in both `AdminView`'s Commission
+  Pipeline and `PatronDashboardView`'s Custom Commissions tab. The
+  correct lookup pattern (`MATERIAL_OPTIONS.find((m) => m.id ===
+  brief.material)?.label ?? brief.material`) already existed and was used
+  correctly in `AdminView`'s Archive tab — it just hadn't been applied to
+  the two other places a brief's material renders as text. Fixed both.
+- **`PatronDashboardView`'s order query already fetched
+  `product:products(title, image_url)`, but never rendered
+  `image_url`** — Active Purchases showed title/price/tracking with no
+  product thumbnail, despite the data already being on hand with no
+  extra query needed. Added the thumbnail.
+
+Verified with a real (temporary, since-removed) patron+admin account: a
+commission brief submitted with `material = 'non-tarnish-gold-tone'`
+renders as "Non-Tarnish Gold-Tone Alloy" in both dashboards, never the
+raw id; a test order shows its product's thumbnail correctly in Active
+Purchases.
+
+## 16. Real logo mark: favicon, apple-touch-icon, and web manifest
+
+The client provided ACUA's actual logo artwork (a stylized monogram +
+wordmark on a circular photo badge) with the request to use it for the
+favicon, background removed. This also happened to replace two
+unrelated, worse problems found along the way:
+
+- **The existing `favicon.svg` was never a placeholder — it was the
+  unmodified default Vite icon** (a purple lightning bolt, `#863bff`),
+  completely unrelated to the brand. `public/icons.svg` (an unused social-
+  icon sprite sheet, confirmed via a full-codebase reference search) was
+  also just dead weight shipping to production for no reason. Both
+  deleted.
+- **No `apple-touch-icon` or web manifest existed at all** — a visitor
+  adding the site to their iOS/Android home screen would get an
+  auto-generated screenshot thumbnail instead of anything branded.
+
+**Background removal, since no image-editing tool is available in this
+environment**: installed `jimp` (pure-JS, no native binary dependency,
+so it isn't blocked by the earlier-noted absence of cwebp/sips/magick/
+ffmpeg) and wrote a small one-off extraction script — not committed, this
+was throwaway tooling for a one-time asset, not app code. The approach:
+threshold the source JPEG for the mark's distinct cream color, then
+connected-component filter to discard small isolated regions (the color
+threshold alone also matched scattered bright water-texture glints in
+the source photo, confirmed by generating and visually inspecting an
+intermediate black-and-white mask before trusting it), then a
+morphological open (erode, then dilate) to shave off the resulting
+jagged edge noise. The output's remaining fine texture is the logo's own
+intentional distressed/stamp art style, not extraction artifacts — and
+at favicon size (16–32px) it's invisible either way, so no further
+cleanup mattered for this use case.
+
+**Two output variants, for a real reason, not redundantly**:
+`favicon.png` (transparent — a browser tab supplies its own backdrop) and
+`apple-touch-icon.png` (opaque, on the brand's own chile-rojo, matching
+the source artwork's circular badge treatment) — iOS composites
+transparent regions of a home-screen icon as solid black, so the browser-
+tab version would look broken there. `manifest.json`'s icon list
+references both (the second as `purpose: "maskable"`, since Android's
+adaptive-icon masking also expects a full-bleed backdrop, not
+transparency).
+
+Verified: rendered all three real usage sizes (16px, 32px, 48px browser-
+tab; 60px rounded-corner home-screen-style) via a headless browser and
+confirmed each reads clearly; confirmed the built `dist/` output
+references the new files (not stale `favicon.svg` paths) and that
+`/favicon.png` actually serves with a 200 in a live dev session.
+
+**Not done, and worth asking about as a natural follow-up**: this same
+logo mark could also replace the Navbar's still-text-only "ACUA"
+wordmark (a standing `TODO` since early in the project) and the
+placeholder hero-photo Open Graph image from §13 — both out of scope for
+what was actually asked (the favicon specifically), so left untouched
+rather than assumed.
