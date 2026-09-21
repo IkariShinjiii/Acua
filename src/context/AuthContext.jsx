@@ -12,10 +12,11 @@ export function AuthProvider({ children }) {
   const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch(() => setSession(null)) // e.g. Supabase not configured — stay logged out, not stuck loading
+      .finally(() => setLoading(false));
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
@@ -40,6 +41,11 @@ export function AuthProvider({ children }) {
       .then(({ data }) => {
         if (cancelled) return;
         setProfile(data ?? null);
+        setProfileLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProfile(null);
         setProfileLoading(false);
       });
     return () => {
