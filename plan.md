@@ -294,7 +294,8 @@ path for the losing payment.
 
 ## 6. Backend setup (Supabase)
 
-Status: schema written, not yet connected to a live project.
+Status: connected to a live project; real auth wired; product/order data
+still mocked in `src/data/*.js`.
 
 - **Client**: `@supabase/supabase-js` is installed; `src/lib/supabaseClient.js`
   reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from the environment
@@ -326,10 +327,41 @@ Status: schema written, not yet connected to a live project.
   - RLS policies for all of the above: public read on products/archive,
     public insert on commission_briefs (submission happens before login),
     patrons scoped to their own rows, `is_admin` scoped to everything.
-- **Not yet done**: creating the actual Supabase project (needs your
-  login), running the migration against it, wiring the mock-data reads in
-  `src/data/*.js` over to real Supabase queries, and building real
-  auth/payment flows against this schema.
+  - `0002_fix_profiles_rls_recursion.sql` — a bare `profiles`-references-
+    `profiles` policy caused infinite RLS recursion (42P17); fixed with a
+    `public.is_admin()` SECURITY DEFINER helper every admin policy now calls
+    instead of inlining the subquery.
+  - `0003_rename_metal_to_material.sql` — ACUA doesn't make metal jewelry
+    (see the brand identity correction in §1); renamed `archive_items.metal`
+    and `commission_briefs.metal` to `material` to match.
+  - `0004_prevent_self_admin_escalation.sql` — the plain "own profile"
+    UPDATE policy had no column restriction, so any signed-in user could
+    have set `is_admin = true` on themselves via a direct API call. Fixed
+    with column-level GRANTs: `authenticated` can update `full_name` only;
+    `is_admin` is set by hand (SQL editor) exclusively.
+- **Auth**: real email/password auth is wired —
+  `src/context/AuthContext.jsx` tracks the Supabase session and the
+  matching `profiles` row (exposing `user`, `profile`, `isAdmin`, `signUp`,
+  `signIn`, `signOut`), and `src/components/AuthForm.jsx` is a reusable
+  login/signup form in the site's own style. `AdminView` is now gated for
+  real in `App.jsx`'s `AdminGate`: logged out → login form (signup hidden —
+  admin accounts are provisioned by hand, never self-served); logged in but
+  not `is_admin` → an explicit "not an admin" message with a log-out
+  option; `is_admin` → the real dashboard. This project requires email
+  confirmation on signup (verified directly against the live project), so
+  the login-success and patron-signup paths still need a real inbox to
+  test end-to-end — automated verification covered everything short of
+  that (wrong-credentials error path, the gate's three states, no console
+  errors).
+- **To make your own account an admin**: sign up on the running site with
+  your real email, confirm it via the email Supabase sends, then run this
+  in the SQL Editor (replace the email):
+  ```sql
+  update public.profiles set is_admin = true where email = 'you@example.com';
+  ```
+- **Not yet done**: wiring the mock-data reads in `src/data/*.js` over to
+  real Supabase queries, building the Patron Dashboard against this same
+  auth, and payment flows.
 
 Two dead file groups were removed as part of this pass: `CommissionForm.jsx`/
 `ProductCarousel.jsx` (unused duplicate/experimental components) and an
