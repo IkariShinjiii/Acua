@@ -198,6 +198,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                       <input
                         type="text"
                         placeholder="Quote price (e.g. ₱50,000)"
+                        aria-label={`Quote price for ${brief.full_name}`}
                         value={quoteDrafts[brief.id] ?? ''}
                         onChange={(e) =>
                           setQuoteDrafts((prev) => ({ ...prev, [brief.id]: e.target.value }))
@@ -414,6 +415,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
             <input
               required
               placeholder="Title *"
+              aria-label="Title"
               value={draft.title}
               onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
@@ -421,6 +423,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
             <select
               value={draft.category}
               onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
+              aria-label="Category"
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             >
               {FILTER_TABS.filter((t) => t !== 'All').map((t) => (
@@ -431,6 +434,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
             </select>
             <input
               placeholder="Material"
+              aria-label="Material"
               value={draft.material}
               onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
@@ -438,12 +442,14 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
             <input
               required
               placeholder="Price (e.g. ₱12,000) *"
+              aria-label="Price"
               value={draft.price}
               onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             />
             <input
               placeholder="Image URL (optional)"
+              aria-label="Image URL"
               value={draft.image}
               onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
@@ -604,6 +610,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <input
               required
               placeholder="Title *"
+              aria-label="Title"
               value={draft.title}
               onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
@@ -611,6 +618,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <select
               value={draft.category}
               onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
+              aria-label="Category"
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             >
               {JEWELRY_CATEGORIES.map((c) => (
@@ -622,6 +630,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <select
               value={draft.material}
               onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
+              aria-label="Material"
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             >
               {MATERIAL_OPTIONS.map((m) => (
@@ -633,12 +642,14 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <input
               required
               placeholder="Image URL *"
+              aria-label="Image URL"
               value={draft.image}
               onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             />
             <input
               placeholder="Image alt text (optional — falls back to title)"
+              aria-label="Image alt text"
               value={draft.alt}
               onChange={(e) => setDraft((d) => ({ ...d, alt: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"

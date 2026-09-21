@@ -1688,3 +1688,38 @@ has to parse/execute before Home is interactive — and the build's
 Verified live: navigating to Custom Request and to a product's detail
 page both still render correctly (their lazy chunks load and mount with
 no console errors), confirmed via a temporary Playwright check.
+
+## 25. Form fields with no real accessible label
+
+`AuthForm` (the login/signup form — arguably the single most important
+form on the site) had zero `<label>` elements at all, relying entirely
+on `placeholder` text for Full Name, Email, and Password. Placeholder
+text is not a substitute for a label: it disappears the moment someone
+starts typing and isn't reliably exposed as the field's accessible name
+by screen readers. `CommissionView`'s main fields (Full Name, Email,
+Phone, Timeline, the narrative textarea, and the file upload) did have
+visible `<label>` elements, but none of them were actually wired up —
+they were visually adjacent `<label>` tags with no `htmlFor`/`id` pair
+and not wrapping the input, so despite looking correct on screen, a
+screen reader had no programmatic way to associate the label text with
+its field. Several of `AdminView`'s compact quick-add-piece inputs
+(Title, Category, Material, Price, Image URL, quote price) had the same
+placeholder-only problem, and `SearchOverlay`'s search input had an
+`aria-label` on its dialog *wrapper* but not on the input itself — an
+ancestor's `aria-label` doesn't cascade down, so the input was still
+unnamed.
+
+**Fix**: added `aria-label` to `AuthForm`'s three fields (matching the
+existing placeholder copy, so nothing about the compact, label-less
+visual design the site already uses had to change); added real
+`id`/`htmlFor` pairs to every `CommissionView` field that had a visible
+but disconnected label; added `aria-label` to `AdminView`'s admin-only
+quick-add inputs and selects; added `aria-label` directly to
+`SearchOverlay`'s input.
+
+Verified live with a targeted check: Playwright's `getByLabel()` only
+resolves when the accessible-name computation actually succeeds (not
+just when text looks adjacent on screen) — confirmed it now correctly
+finds Full Name, Email Address, the narrative textarea, and the file
+upload field in Commission, and Email Address / Password in the login
+form.

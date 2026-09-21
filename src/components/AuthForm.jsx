@@ -144,6 +144,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             type="text"
             required
             placeholder="Full Name"
+            aria-label="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className="cloud-input"
@@ -153,6 +154,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
           type="email"
           required
           placeholder="Email Address"
+          aria-label="Email Address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="cloud-input"
@@ -163,6 +165,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             required
             minLength={6}
             placeholder="Password"
+            aria-label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="cloud-input"

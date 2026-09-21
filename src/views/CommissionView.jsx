@@ -305,10 +305,11 @@ export default function CommissionView({ prefill }) {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-on-surface mb-1.5 block">
+                      <label htmlFor="commission-full-name" className="text-xs font-medium text-on-surface mb-1.5 block">
                         Full Name *
                       </label>
                       <input
+                        id="commission-full-name"
                         type="text"
                         name="fullName"
                         required
@@ -320,10 +321,11 @@ export default function CommissionView({ prefill }) {
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-on-surface mb-1.5 block">
+                      <label htmlFor="commission-email" className="text-xs font-medium text-on-surface mb-1.5 block">
                         Email Address *
                       </label>
                       <input
+                        id="commission-email"
                         type="email"
                         name="email"
                         required
@@ -337,10 +339,11 @@ export default function CommissionView({ prefill }) {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-on-surface mb-1.5 block">
+                      <label htmlFor="commission-phone" className="text-xs font-medium text-on-surface mb-1.5 block">
                         Phone or Instagram Handle
                       </label>
                       <input
+                        id="commission-phone"
                         type="text"
                         name="phone"
                         value={formData.phone}
@@ -351,10 +354,11 @@ export default function CommissionView({ prefill }) {
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-on-surface mb-1.5 block">
+                      <label htmlFor="commission-timeline" className="text-xs font-medium text-on-surface mb-1.5 block">
                         Desired Timeline
                       </label>
                       <input
+                        id="commission-timeline"
                         type="text"
                         name="timeline"
                         value={formData.timeline}
@@ -483,10 +487,11 @@ export default function CommissionView({ prefill }) {
                   </span>
 
                   <div>
-                    <label className="text-xs font-medium text-on-surface mb-1.5 block">
+                    <label htmlFor="commission-narrative" className="text-xs font-medium text-on-surface mb-1.5 block">
                       Concept Vision & Symbolism *
                     </label>
                     <textarea
+                      id="commission-narrative"
                       name="narrative"
                       rows={4}
                       required
@@ -499,7 +504,7 @@ export default function CommissionView({ prefill }) {
 
                   {/* Border-Free Cloud Upload Box */}
                   <div>
-                    <label className="text-xs font-medium text-on-surface mb-1.5 block">
+                    <label htmlFor="commission-file-upload" className="text-xs font-medium text-on-surface mb-1.5 block">
                       Visual References or Sketches (Optional)
                     </label>
 
@@ -515,6 +520,7 @@ export default function CommissionView({ prefill }) {
                       }`}
                     >
                       <input
+                        id="commission-file-upload"
                         type="file"
                         multiple
                         accept="image/*,.pdf"

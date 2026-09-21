@@ -73,6 +73,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, category, or material…"
+                aria-label="Search by name, category, or material"
                 className="flex-1 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/60 text-sm"
               />
               <button
