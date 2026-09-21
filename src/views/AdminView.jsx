@@ -64,6 +64,29 @@ function CommissionPipeline({ briefs, onUpdated }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [quoteDrafts, setQuoteDrafts] = useState({});
   const [saving, setSaving] = useState(null);
+  const [signedImages, setSignedImages] = useState({});
+
+  // Reference images live in a private bucket (only admins can read them),
+  // so each brief's paths need a fresh signed URL rather than a public one.
+  useEffect(() => {
+    const briefsWithImages = briefs.filter((b) => b.reference_image_urls?.length);
+    if (briefsWithImages.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        briefsWithImages.map(async (b) => {
+          const { data } = await supabase.storage
+            .from('commission-references')
+            .createSignedUrls(b.reference_image_urls, 3600);
+          return [b.id, (data ?? []).filter((d) => d.signedUrl).map((d) => d.signedUrl)];
+        })
+      );
+      if (!cancelled) setSignedImages(Object.fromEntries(entries));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [briefs]);
 
   const advance = async (id, nextStatus, extra = {}) => {
     setSaving(id);
@@ -139,12 +162,25 @@ function CommissionPipeline({ briefs, onUpdated }) {
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-[#57423b]">
                     {brief.budget_range && <span>Budget: {brief.budget_range}</span>}
                     {brief.timeline && <span>Timeline: {brief.timeline}</span>}
-                    <span>{brief.reference_image_urls?.length ?? 0} reference image(s)</span>
+                    {!brief.reference_image_urls?.length && <span>0 reference images</span>}
                     <span>Submitted {new Date(brief.created_at).toLocaleDateString()}</span>
                     {brief.quote_price_cents != null && (
                       <span>Quote: {formatPeso(brief.quote_price_cents / 100)}</span>
                     )}
                   </div>
+                  {signedImages[brief.id]?.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {signedImages[brief.id].map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noreferrer">
+                          <img
+                            src={url}
+                            alt={`Reference ${i + 1}`}
+                            className="w-14 h-14 rounded-xl object-cover shadow-cloud-sm hover:opacity-80 transition-opacity"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Pipeline action, one step ahead of the current status */}

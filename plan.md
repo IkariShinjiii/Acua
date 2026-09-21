@@ -140,8 +140,7 @@ Central hub for customers and commissioners:
   `setTimeout` to a real `commission_briefs` insert in the same pass —
   verified end-to-end with a live test submission, confirmed in the
   database via direct query, then cleaned up. Reference image upload to
-  Supabase Storage is still not wired — the form accepts files for local
-  preview only, they aren't persisted.
+  Supabase Storage is now wired (§6.2).
 
 ### E. Client admin dashboard (`app/admin/page.tsx`)
 
@@ -492,3 +491,41 @@ entire unreachable Next.js scaffold at the project root (`app/`, root-level
 pivoted to this Vite app — it had no `next` dependency installed and nothing
 in the build pointed to it. Removing it also shrank the CSS bundle (Tailwind
 had been scanning those dead files for class names).
+
+### 6.2 Commission reference image upload (Supabase Storage)
+
+Migration `0007` adds a private `commission-references` bucket plus three
+`storage.objects` policies matching the same trust model as the
+`commission_briefs` table itself: anyone can INSERT (a brief is submitted
+before any auth gate), only `is_admin()` can SELECT or DELETE (AdminView is
+still the only place these are ever displayed).
+
+`CommissionView.jsx`'s `handleFiles` was retaining only a derived
+`name`/`size`/`preview` (a blob URL) per dropped file — the actual `File`
+object needed for `storage.upload()` was discarded. Fixed by keeping the raw
+`file` alongside those fields, and `removeFile` now revokes the blob URL it
+created to avoid leaking memory.
+
+The brief's `id` is generated client-side (`crypto.randomUUID()`) *before*
+either the upload or the insert, rather than inserting first and reading the
+new row's id back — an anonymous submitter has no SELECT access to their own
+row under the "Users can view their own briefs" RLS policy
+(`auth.uid() = user_id OR is_admin()`, which a null `user_id` never
+satisfies), so `.insert(...).select().single()` failed with an RLS
+violation the first time this was tried. Uploading first and inserting once
+with `reference_image_urls` already populated also sidesteps the fact that
+briefs can only be *updated* by an admin — an anonymous patron has no way to
+attach paths after the fact anyway.
+
+`AdminView.jsx`'s `CommissionPipeline` now renders actual thumbnails instead
+of a bare image count: a `useEffect` keyed on `briefs` batch-requests signed
+URLs (`createSignedUrls`, 1hr expiry) for every brief with reference images,
+since the bucket is private and a public URL would 403.
+
+Verified end-to-end against the live project: submitted a brief through the
+real form with an attached test image (Playwright + a synthetic PNG),
+confirmed the row and storage path in Postgres directly, then logged into
+AdminView as a temporarily-created confirmed admin account and confirmed the
+thumbnail actually rendered (a real signed `storage/v1/object/sign/...` URL,
+zero console errors) — then deleted the storage object, the test brief, and
+the test admin account.

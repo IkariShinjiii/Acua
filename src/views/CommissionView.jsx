@@ -65,6 +65,7 @@ export default function CommissionView({ prefill }) {
 
   const handleFiles = (files) => {
     const validFiles = Array.from(files).map((file) => ({
+      file,
       name: file.name,
       size: (file.size / 1024).toFixed(1) + ' KB',
       preview: URL.createObjectURL(file),
@@ -73,7 +74,10 @@ export default function CommissionView({ prefill }) {
   };
 
   const removeFile = (index) => {
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
+    setUploadedImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -81,9 +85,26 @@ export default function CommissionView({ prefill }) {
     setSubmitError('');
     setIsSubmitting(true);
 
-    // Reference image upload to Supabase Storage isn't wired yet — the
-    // brief still saves without them rather than blocking submission on it.
+    // Generated client-side, before the brief row exists, so reference
+    // images can be uploaded under this id first and the brief can be
+    // inserted once with reference_image_urls already populated. Briefs
+    // can only be updated by an admin (see "Admins can update briefs"),
+    // so an anonymous patron has no way to attach paths after the fact.
+    const briefId = crypto.randomUUID();
+    const uploadedPaths = [];
+    for (const [idx, img] of uploadedImages.entries()) {
+      const ext = img.name.includes('.') ? img.name.split('.').pop() : 'jpg';
+      const path = `${briefId}/${idx}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('commission-references')
+        .upload(path, img.file, { contentType: img.file.type });
+      if (!uploadError) {
+        uploadedPaths.push(path);
+      }
+    }
+
     const { error } = await supabase.from('commission_briefs').insert({
+      id: briefId,
       user_id: user?.id ?? null,
       full_name: formData.fullName,
       email: formData.email,
@@ -93,15 +114,16 @@ export default function CommissionView({ prefill }) {
       budget_range: formData.budget,
       timeline: formData.timeline || null,
       narrative: formData.narrative || null,
+      reference_image_urls: uploadedPaths,
     });
 
-    setIsSubmitting(false);
-
     if (error) {
+      setIsSubmitting(false);
       setSubmitError(error.message);
       return;
     }
 
+    setIsSubmitting(false);
     setIsSubmitted(true);
   };
 
