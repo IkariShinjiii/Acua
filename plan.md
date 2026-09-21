@@ -661,3 +661,40 @@ Verified against the real, currently sold-out "Woven Sand Bracelet" and a
 real Archive tile via Playwright: correct source label for each, exactly
 one material card selected in both cases (never zero), and the fallback
 narrative text reads correctly.
+
+### 6.6 One-of-one gap in the Available Pieces grid (user-reported)
+
+The user reported, after 6.4's cart-cap fix: "at the available pieces part
+the items that are 1 of 1 doesn't have a label then u can add it multiple
+times... to the cart." 6.4 only touched `ProductDetailView` and
+`CartDrawer` — the `HomeView` grid card (the actual "Available Pieces"
+section) had neither a "1-of-1" badge nor any indication once a one-of-one
+piece was already in the cart, so its quick-add "+" button kept inviting
+more clicks even though `CartContext.addItem` was already silently
+no-op'ing them. That silent no-op, with no visual change, is exactly what
+reads as "you can add it multiple times" even though the cart's real
+quantity never moved.
+
+Fixed:
+- Added a small "1-OF-1" badge to the grid card's thumbnail (top-left,
+  matching the Archive section's own badge styling), shown whenever
+  `piece.isOneOfOne` and not sold out.
+- Once a one-of-one piece is already in the cart, its quick-add button is
+  now replaced by a permanent "already in your cart" checkmark indicator
+  instead of reverting back to a clickable "+" after the momentary
+  "Added" animation — so the UI stops implying another click would do
+  anything.
+- **Defensive fix**: `CartContext.readStoredCart()` now clamps any
+  already-persisted one-of-one item down to quantity 1 on load. The
+  addItem/setQuantity caps from 6.4 only guarded new writes — a cart that
+  had already accumulated quantity > 1 for a one-of-one piece before that
+  fix landed (or from any other bug) would otherwise stay stuck that way
+  indefinitely in the user's own browser storage.
+
+Verified with a temporarily re-flagged seed product (still none in the
+live catalog are marked one-of-one) via Playwright: badge renders, the
+quick-add button correctly becomes a permanent "in cart" indicator after
+one click, the cart drawer shows quantity 1 (not 3) at the right subtotal,
+and a simulated pre-existing corrupted cart (quantity 3, written directly
+to localStorage) is clamped back to 1 on the next page load. Flag reverted
+after.

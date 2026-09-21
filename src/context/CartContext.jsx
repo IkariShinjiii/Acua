@@ -11,7 +11,11 @@ const STORAGE_KEY = 'acua-cart-v2';
 function readStoredCart() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    // Defensive: a cart saved before the one-of-one cap existed (or from a
+    // bug) could already hold quantity > 1 for a piece that only ever has
+    // one unit to fulfill. Clamp on load rather than trusting old state.
+    return parsed.map((i) => (i.product?.isOneOfOne ? { ...i, quantity: 1 } : i));
   } catch {
     return [];
   }

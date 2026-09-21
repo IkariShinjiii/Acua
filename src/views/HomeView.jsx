@@ -10,7 +10,7 @@ import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { useCart } from '../context/CartContext';
 
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
-  const { addItem } = useCart();
+  const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
   const [pieces, setPieces] = useState(null);
@@ -216,6 +216,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                         </span>
                       </div>
                     )}
+                    {piece.isOneOfOne && !piece.soldOut && (
+                      <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                        1-of-1
+                      </span>
+                    )}
                   </div>
 
                   {/* Card Description & Action Row */}
@@ -243,6 +248,19 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                         >
                           Request Similar
                         </button>
+                      ) : piece.isOneOfOne && cartItems.some((i) => i.product.id === piece.id) ? (
+                        // Only one unit will ever exist to fulfill (plan.md
+                        // 5.2) — once it's in the cart, the button reflects
+                        // that permanently instead of the usual momentary
+                        // checkmark, which would otherwise invite another
+                        // click that CartContext just silently no-ops.
+                        <span
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-olive/15 text-olive"
+                          aria-label={`${piece.title} is already in your cart`}
+                          title="Already in your cart"
+                        >
+                          <Check className="w-5 h-5 stroke-[2]" />
+                        </span>
                       ) : (
                         <button
                           onClick={(e) => {
