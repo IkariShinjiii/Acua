@@ -33,6 +33,9 @@ export function CartProvider({ children }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
+        // A one-of-one piece only ever has one unit to fulfill — see plan.md
+        // 5.2 (first-payment-wins, no reservation) — so it can't go past 1.
+        if (product.isOneOfOne) return prev;
         return prev.map((i) =>
           i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
@@ -50,7 +53,13 @@ export function CartProvider({ children }) {
       removeItem(productId);
       return;
     }
-    setItems((prev) => prev.map((i) => (i.product.id === productId ? { ...i, quantity } : i)));
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.product.id !== productId) return i;
+        const capped = i.product.isOneOfOne ? Math.min(quantity, 1) : quantity;
+        return { ...i, quantity: capped };
+      })
+    );
   };
 
   const clearCart = () => setItems([]);

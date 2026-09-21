@@ -55,6 +55,9 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
             exit={{ opacity: 0, y: -16 }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-xl bg-sand rounded-3xl shadow-2xl overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search catalog"
           >
             <div className="flex items-center gap-3 p-5 border-b border-outline-variant/30">
               <Search className="w-5 h-5 text-on-surface-variant flex-shrink-0" />

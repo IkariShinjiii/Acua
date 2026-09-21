@@ -591,3 +591,39 @@ RLS-migration smoke test and the cleanup pass) deleted afterward.
 (needs a provider decision), the real product catalog (needs
 photos/prices), and the product detail page layout (needs the reference
 image that was never viewable this session).
+
+### 6.4 One-of-one cart cap, cart/search a11y parity, reduced motion
+
+Another self-directed pass, found while looking for more standalone work:
+
+- **Real business-logic bug fixed**: `products.is_one_of_one` was mapped
+  from Supabase (`mapProduct.js`) but never actually read anywhere — a
+  patron could add quantity 2+ of a one-of-one piece from
+  `ProductDetailView`, or increment it past 1 in `CartDrawer`, despite
+  §5.2's first-payment-wins model meaning only one unit will ever exist to
+  fulfill. Fixed at the source of truth (`CartContext`'s `addItem` and
+  `setQuantity` now cap at 1 for `isOneOfOne` products) and in the UI
+  (quantity stepper hidden entirely on the product page and in the cart
+  drawer for those pieces, plus a small "One of one — once it's gone, it's
+  gone" badge on the product page). No product in the seeded catalog is
+  currently flagged this way, so this was unreachable in practice today —
+  it protects the real 1-of-1 catalog once the client's actual products
+  (some of which are meant to be 1-of-1, per the brand's two-product-line
+  positioning) replace the seed data.
+- **A11y parity fix**: `SearchOverlay` already closed on Escape and had
+  focus management; `CartDrawer` had neither. Added the same Escape-key
+  handler, plus `role="dialog"` / `aria-modal` / `aria-label` to both
+  overlays.
+- **`prefers-reduced-motion` support**: nothing in the app respected it
+  despite Framer Motion being used everywhere (page transitions, the
+  ReviewReel marquee, fade-ins). Wrapped the app root in
+  `<MotionConfig reducedMotion="user">` (`main.jsx`) — a single change that
+  makes every Framer Motion animation in the app respect the OS-level
+  setting, rather than patching each component individually.
+
+Verified with a combined Playwright pass: a `reducedMotion: 'reduce'`
+browser context loads with zero errors; a product temporarily flagged
+`is_one_of_one` (seed data has none yet) correctly hides its quantity
+stepper, caps at 1 in the cart, and hides the cart's own "+" button;
+Escape closes the cart drawer. The temporary flag was reverted immediately
+after the test.

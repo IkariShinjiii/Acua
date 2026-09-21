@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -6,6 +6,15 @@ import { formatPeso } from '../lib/currency';
 
 export default function CartDrawer({ open, onClose, onViewProduct }) {
   const { items, subtotalCents, removeItem, setQuantity } = useCart();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
 
   return (
     <AnimatePresence>
@@ -24,6 +33,9 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-sand z-[100] shadow-2xl flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Shopping cart"
           >
             <div className="flex items-center justify-between p-5 border-b border-outline-variant/30">
               <h2 className="font-serif text-xl text-on-surface">Your Cart</h2>
@@ -76,13 +88,15 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                           <Minus className="w-3 h-3" />
                         </button>
                         <span className="text-xs w-4 text-center">{quantity}</span>
-                        <button
-                          onClick={() => setQuantity(product.id, quantity + 1)}
-                          className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+                        {!product.isOneOfOne && (
+                          <button
+                            onClick={() => setQuantity(product.id, quantity + 1)}
+                            className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <button

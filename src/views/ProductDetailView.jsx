@@ -98,6 +98,11 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
               {product.title}
             </h1>
             <p className="text-2xl font-semibold text-terracota mt-4">{product.price}</p>
+            {product.isOneOfOne && !product.soldOut && (
+              <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-chile-rojo bg-chile-rojo/10 rounded-full px-3 py-1 mt-3">
+                One of one — once it's gone, it's gone
+              </span>
+            )}
 
             <p className="text-sm text-on-surface/80 leading-relaxed mt-6">{product.description}</p>
 
@@ -118,23 +123,28 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                 </button>
               ) : (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                  <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
-                    <button
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-sm w-5 text-center">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity((q) => q + 1)}
-                      className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {/* A one-of-one piece only ever has one unit to sell — see
+                      plan.md 5.2 — so there's nothing for a quantity stepper
+                      to control. */}
+                  {!product.isOneOfOne && (
+                    <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
+                      <button
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-sm w-5 text-center">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity((q) => q + 1)}
+                        className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleAddToCart}
