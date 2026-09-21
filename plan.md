@@ -1351,3 +1351,25 @@ wordmark (a standing `TODO` since early in the project) and the
 placeholder hero-photo Open Graph image from §13 — both out of scope for
 what was actually asked (the favicon specifically), so left untouched
 rather than assumed.
+
+### 16.1 Re-extracted from a cleaner source photo
+
+The client supplied the same logo mark again, on a different circular
+badge photo (agave/cactus foliage instead of the water-texture one) and
+asked for the extraction to be redone against it, expecting a cleaner
+result. It was: the color-threshold step alone found **6 total connected
+regions in the new photo, all real, versus 594 in the water-texture photo
+(of which only ~13 survived the size/noise filtering)** — foliage green is
+just a much bigger, more consistent color distance from the logo's cream
+than the water photo's bright golden highlights were. No connected-
+component filtering or morphological cleanup was even needed to get a
+clean result this time, though the same pipeline from §16 was reused
+as-is rather than special-cased.
+
+Same two output files (`favicon.png` transparent, `apple-touch-icon.png`
+on chile-rojo), same filenames — so no code changes were needed, only the
+two PNGs themselves were replaced. Verified the new `dist/favicon.png` is
+byte-identical to the new `public/favicon.png` (confirms the build picked
+up the replacement, not a cached copy) and re-rendered all four real
+usage sizes to confirm the sharper edges are visible at every one, not
+just at full resolution.
