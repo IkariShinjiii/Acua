@@ -339,6 +339,29 @@ still mocked in `src/data/*.js`.
     have set `is_admin = true` on themselves via a direct API call. Fixed
     with column-level GRANTs: `authenticated` can update `full_name` only;
     `is_admin` is set by hand (SQL editor) exclusively.
+  - `0005_advisor_fixes.sql` / `0006_revoke_execute_from_public.sql` — a
+    full pass against Supabase's own security/performance advisors (run via
+    direct project access, not guesswork). Found and fixed a real hole:
+    `claim_product_if_available` (the §5.2 atomic sold-out claim) had no
+    execute restriction at all — anyone, signed in or not, could call it
+    via `/rest/v1/rpc` and mark any product sold out with zero payment
+    involved. Revoked execute on it and on the `handle_new_user` trigger
+    function for both `anon` and `authenticated`, **and** from `PUBLIC` —
+    the first revoke alone did nothing, since Postgres grants execute to
+    `PUBLIC` by default at function creation and every role inherits that
+    regardless of a revoke aimed at the named role. Verified with
+    `has_function_privilege()` before and after, not just by re-reading the
+    advisor. Also fixed the standard RLS performance set: added the 3
+    missing foreign-key indexes, wrapped `auth.uid()` calls in
+    `(select ...)` so Postgres evaluates them once per query instead of
+    once per row, and merged duplicate permissive SELECT policies (an
+    admin-sees-all policy stacked on top of an own-row/public-read policy)
+    into one per table. `is_admin()` itself stays executable by
+    anon/authenticated — that one's flagged too, but it's required: RLS
+    policies invoke it under the calling role, so revoking it would break
+    every policy that uses it. One advisory item is a dashboard toggle, not
+    SQL — **Leaked Password Protection** is off; enable it under
+    Authentication → Policies in the Supabase dashboard.
 - **Auth**: real email/password auth is wired —
   `src/context/AuthContext.jsx` tracks the Supabase session and the
   matching `profiles` row (exposing `user`, `profile`, `isAdmin`, `signUp`,
