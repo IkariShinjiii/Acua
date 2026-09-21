@@ -1660,3 +1660,31 @@ Verified via a temporary Playwright check: no new console errors or
 warnings after the change, the preload `<link>` and the image's
 `fetchpriority="high"` both render correctly in the live DOM, and the
 hero section still renders pixel-identical to before.
+
+## 24. Commission and product-detail views bundled into every visitor's initial load
+
+`AdminView` and `PatronDashboardView` were already code-split with
+`React.lazy` — reasonably, since both are gated behind a login/admin
+check that most visitors never pass. `CommissionView` and
+`ProductDetailView` weren't, despite the exact same logic applying: a
+first-time visitor lands on Home by default and, most of the time,
+never even opens either of those views in that session — yet the build
+was shipping both to every single visitor regardless. Every build had
+also been quietly warning about this the whole session
+("Some chunks are larger than 500 kB after minification") without it
+being addressed.
+
+**Fix**: converted both to the same `lazy()` + `<Suspense
+fallback={<ViewLoadingFallback />}>` pattern already used for
+Admin/Dashboard — no behavior change, just moved out of the eagerly-
+bundled main chunk.
+
+**Result**: the main JS chunk dropped from 651 KB to 400 KB (186 KB to
+122 KB gzipped) — a real ~35% cut to what every visitor downloads and
+has to parse/execute before Home is interactive — and the build's
+"chunk too large" warning is gone entirely. `CommissionView` (17 KB) and
+`ProductDetailView` (7 KB) now fetch on demand instead.
+
+Verified live: navigating to Custom Request and to a product's detail
+page both still render correctly (their lazy chunks load and mount with
+no console errors), confirmed via a temporary Playwright check.

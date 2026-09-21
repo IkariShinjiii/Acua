@@ -1,8 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { LogOut, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
-import CommissionView from './views/CommissionView';
 import HomeView from './views/HomeView';
-import ProductDetailView from './views/ProductDetailView';
 import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
 import CartDrawer from './components/CartDrawer';
@@ -11,11 +9,15 @@ import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
 
-// Split out of the main bundle: every anonymous storefront visitor pays for
-// these otherwise, despite being gated behind a login/admin check that most
-// of them never pass.
+// Split out of the main bundle: every visitor lands on Home first (the
+// default view), so only it needs to be in the initial bundle — every
+// other view is either behind a login/admin check most visitors never
+// pass, or (Commission, product detail) just isn't needed until they
+// actually navigate there.
 const AdminView = lazy(() => import('./views/AdminView'));
 const PatronDashboardView = lazy(() => import('./views/PatronDashboardView'));
+const CommissionView = lazy(() => import('./views/CommissionView'));
+const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 
 const ViewLoadingFallback = () => (
   <div className="pt-40 text-center text-sm text-on-surface-variant">Loading…</div>
@@ -309,17 +311,23 @@ export default function App() {
           onViewProduct={handleViewProduct}
         />
       )}
-      {currentView === 'commission' && <CommissionView prefill={commissionPrefill} />}
+      {currentView === 'commission' && (
+        <Suspense fallback={<ViewLoadingFallback />}>
+          <CommissionView prefill={commissionPrefill} />
+        </Suspense>
+      )}
       {currentView === 'admin' && <AdminGate />}
       {currentView === 'dashboard' && (
         <PatronGate setCurrentView={navigateTo} initialTab={dashboardInitialTab} />
       )}
       {currentView === 'product' && (
-        <ProductDetailView
-          productId={selectedProductId}
-          setCurrentView={navigateTo}
-          onRequestSimilar={handleRequestSimilar}
-        />
+        <Suspense fallback={<ViewLoadingFallback />}>
+          <ProductDetailView
+            productId={selectedProductId}
+            setCurrentView={navigateTo}
+            onRequestSimilar={handleRequestSimilar}
+          />
+        </Suspense>
       )}
 
       {/* Shared across every storefront-facing view — not the admin
