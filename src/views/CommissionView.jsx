@@ -49,7 +49,7 @@ export default function CommissionView({ prefill }) {
     email: user?.email ?? '',
     phone: '',
     timeline: 'Flexible (4-6 Weeks)',
-    category: prefill?.category ?? 'Sculptural Ring',
+    category: prefill?.category ?? 'Necklace / Choker',
     material: prefillMaterialId ?? 'non-tarnish-gold-tone',
     budget: '₱45,000 – ₱84,000',
     narrative: prefill

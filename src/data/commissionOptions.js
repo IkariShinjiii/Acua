@@ -1,9 +1,7 @@
 // Selectable options for the Custom Commission request form.
 export const JEWELRY_CATEGORIES = [
-  'Sculptural Ring',
   'Necklace / Choker',
   'Statement Cuff',
-  'Artisanal Earrings',
   'Ceremonial / Suite',
 ];
 

@@ -1077,3 +1077,44 @@ treatment — while open, and reverts to `rgba(0,0,0,0)` on close. Confirmed
 visually too: a screenshot with the drawer open shows one continuous dark
 panel with no seam, and a screenshot with it closed shows the original
 translucent hero navbar, unchanged.
+
+## 10. Rings and earrings removed — not a real product line
+
+The client clarified ACUA doesn't make rings or earrings. Every trace of
+those categories was still placeholder/mock content — the real catalog
+has never been provided (a recurring "still blocked on the client" item
+throughout this doc) — so this was safe to remove outright rather than
+just relabel:
+
+- **`products` table**: deleted "Dune Texture Ring", "Hammered Stacking
+  Set" (both `category = 'Rings'`) and "Solitary Tidal Ear Cuff"
+  (`category = 'Earrings'`) — confirmed zero orphaned `orders` rows
+  referencing them afterward.
+- **`archive_items` table**: deleted "Raw Sapphire Ring"
+  (`Sculptural Ring`) and "Textured Drop Earrings" (`Artisanal Earrings`).
+- **`src/data/reel.js`**: the "New Release" marquee turned out to be
+  entirely disconnected from Supabase — a static mock array that was
+  still showing "Dune Texture Ring," "Crag Textured Signet," and
+  "Solitary Tidal Ear Cuff" regardless of what the real `products` table
+  said. Removed those three; the marquee now shows only the three
+  remaining necklace/bracelet entries. (Worth flagging on its own: this
+  file being unconnected to the real catalog means *any* future catalog
+  change won't show up in the marquee automatically — a real gap, not
+  something fixed in this pass since it wasn't what was asked.)
+- **Taxonomy**: removed `'Rings'`/`'Earrings'` from `FILTER_TABS`
+  (`src/data/products.js`) and `'Sculptural Ring'`/`'Artisanal Earrings'`
+  from `JEWELRY_CATEGORIES` (`src/data/commissionOptions.js`) — these
+  drive the Available Pieces filter pills, the Commission form's category
+  pills, and both AdminView category `<select>` dropdowns (Inventory and
+  Archive tabs), so removing them here closes off the categories
+  everywhere at once. `CommissionView`'s default category fallback
+  (previously `'Sculptural Ring'`) was updated to `'Necklace / Choker'`
+  since its old default no longer exists in the list.
+
+Verified live: the Available Pieces filter pills show only
+All/Necklaces/Bracelets; no ring or earring titles appear anywhere on the
+storefront (grid or marquee); the Commission form's category pills and
+both AdminView category dropdowns show only the remaining three
+categories; and, as a real (temporary, since-removed) admin account,
+confirmed no ring/earring items remain visible in either Inventory or
+Archive tabs.
