@@ -16,6 +16,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { parsePesoToNumber, formatPeso } from '../lib/currency';
+import Toast, { useToast } from '../components/Toast';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { FILTER_TABS } from '../data/products';
@@ -64,7 +65,7 @@ function StatCard({ icon: Icon, label, value }) {
 /* ------------------------------------------------------------------ */
 /* Commission Pipeline                                                  */
 /* ------------------------------------------------------------------ */
-function CommissionPipeline({ briefs, onUpdated }) {
+function CommissionPipeline({ briefs, onUpdated, showToast }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [quoteDrafts, setQuoteDrafts] = useState({});
   const [saving, setSaving] = useState(null);
@@ -92,7 +93,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
     };
   }, [briefs]);
 
-  const advance = async (id, nextStatus, extra = {}) => {
+  const advance = async (id, nextStatus, extra = {}, successMessage) => {
     setSaving(id);
     const { error } = await supabase
       .from('commission_briefs')
@@ -100,16 +101,17 @@ function CommissionPipeline({ briefs, onUpdated }) {
       .eq('id', id);
     setSaving(null);
     if (error) {
-      alert(`Couldn't update that brief: ${error.message}`);
+      showToast(`Couldn't update that brief: ${error.message}`, 'error');
       return;
     }
+    if (successMessage) showToast(successMessage, 'success');
     onUpdated();
   };
 
   const sendQuote = (brief) => {
     const raw = quoteDrafts[brief.id] ?? '';
     const cents = Math.round(parsePesoToNumber(raw) * 100);
-    advance(brief.id, 'quote_sent', { quote_price_cents: cents || null });
+    advance(brief.id, 'quote_sent', { quote_price_cents: cents || null }, 'Quote sent.');
   };
 
   const visible =
@@ -212,7 +214,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
                   )}
                   {brief.status === 'quote_sent' && (
                     <button
-                      onClick={() => advance(brief.id, 'in_production', { deposit_paid: true })}
+                      onClick={() => advance(brief.id, 'in_production', { deposit_paid: true }, 'Moved to production.')}
                       disabled={isSaving}
                       className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50"
                     >
@@ -221,7 +223,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
                   )}
                   {brief.status === 'in_production' && (
                     <button
-                      onClick={() => advance(brief.id, 'delivered')}
+                      onClick={() => advance(brief.id, 'delivered', {}, 'Marked as delivered.')}
                       disabled={isSaving}
                       className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50"
                     >
@@ -249,7 +251,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
 /* ------------------------------------------------------------------ */
 /* Order Fulfillment                                                     */
 /* ------------------------------------------------------------------ */
-function OrderFulfillment({ orders, onUpdated }) {
+function OrderFulfillment({ orders, onUpdated, showToast }) {
   const advance = async (order) => {
     const idx = stageIndex(ORDER_STAGES, order.status);
     const next = ORDER_STAGES[idx + 1];
@@ -264,9 +266,10 @@ function OrderFulfillment({ orders, onUpdated }) {
       .update({ status: next.id, tracking_number: trackingNumber })
       .eq('id', order.id);
     if (error) {
-      alert(`Couldn't update that order: ${error.message}`);
+      showToast(`Couldn't update that order: ${error.message}`, 'error');
       return;
     }
+    showToast(`Order marked as ${next.label.toLowerCase()}.`, 'success');
     onUpdated();
   };
 
@@ -321,7 +324,7 @@ function OrderFulfillment({ orders, onUpdated }) {
 /* ------------------------------------------------------------------ */
 /* Inventory & Site Curation                                            */
 /* ------------------------------------------------------------------ */
-function InventoryCuration({ pieces, onUpdated }) {
+function InventoryCuration({ pieces, onUpdated, showToast }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [draft, setDraft] = useState({
     title: '',
@@ -339,9 +342,10 @@ function InventoryCuration({ pieces, onUpdated }) {
       .update({ sold_out: !piece.soldOut })
       .eq('id', piece.id);
     if (error) {
-      alert(`Couldn't update that piece: ${error.message}`);
+      showToast(`Couldn't update that piece: ${error.message}`, 'error');
       return;
     }
+    showToast(piece.soldOut ? 'Marked available again.' : 'Marked sold out.', 'success');
     onUpdated();
   };
 
@@ -351,9 +355,10 @@ function InventoryCuration({ pieces, onUpdated }) {
       .update({ is_one_of_one: !piece.isOneOfOne })
       .eq('id', piece.id);
     if (error) {
-      alert(`Couldn't update that piece: ${error.message}`);
+      showToast(`Couldn't update that piece: ${error.message}`, 'error');
       return;
     }
+    showToast(piece.isOneOfOne ? 'No longer marked 1-of-1.' : 'Marked as a 1-of-1 piece.', 'success');
     onUpdated();
   };
 
@@ -375,11 +380,12 @@ function InventoryCuration({ pieces, onUpdated }) {
     });
     setSaving(false);
     if (error) {
-      alert(`Couldn't save that piece: ${error.message}`);
+      showToast(`Couldn't save that piece: ${error.message}`, 'error');
       return;
     }
     setDraft({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '', isOneOfOne: false });
     setShowAddForm(false);
+    showToast(`"${draft.title}" added to Available Pieces.`, 'success');
     onUpdated();
   };
 
@@ -464,7 +470,7 @@ function InventoryCuration({ pieces, onUpdated }) {
         {pieces.map((piece) => (
           <div key={piece.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm overflow-hidden">
             <div className="relative aspect-square bg-surface-container-low">
-              <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" />
+              <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" loading="lazy" />
               {piece.isOneOfOne && (
                 <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
                   1-of-1
@@ -520,7 +526,7 @@ function InventoryCuration({ pieces, onUpdated }) {
 /* ------------------------------------------------------------------ */
 /* The Archive                                                          */
 /* ------------------------------------------------------------------ */
-function ArchiveCuration({ archiveItems, onUpdated }) {
+function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [draft, setDraft] = useState({
     title: '',
@@ -545,9 +551,10 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
     });
     setSaving(false);
     if (error) {
-      alert(`Couldn't save that piece: ${error.message}`);
+      showToast(`Couldn't save that piece: ${error.message}`, 'error');
       return;
     }
+    showToast(`"${draft.title}" added to The Archive.`, 'success');
     setDraft({ title: '', category: JEWELRY_CATEGORIES[0], material: MATERIAL_OPTIONS[0].id, image: '', alt: '' });
     setShowAddForm(false);
     onUpdated();
@@ -559,9 +566,10 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
     const { error } = await supabase.from('archive_items').delete().eq('id', item.id);
     setDeletingId(null);
     if (error) {
-      alert(`Couldn't remove that piece: ${error.message}`);
+      showToast(`Couldn't remove that piece: ${error.message}`, 'error');
       return;
     }
+    showToast(`"${item.title}" removed.`, 'success');
     onUpdated();
   };
 
@@ -648,7 +656,7 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
         {archiveItems.map((item) => (
           <div key={item.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm overflow-hidden">
             <div className="relative aspect-square bg-surface-container-low">
-              <img src={item.image} alt={item.alt ?? item.title} className="w-full h-full object-cover" />
+              <img src={item.image} alt={item.alt ?? item.title} className="w-full h-full object-cover" loading="lazy" />
               <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
                 1-of-1
               </span>
@@ -690,6 +698,7 @@ export default function AdminView() {
   const [archiveItems, setArchiveItems] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -778,27 +787,28 @@ export default function AdminView() {
           (briefs === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
-            <CommissionPipeline briefs={briefs} onUpdated={refresh} />
+            <CommissionPipeline briefs={briefs} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'orders' &&
           (orders === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
-            <OrderFulfillment orders={orders} onUpdated={refresh} />
+            <OrderFulfillment orders={orders} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'inventory' &&
           (pieces === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
-            <InventoryCuration pieces={pieces} onUpdated={refresh} />
+            <InventoryCuration pieces={pieces} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'archive' &&
           (archiveItems === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
-            <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} />
+            <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} showToast={showToast} />
           ))}
       </div>
+      <Toast toast={toast} onDismiss={dismissToast} />
     </div>
   );
 }

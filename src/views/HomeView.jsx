@@ -207,6 +207,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       src={piece.image}
                       alt={piece.title}
+                      loading="lazy"
                       onError={(e) => handleImageError(e, piece.fallback)}
                     />
                     {piece.soldOut && (
@@ -287,15 +288,6 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
               ))}
             </AnimatePresence>
           </div>
-
-          <div className="mt-14 text-center">
-            <button
-              onClick={() => setActiveFilter('All')}
-              className="px-8 py-3.5 rounded-full bg-surface-container border border-outline-variant/30 text-on-surface font-sans text-xs font-semibold tracking-widest uppercase hover:bg-surface-container-high hover:border-terracota/50 transition-colors shadow-sm cursor-pointer"
-            >
-              LOAD MORE
-            </button>
-          </div>
         </section>
 
         {/* 4. The Archive: Bespoke Creations Showcase */}
@@ -322,6 +314,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 filter grayscale-[20%] group-hover:grayscale-0"
                     src={item.image}
                     alt={item.alt}
+                    loading="lazy"
                     onError={(e) => handleImageError(e, item.fallback)}
                   />
                   <div className="absolute inset-0 bg-chile-rojo/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4 text-center backdrop-blur-[2px]">

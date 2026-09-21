@@ -907,3 +907,57 @@ and visually (a real dark-mode screenshot of the Commission form).
 (2.75–3.34:1) — but that's pre-existing, not something §7 introduced or
 regressed, so it wasn't touched in this pass. Worth a dedicated look if
 asked, separate from the dark-mode work.
+
+## 8. UI improvement pass
+
+Self-directed audit for standalone frontend value, independent of the
+theming/auth work above. Four real, confirmed issues:
+
+- **Mobile visitors had no way to search or reach their account at all.**
+  The Search and Account icon buttons in the navbar are `hidden
+  md:inline-flex` — desktop-only, not just visually deprioritized on
+  mobile — and the mobile hamburger drawer only ever listed Shop /
+  Collections / Custom Request. There was no path to `onOpenSearch` or
+  `onAccountClick` on a phone whatsoever, meaning no mobile visitor could
+  search the catalog or log in / view their orders and commissions. Fixed
+  by adding "Search" and "My Account" entries to the mobile drawer, wired
+  to the same handlers the desktop icons use.
+- **The "LOAD MORE" button did nothing it claimed to.** `HomeView`'s
+  Available Pieces grid renders every fetched product with no
+  slicing/pagination anywhere in the code — the button's `onClick` just
+  called `setActiveFilter('All')`, which is either a no-op (if "All" was
+  already selected) or silently resets the category filter a patron could
+  already change via the filter pills above it. Since there's nothing
+  currently held back to reveal, and building real pagination for a
+  6-product catalog would be solving a problem that doesn't exist yet, the
+  button was removed rather than half-fixed. Worth revisiting once the
+  real catalog (§ replacing seed data, still pending on the client) is
+  large enough that pagination is a genuine need.
+- **`alert()` for every admin error, 7 call sites.** A native browser
+  dialog blocks the entire page and looks jarring against a dashboard with
+  its own cloud-card design system. Replaced with a proper in-page toast
+  (`src/components/Toast.jsx` + a `useToast` hook): a dismissible,
+  auto-expiring (4.5s) notification matching the app's visual language,
+  threaded through `CommissionPipeline`, `OrderFulfillment`,
+  `InventoryCuration`, and `ArchiveCuration` via a `showToast` prop from
+  the `AdminView` root. Success paths, which previously gave the admin no
+  feedback at all beyond the form silently closing, now also show a brief
+  confirmation ("Quote sent.", "Marked sold out.", "'X' added to The
+  Archive.").
+- **Missing `loading="lazy"` on below-the-fold images.** Added to the
+  Available Pieces grid, the Archive grid, and Search results — genuinely
+  off-screen image sets a visitor may never scroll to. Deliberately *not*
+  added to `ProductDetailView`'s primary image (above-the-fold, would hurt
+  LCP) or `ReviewReel`'s marquee (visible immediately on page load).
+
+Verified live: a real mobile-viewport (390×844) Playwright session opened
+the drawer, reached Search and "My Account" through it, and confirmed both
+actually opened; confirmed "LOAD MORE" no longer renders; confirmed the
+lazy `loading` attribute is present via computed DOM properties (not just
+markup text) on all 6 grid images; and, as a real signed-in admin,
+confirmed a toast (not a native dialog) appears on a real Supabase write
+with the correct message. One mistake in that same verification pass: an
+ambiguous `Mark Sold Out`/`Mark Available` button-text match in the test
+script toggled the wrong two seed products — caught via direct DB query
+immediately after and corrected back to the original seed state (Woven
+Sand Bracelet sold out, Solitary Tidal Ear Cuff available) before finishing.

@@ -103,6 +103,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                       src={piece.image}
                       alt={piece.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => handleImageError(e, piece.fallback)}
                     />
                   </div>

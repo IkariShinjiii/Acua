@@ -201,6 +201,33 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               >
                 Custom Request
               </button>
+
+              {/* Search and Account only ever appeared as desktop-only icons
+                  in the header (hidden md:inline-flex) — with nothing else
+                  reachable on mobile, there was no way to search or log in
+                  on a phone at all. */}
+              <div className="pt-2 border-t border-outline-variant/30 flex flex-col space-y-4">
+                <button
+                  onClick={() => {
+                    onOpenSearch?.();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                >
+                  <Search className="w-4 h-4 stroke-[1.5]" />
+                  Search
+                </button>
+                <button
+                  onClick={() => {
+                    onAccountClick?.();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                >
+                  <User className="w-4 h-4 stroke-[1.5]" />
+                  My Account
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
