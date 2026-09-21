@@ -11,16 +11,22 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
-      setQuery('');
-      // Focus after the entrance animation starts rendering the input.
-      const id = setTimeout(() => inputRef.current?.focus(), 50);
-      supabase
-        .from('products')
-        .select('*')
-        .then(({ data, error }) => setPieces(error || !data ? [] : data.map(mapProductRow)));
-      return () => clearTimeout(id);
-    }
+    if (!open) return;
+    let cancelled = false;
+    setQuery('');
+    // Focus after the entrance animation starts rendering the input.
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    supabase
+      .from('products')
+      .select('*')
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setPieces(error || !data ? [] : data.map(mapProductRow));
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
   }, [open]);
 
   useEffect(() => {

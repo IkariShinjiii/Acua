@@ -5,10 +5,11 @@ const STORAGE_KEY = 'acua-theme';
 
 export function ThemeProvider({ children }) {
   // index.html's inline script already set the `dark` class on <html>
-  // before first paint (reading the same storage key, falling back to the
-  // OS preference) — reading it back here just syncs React state to that
-  // already-correct DOM state, rather than re-deriving it and risking a
-  // mismatch.
+  // before first paint, reading the same storage key (and deliberately
+  // NOT the OS preference — light is the default until someone explicitly
+  // chooses dark via the toggle below) — reading it back here just syncs
+  // React state to that already-correct DOM state, rather than re-deriving
+  // it and risking a mismatch.
   const [theme, setTheme] = useState(() =>
     document.documentElement.classList.contains('dark') ? 'dark' : 'light'
   );
