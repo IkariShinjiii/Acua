@@ -81,16 +81,17 @@
     html.dark #initial-loader {
       background: #1A1815;
     }
-    #initial-loader .wordmark {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 26px;
-      letter-spacing: 0.35em;
-      color: #1D1C16;
+    #initial-loader .mark {
+      height: 56px;
+      width: auto;
       animation: initial-loader-pulse 1.6s ease-in-out infinite;
     }
-    html.dark #initial-loader .wordmark {
-      color: #F2EDE4;
-    }
+    /* Ink mark on the light (default) background, cream mark once dark
+       mode's class is present — same fixed-vs-theme-aware split the rest
+       of the site's logo usages follow (see Navbar/HomeView footer). */
+    #initial-loader .mark-dark { display: none; }
+    html.dark #initial-loader .mark-light { display: none; }
+    html.dark #initial-loader .mark-dark { display: block; }
     #initial-loader .bar {
       position: relative;
       width: 120px;
@@ -117,7 +118,7 @@
       100% { transform: translateX(350%); }
     }
     @media (prefers-reduced-motion: reduce) {
-      #initial-loader .wordmark,
+      #initial-loader .mark,
       #initial-loader .bar::after {
         animation: none;
       }
@@ -130,7 +131,8 @@
     <!-- React's first render replaces everything inside #root, so this
          disappears the instant the app mounts — no removal code needed. -->
     <div id="initial-loader" aria-hidden="true">
-      <span class="wordmark">ACUA</span>
+      <img class="mark mark-light" src="/src/assets/logo-mark-ink.png" alt="" />
+      <img class="mark mark-dark" src="/src/assets/logo-mark-cream.png" alt="" />
       <div class="bar"></div>
     </div>
   </div>

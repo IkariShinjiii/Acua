@@ -4,6 +4,7 @@ import { Plus, Check } from 'lucide-react';
 import { InstagramIcon, FacebookIcon } from '../components/SocialIcons';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
+import logoMarkCream from '../assets/logo-mark-cream.png';
 import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -351,11 +352,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       <footer className="w-full mt-auto bg-chile-rojo text-white">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="bg-sand px-4 py-2 rounded-lg shadow-sm inline-flex items-center justify-center">
-              <span className="font-serif text-2xl tracking-[0.22em] text-on-surface font-normal uppercase">
-                ACUA
-              </span>
-            </div>
+            <img src={logoMarkCream} alt="ACUA" className="h-12 w-auto" />
             <span className="text-xs uppercase tracking-widest text-sunset opacity-95 font-medium mt-1 font-sans">
               NATURALLY ROOTED. INTENTIONALLY DESIGNED.
             </span>

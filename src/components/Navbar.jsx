@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Menu, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import logoMarkCream from '../assets/logo-mark-cream.png';
+import logoMarkInk from '../assets/logo-mark-ink.png';
 
 export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart, onOpenSearch, onAccountClick }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -32,6 +34,12 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
   // fix as HomeView's scrim) — not the theme-aware surface, which would
   // put a near-white ring offset over the photo in dark mode.
   const ringOffset = isTransparent ? 'focus-visible:ring-offset-ink' : 'focus-visible:ring-offset-sand';
+  // The logo mark is a single flat color, so it can't invert itself the
+  // way a `text-*` token does — pick the asset that reads against
+  // whatever's actually behind it: the fixed-dark hero photo (transparent
+  // state) or a dark-mode-solid navbar both need the light/cream mark;
+  // only the light-mode-solid navbar (a light sand bar) needs the dark one.
+  const logoMark = isTransparent || theme === 'dark' ? logoMarkCream : logoMarkInk;
 
   return (
     <header
@@ -53,7 +61,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
             className={`group flex items-center gap-2.5 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full bg-transparent border-none cursor-pointer`}
             aria-label="ACUA Home"
           >
-            {/* TODO: swap for the exported ACUA icon mark once provided (transparent PNG/SVG) */}
+            <img src={logoMark} alt="" className="h-8 sm:h-9 w-auto" />
             <span className={`font-serif text-2xl sm:text-3xl tracking-[0.24em] uppercase font-normal transition-colors duration-300 ${textStrong} ${groupAccentHover}`}>
               ACUA
             </span>

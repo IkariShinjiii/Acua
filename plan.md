@@ -1373,3 +1373,52 @@ byte-identical to the new `public/favicon.png` (confirms the build picked
 up the replacement, not a cached copy) and re-rendered all four real
 usage sizes to confirm the sharper edges are visible at every one, not
 just at full resolution.
+
+## 17. Real logo mark used across the site, not just the favicon
+
+The client confirmed this is the official logo and asked for it to be
+used more broadly. Extracted two persistent, reusable assets into
+`src/assets/` this time (`logo-mark-cream.png`, `logo-mark-ink.png`) —
+same background-removal pipeline as §16/§16.1, reused as a real project
+asset rather than a one-off temp file, since three separate places now
+need it.
+
+**Why two colors, and the logic behind which one shows where**: the mark
+is a single flat color, so unlike a `text-*` Tailwind class it can't
+invert itself against whatever's behind it — each usage site has to pick
+the right variant explicitly, based on what's actually behind it there:
+
+- **Navbar, transparent/hero state**: sits over the fixed-dark hero photo
+  (the `bg-ink` scrim from §9) — always needs the cream mark, regardless
+  of site theme, matching the `text-white` treatment already used for the
+  wordmark text in this state.
+- **Navbar, solid/scrolled state**: sits on `bg-sand/95`, which is
+  theme-aware (light sand in light mode, near-black in dark mode) — needs
+  the ink mark in light mode, cream mark in dark mode. `Navbar.jsx`
+  already had `useTheme()` wired in for the dark-mode toggle button, so
+  the logic is one line: `isTransparent || theme === 'dark' ? cream :
+  ink`.
+- **Footer**: sits on `bg-chile-rojo`, a brand color fixed regardless of
+  site theme — always the cream mark, no conditional needed. This also
+  let the cream-colored box that used to sit *behind* the plain "ACUA"
+  text (there for contrast, since dark text needed a light backdrop) go
+  away entirely — the real mark is already legible directly on the
+  terracotta background, which reads cleaner than a text-in-a-box
+  treatment.
+- **Preloader** (`index.html`, plain HTML/CSS, no framework or `useTheme`
+  available at that point): same light/dark split as the rest of the
+  preloader, done the same way — two `<img>` tags, toggled via the
+  existing `html.dark` selector convention the preloader already
+  established in §14, rather than one image with a runtime color swap.
+
+Confirmed Vite correctly processes and content-hashes image references
+written directly in `index.html` (not just ones imported from JS/JSX) —
+checked the built output and both `logo-mark-*.png` references were
+rewritten to their hashed `/assets/` paths, not left pointing at the raw
+dev-only `/src/assets/...` path that would 404 in production.
+
+Verified live across every real combination: navbar over the hero photo
+(cream, legible), navbar scrolled in light mode (ink, legible), navbar
+scrolled in dark mode (cream, legible), and the footer (cream, directly
+on the terracotta background, no box) — four screenshots, one per state,
+all reviewed directly.
