@@ -1,11 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { X, Minus, Plus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { formatPeso } from '../lib/currency';
+import { formatPeso, parsePesoToNumber } from '../lib/currency';
+import { supabase } from '../lib/supabaseClient';
 
 export default function CartDrawer({ open, onClose, onViewProduct }) {
-  const { items, subtotalCents, removeItem, setQuantity } = useCart();
+  const { items, removeItem, setQuantity } = useCart();
+  // The cart is built from whatever product snapshot was saved to
+  // localStorage when each item was added — potentially days or weeks
+  // ago. If ACUA marks a piece sold out (most items are 1-of-1) after
+  // that, the cart would otherwise still happily offer to "order" it.
+  // Revalidate against the live table every time the drawer opens.
+  const [soldOutIds, setSoldOutIds] = useState(() => new Set());
 
   useEffect(() => {
     if (!open) return;
@@ -15,6 +22,37 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
+
+  const itemIdsKey = items
+    .map((i) => i.product.id)
+    .sort()
+    .join(',');
+
+  useEffect(() => {
+    if (!open || items.length === 0) return;
+    let cancelled = false;
+    supabase
+      .from('products')
+      .select('id, sold_out')
+      .in(
+        'id',
+        items.map((i) => i.product.id)
+      )
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return;
+        setSoldOutIds(new Set(data.filter((r) => r.sold_out).map((r) => r.id)));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, itemIdsKey]);
+
+  const availableItems = items.filter((i) => !soldOutIds.has(i.product.id));
+  const availableSubtotalCents = availableItems.reduce(
+    (sum, i) => sum + parsePesoToNumber(i.product.price) * 100 * i.quantity,
+    0
+  );
 
   return (
     <AnimatePresence>
@@ -57,75 +95,104 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                   <p className="text-sm text-on-surface-variant">Your cart is empty.</p>
                 </div>
               ) : (
-                items.map(({ product, quantity }) => (
-                  <div key={product.id} className="flex gap-3 bg-surface-elevated rounded-2xl p-3 shadow-cloud-sm">
-                    <button
-                      onClick={() => {
-                        onViewProduct(product.id);
-                        onClose();
-                      }}
-                      className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                items.map(({ product, quantity }) => {
+                  const isSoldOut = soldOutIds.has(product.id);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`flex gap-3 bg-surface-elevated rounded-2xl p-3 shadow-cloud-sm ${
+                        isSoldOut ? 'opacity-60' : ''
+                      }`}
                     >
-                      <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
-                    </button>
-                    <div className="flex-1 min-w-0">
                       <button
                         onClick={() => {
                           onViewProduct(product.id);
                           onClose();
                         }}
-                        className="text-sm font-medium text-on-surface hover:text-accent transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                       >
-                        {product.title}
+                        <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
                       </button>
-                      <p className="text-xs text-terracota font-semibold mt-0.5">{product.price}</p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex-1 min-w-0">
                         <button
-                          onClick={() => setQuantity(product.id, quantity - 1)}
-                          className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
-                          aria-label="Decrease quantity"
+                          onClick={() => {
+                            onViewProduct(product.id);
+                            onClose();
+                          }}
+                          className="text-sm font-medium text-on-surface hover:text-accent transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         >
-                          <Minus className="w-3 h-3" />
+                          {product.title}
                         </button>
-                        <span className="text-xs w-4 text-center">{quantity}</span>
-                        {!product.isOneOfOne && (
-                          <button
-                            onClick={() => setQuantity(product.id, quantity + 1)}
-                            className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
-                            aria-label="Increase quantity"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                        {isSoldOut ? (
+                          <p className="flex items-center gap-1 text-xs text-accent font-semibold mt-0.5">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0" /> No longer available
+                          </p>
+                        ) : (
+                          <p className="text-xs text-terracota font-semibold mt-0.5">{product.price}</p>
+                        )}
+                        {!isSoldOut && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <button
+                              onClick={() => setQuantity(product.id, quantity - 1)}
+                              className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs w-4 text-center">{quantity}</span>
+                            {!product.isOneOfOne && (
+                              <button
+                                onClick={() => setQuantity(product.id, quantity + 1)}
+                                className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
+                      <button
+                        onClick={() => removeItem(product.id)}
+                        className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-1 h-fit rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        aria-label={`Remove ${product.title}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => removeItem(product.id)}
-                      className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-1 h-fit rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
-                      aria-label={`Remove ${product.title}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
             {items.length > 0 && (
               <div className="p-5 border-t border-outline-variant/30 space-y-3">
+                {soldOutIds.size > 0 && (
+                  <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      {soldOutIds.size === 1 ? 'One piece has' : `${soldOutIds.size} pieces have`} sold
+                      since you added {soldOutIds.size === 1 ? 'it' : 'them'} — excluded from your order
+                      below.
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-on-surface-variant">Subtotal</span>
-                  <span className="font-semibold text-on-surface">{formatPeso(subtotalCents / 100)}</span>
+                  <span className="font-semibold text-on-surface">{formatPeso(availableSubtotalCents / 100)}</span>
                 </div>
                 <a
                   href={`mailto:acuavibe@gmail.com?subject=${encodeURIComponent(
                     'Order inquiry from acuaproject.vercel.app'
                   )}&body=${encodeURIComponent(
-                    `Hi ACUA! I'd like to order:\n\n${items
+                    `Hi ACUA! I'd like to order:\n\n${availableItems
                       .map((i) => `- ${i.product.title} x${i.quantity} (${i.product.price})`)
-                      .join('\n')}\n\nSubtotal: ${formatPeso(subtotalCents / 100)}`
+                      .join('\n')}\n\nSubtotal: ${formatPeso(availableSubtotalCents / 100)}`
                   )}`}
-                  className="btn-terracotta w-full justify-center"
+                  className={`btn-terracotta w-full justify-center ${
+                    availableItems.length === 0 ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                  aria-disabled={availableItems.length === 0}
                 >
                   Email to Order
                 </a>

@@ -1559,3 +1559,37 @@ fixed one more related bug found in the same pass: the Archive section's
 group-hover:opacity-100`), so a keyboard user tabbing onto it got no
 visual feedback at all — added `group-focus-within:opacity-100` so
 focusing the button reveals the overlay the same way hovering does.
+
+## 20. Cart never revalidated against live stock or price
+
+The cart persists to `localStorage` (`acua-cart-v2`) as a full snapshot
+of each product at the moment it was added — title, price, image,
+`isOneOfOne` — and never touches the database again until checkout.
+Since most of ACUA's catalog is 1-of-1 pieces, and "checkout" is really
+just emailing the cart contents to the shop to confirm and pay, this had
+a real, live consequence: if a customer added a one-of-one piece to their
+cart, left it there, and the piece sold to someone else in the
+meantime (marked `sold_out` by staff in Admin), the cart would still
+show it as orderable, include it in the subtotal, and let the "Email to
+Order" button draft an email requesting a piece that's already gone.
+
+**Fix**: `CartDrawer` now re-queries the `products` table for
+`id, sold_out` for every item currently in the cart each time the drawer
+opens (not continuously — no need to poll a closed drawer). Any item
+that's since sold out is shown dimmed, labeled "No longer available,"
+loses its quantity stepper, and is excluded from both the displayed
+subtotal and the emailed order — with a banner explaining why so the
+exclusion isn't silent. The subtotal math was moved out of `CartContext`
+(which has no way to know about live stock) and computed locally from
+just the still-available items.
+
+Verified without touching the real production database: mocked the
+Supabase REST response via Playwright's network interception (the
+classifier correctly blocked a direct `UPDATE` against the live
+`products` table, since it's a shared, real-money-adjacent resource —
+appropriately so) to simulate one of two seeded cart items having sold
+out, then confirmed live: the sold item shows "No longer available" and
+loses its stepper, the banner appears, the subtotal reflects only the
+available item (₱4,000 for 2× a ₱2,000 piece, correctly excluding the
+sold ₱1,000 one), and the "Email to Order" `mailto:` link's body includes
+the available item's title but not the sold-out one's.
