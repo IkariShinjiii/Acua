@@ -1,12 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useAnimationFrame } from 'framer-motion';
-import { REEL_ITEMS } from '../data/reel';
+import { supabase } from '../lib/supabaseClient';
+import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
 
 // px/second the reel drifts at when nothing is dragging it
 const AUTO_SCROLL_SPEED = 40;
 // How long to wait after a drag ends before the auto-drift resumes.
 const RESUME_DELAY_MS = 600;
+// "New Release" is a highlight reel, not the full catalog — capped so it
+// stays a quick skim even once there are many more products than this.
+const REEL_LIMIT = 8;
 
 // Wrap a translateX value into the canonical (-lapWidth, 0] range so the
 // duplicated content loops seamlessly in either direction.
@@ -18,8 +22,29 @@ function wrap(value, lapWidth) {
 }
 
 export default function ReviewReel({ onSelectProduct }) {
+  const [pieces, setPieces] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Sold-out items excluded deliberately: this is a "click through and buy
+    // it" highlight reel, not an archive of what used to be available.
+    supabase
+      .from('products')
+      .select('*')
+      .eq('sold_out', false)
+      .order('created_at', { ascending: false })
+      .limit(REEL_LIMIT)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setPieces(error || !data ? [] : data.map(mapProductRow));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Seamless loop: one full duplicated set, so half the track's width is one lap.
-  const duplicatedItems = [...REEL_ITEMS, ...REEL_ITEMS];
+  const duplicatedItems = pieces ? [...pieces, ...pieces] : [];
 
   const trackRef = useRef(null);
   const lapWidthRef = useRef(0);
@@ -35,7 +60,9 @@ export default function ReviewReel({ onSelectProduct }) {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, []);
+    // Re-measure once the real items replace the initial empty track —
+    // the loop math is meaningless until then.
+  }, [pieces]);
 
   // Real-time (Framer Motion) auto-drift loop — the same clock the drag
   // gesture itself runs on, so there's no fighting between the two.
@@ -87,7 +114,7 @@ export default function ReviewReel({ onSelectProduct }) {
             whileHover={{ y: -8, scale: 1.02 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             onClick={() => {
-              if (!dragMovedRef.current) onSelectProduct?.(item);
+              if (!dragMovedRef.current) onSelectProduct?.(item.id);
             }}
             className="w-[280px] sm:w-[320px] shrink-0 select-none group cursor-pointer"
           >
@@ -102,12 +129,15 @@ export default function ReviewReel({ onSelectProduct }) {
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 pointer-events-none" />
 
-              {/* Subtle Pill Tag */}
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-full bg-surface-elevated/85 backdrop-blur-md text-[10px] uppercase font-semibold tracking-widest text-on-surface shadow-sm">
-                  1-of-1 Relic
-                </span>
-              </div>
+              {/* Subtle Pill Tag — only for pieces actually flagged 1-of-1,
+                  not every "new release" by default. */}
+              {item.isOneOfOne && (
+                <div className="absolute top-4 left-4">
+                  <span className="px-3 py-1 rounded-full bg-surface-elevated/85 backdrop-blur-md text-[10px] uppercase font-semibold tracking-widest text-on-surface shadow-sm">
+                    1-of-1 Relic
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Product Meta */}

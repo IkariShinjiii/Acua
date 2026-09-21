@@ -1118,3 +1118,47 @@ both AdminView category dropdowns show only the remaining three
 categories; and, as a real (temporary, since-removed) admin account,
 confirmed no ring/earring items remain visible in either Inventory or
 Archive tabs.
+
+## 11. "New Release" marquee: clicking a product did nothing real
+
+The client reported the carousel wasn't clickable. Root cause went one
+level deeper than the click handler: `ReviewReel` was still rendering
+`src/data/reel.js` — a fully static, hand-written mock array flagged as a
+gap in §10 ("this file being unconnected to the real catalog means any
+future catalog change won't show up in the marquee automatically") — so
+its items never had a real database id to navigate to in the first place.
+`HomeView`'s `onSelectProduct` handler compounded it by ignoring whatever
+was passed and just scrolling to the grid below, regardless of which card
+was clicked.
+
+Fixed at the root rather than patching the symptom: `ReviewReel` now
+fetches real products directly from Supabase — `sold_out = false`
+(deliberately excluded; this is a "click through and buy it" highlight,
+not an archive of things no longer available), most recent first, capped
+at 8 (`REEL_LIMIT`) so it stays a quick skim rather than the whole
+catalog. `HomeView` now wires `onSelectProduct` straight to the same
+`onViewProduct` handler the Available Pieces grid already uses, so
+clicking a card opens *that exact product's* real detail page — matching
+the interaction pattern already established everywhere else on the site.
+
+Two follow-on fixes that fell out of switching to real data:
+- The "1-of-1 Relic" badge was shown unconditionally on every card before
+  (accurate by coincidence, since the old mock titles were all named like
+  one-off relics). Made it conditional on the real `is_one_of_one` flag,
+  matching how the badge behaves everywhere else in the app.
+- `lapWidthRef`'s measurement (needed for the seamless drag-loop math) ran
+  once on mount in the old version, when the mock array was available
+  synchronously. With an async fetch, mount-time measurement would read
+  `scrollWidth` off an empty track. Re-measures whenever `pieces` changes
+  instead.
+
+`src/data/reel.js` is now fully unused (confirmed via a full-codebase
+reference search) and was deleted.
+
+Verified live: the marquee shows real product titles (Azure Drop Pendant,
+Pearl Drop Chain, Woven Sand Bracelet — the actual remaining catalog), no
+trace of the old mock titles; clicking the first card (with a forced
+click, since the marquee's continuous auto-drift means Playwright's
+normal "wait until stable" check never resolves — not a real issue, an
+actual visitor can click a moving element fine) opens a product detail
+page whose `<h1>` title matches the clicked card's title exactly.

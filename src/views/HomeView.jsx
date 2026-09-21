@@ -137,12 +137,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </a>
           </div>
 
-          <ReviewReel
-            onSelectProduct={() => {
-              const el = document.getElementById('available-pieces');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
+          <ReviewReel onSelectProduct={onViewProduct} />
         </section>
 
         {/* 3. Available Pieces: Filter Tabs & Cloud UI Product Cards */}
