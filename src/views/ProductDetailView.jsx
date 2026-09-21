@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck } from 'lucide-react';
-import { AVAILABLE_PIECES } from '../data/products';
+import { supabase } from '../lib/supabaseClient';
+import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
 import { useCart } from '../context/CartContext';
 
@@ -9,8 +10,28 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [product, setProduct] = useState(undefined); // undefined = loading, null = not found
 
-  const product = AVAILABLE_PIECES.find((p) => p.id === productId);
+  useEffect(() => {
+    let cancelled = false;
+    setProduct(undefined);
+    supabase
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setProduct(error || !data ? null : mapProductRow(data));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
+
+  if (product === undefined) {
+    return <div className="min-h-screen bg-[#F9F6F0] pt-40 text-center text-sm text-[#57423b]">Loading…</div>;
+  }
 
   if (!product) {
     return (

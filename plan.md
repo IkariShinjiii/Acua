@@ -342,8 +342,11 @@ path for the losing payment.
 
 ## 6. Backend setup (Supabase)
 
-Status: connected to a live project; real auth wired; product/order data
-still mocked in `src/data/*.js`.
+Status: connected to a live project; real auth wired; storefront, Patron
+Dashboard, and AdminView all read/write real data now — no view left
+reading `src/data/*.js` mock arrays except static UI labels
+(`FILTER_TABS`, `COMMISSION_STAGES`, `ORDER_STAGES`, `commissionOptions.js`,
+and the unrelated `reel.js` marquee data, which has no backing table).
 
 - **Client**: `@supabase/supabase-js` is installed; `src/lib/supabaseClient.js`
   reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from the environment
@@ -430,9 +433,57 @@ still mocked in `src/data/*.js`.
   ```sql
   update public.profiles set is_admin = true where email = 'you@example.com';
   ```
-- **Not yet done**: wiring the mock-data reads in `src/data/*.js` over to
-  real Supabase queries, building the Patron Dashboard against this same
-  auth, and payment flows.
+- **Not yet done**: payment flows (deposit/checkout is still an honest
+  `mailto:`/manual-confirmation stand-in — see §5.3), reference image
+  upload to Supabase Storage for commission briefs, and real product
+  photos/prices for anything beyond the initial seed (§6.1 explains why
+  that content-gathering stalled).
+
+### 6.1 Storefront + AdminView wired to real data
+
+Everything that used to read `src/data/products.js` / `archive.js` /
+`commissionBriefs.js` / `orders.js` mock arrays now reads Supabase directly:
+`HomeView`, `SearchOverlay`, `ProductDetailView`, and every tab of
+`AdminView` (`CommissionPipeline`, `OrderFulfillment`, `InventoryCuration`).
+`src/lib/mapProduct.js` holds the two mapping functions
+(`mapProductRow`/`mapArchiveRow`) that translate a Supabase row
+(snake_case, `price_cents`) into the shape every view was already built
+against (camelCase, a formatted price string) — the fetch is the only
+thing that changed in each view, not the rendering logic.
+
+The original mock catalog was seeded into the real tables verbatim
+(`supabase/seed.sql`) so the storefront isn't empty. `products.js` and
+`archive.js` are gone now except for `FILTER_TABS` (a static UI constant,
+kept in `products.js`), since nothing else in them was still referenced
+once every view read from Supabase.
+
+**A real bug this surfaced**: `COMMISSION_STAGES` had hyphenated ids
+(`'brief-submitted'`) while the actual Postgres enum uses underscores
+(`'brief_submitted'`) — `PatronDashboardView` (built the prior pass) was
+comparing a real brief's status against these ids and silently always
+falling back to index 0, i.e. every real commission would have shown
+"Brief Submitted" regardless of its actual stage. Fixed by making
+`COMMISSION_STAGES`/`ORDER_STAGES` hold only the enum-matching ids
+(deleted `COMMISSION_BRIEFS`/`ORDERS`, the mock data arrays, since nothing
+referenced them anymore once AdminView stopped importing them).
+
+**Also fixed**: `handleImageError` would set `img.src` to the literal
+string `"undefined"` (a real, 404-ing URL) when no fallback exists —
+`archive_items` has no fallback-image column, so every archive card's
+`onError` was hitting this. Hardened the shared helper to no-op without a
+fallback instead of patching each call site.
+
+Verified end-to-end against the live database, not just the UI: seeded
+data renders on the real homepage; submitted a fresh brief through the
+live form, sent it a quote as a real (temporarily-promoted, since-reverted)
+admin account through the actual AdminView UI, and confirmed both the
+brief's new status/quote and a separate "mark sold out" toggle landed in
+Postgres via direct query — then cleaned up every piece of test data
+(brief, sold-out flag, admin flag) afterward.
+
+The cart's `localStorage` key was bumped to `v2` since product ids moved
+from static strings (`'ap-1'`) to real Supabase UUIDs — a cart saved under
+the old scheme would otherwise point at ids that no longer exist.
 
 Two dead file groups were removed as part of this pass: `CommissionForm.jsx`/
 `ProductCarousel.jsx` (unused duplicate/experimental components) and an

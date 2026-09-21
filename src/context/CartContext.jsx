@@ -2,7 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { parsePesoToNumber } from '../lib/currency';
 
 const CartContext = createContext(null);
-const STORAGE_KEY = 'acua-cart-v1';
+// v2: product ids switched from static strings ('ap-1') to real Supabase
+// UUIDs once the storefront was wired to the database — bumped so any
+// cart saved under the old id scheme doesn't resolve to the wrong/missing
+// product.
+const STORAGE_KEY = 'acua-cart-v2';
 
 function readStoredCart() {
   try {

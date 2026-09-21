@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search } from 'lucide-react';
-import { AVAILABLE_PIECES } from '../data/products';
+import { supabase } from '../lib/supabaseClient';
+import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
 
 export default function SearchOverlay({ open, onClose, onSelectProduct }) {
   const [query, setQuery] = useState('');
+  const [pieces, setPieces] = useState([]);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -13,6 +15,10 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
       setQuery('');
       // Focus after the entrance animation starts rendering the input.
       const id = setTimeout(() => inputRef.current?.focus(), 50);
+      supabase
+        .from('products')
+        .select('*')
+        .then(({ data, error }) => setPieces(error || !data ? [] : data.map(mapProductRow)));
       return () => clearTimeout(id);
     }
   }, [open]);
@@ -28,7 +34,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
 
   const q = query.trim().toLowerCase();
   const results = q
-    ? AVAILABLE_PIECES.filter((p) =>
+    ? pieces.filter((p) =>
         [p.title, p.category, p.material].some((field) => field.toLowerCase().includes(q))
       )
     : [];

@@ -1,17 +1,47 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check } from 'lucide-react';
 import { InstagramIcon, FacebookIcon } from '../components/SocialIcons';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
-import { AVAILABLE_PIECES, FILTER_TABS } from '../data/products';
-import { ARCHIVE_ITEMS } from '../data/archive';
+import { FILTER_TABS } from '../data/products';
+import { supabase } from '../lib/supabaseClient';
+import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { useCart } from '../context/CartContext';
 
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
   const { addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
+  const [pieces, setPieces] = useState(null);
+  const [archiveItems, setArchiveItems] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setPieces(error || !data ? [] : data.map(mapProductRow));
+      });
+
+    supabase
+      .from('archive_items')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleAdd = (piece) => {
     addItem(piece);
     setAddedItem(piece.id);
@@ -19,9 +49,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   };
 
   const filteredPieces =
-    activeFilter === 'All'
-      ? AVAILABLE_PIECES
-      : AVAILABLE_PIECES.filter((p) => p.category === activeFilter);
+    pieces === null
+      ? []
+      : activeFilter === 'All'
+      ? pieces
+      : pieces.filter((p) => p.category === activeFilter);
 
   return (
     <div className="bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased min-h-screen flex flex-col selection:bg-chile-rojo selection:text-white">
@@ -146,6 +178,15 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </div>
           </div>
 
+          {pieces === null && (
+            <p className="text-center text-sm text-[#57423b] py-16">Loading pieces…</p>
+          )}
+          {pieces !== null && filteredPieces.length === 0 && (
+            <p className="text-center text-sm text-[#57423b] py-16">
+              No pieces in this category yet.
+            </p>
+          )}
+
           {/* 3-Column Bento Cloud Product Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <AnimatePresence mode="popLayout">
@@ -254,7 +295,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
 
             {/* 4-Column Asymmetric Staggered Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-16">
-              {ARCHIVE_ITEMS.map((item) => (
+              {archiveItems?.map((item) => (
                 <div
                   key={item.id}
                   className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] bg-[#ede4d8]`}
