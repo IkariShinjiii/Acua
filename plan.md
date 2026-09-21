@@ -722,3 +722,35 @@ admin account: added a test piece with the checkbox checked, confirmed the
 badge and toggle button reflected `is_one_of_one = true`, toggled it back
 off, and confirmed the database row updated correctly both times before
 cleaning up the test piece and account.
+
+### 6.8 "The Archive" had zero admin management — new tab added
+
+Found while continuing to look for standalone work: `archive_items` (the
+storefront's "The Archive" section, past 1-of-1 creations, feeds "Request
+Similar Piece") had no admin UI at all — `AdminView` never queried or
+rendered it. The only way to add, edit, or remove an Archive piece was a
+raw SQL statement, which isn't something the business owner using this
+dashboard can run.
+
+Added a fourth AdminView tab, **The Archive**, with:
+- A grid of existing archive pieces (thumbnail, title, category, resolved
+  material label) with a **Remove** button (confirms before deleting).
+- An **Add Archive Piece** form — title, a category `<select>` constrained
+  to `JEWELRY_CATEGORIES`, a material `<select>` constrained to
+  `MATERIAL_OPTIONS` ids, image URL, optional alt text.
+
+The category/material fields are constrained dropdowns rather than free
+text specifically because §6.5 already found what happens when
+`archive_items`/`commission_briefs` expect an exact enum-like value and get
+arbitrary text instead (the material-mismatch bug) — building the same
+mistake into the one form that writes this table would have undone that
+fix. Every Archive piece is inherently one-of-one already (that's what
+"past creation, sold, kept for inspiration" means), so there's no separate
+`is_one_of_one` toggle here the way there is in Inventory.
+
+Verified end-to-end as a real (temporarily-provisioned, since-removed)
+admin account against the live database: the 4 real seeded Archive pieces
+listed correctly, added a real test piece through the form (confirmed it
+appeared in both the UI and Postgres), removed it through the UI's Remove
+button, and confirmed via direct query that the table was back to exactly
+4 rows with zero leftovers.

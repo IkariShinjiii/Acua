@@ -4,24 +4,28 @@ import {
   Hammer,
   Package,
   Gem,
+  Archive,
   ChevronRight,
   Truck,
   CheckCircle2,
   Plus,
   Send,
+  Trash2,
   LayoutDashboard,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { mapProductRow } from '../lib/mapProduct';
+import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { parsePesoToNumber, formatPeso } from '../lib/currency';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { FILTER_TABS } from '../data/products';
+import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS } from '../data/commissionOptions';
 
 const TABS = [
   { id: 'commissions', label: 'Commission Pipeline', icon: Hammer },
   { id: 'orders', label: 'Order Fulfillment', icon: Package },
   { id: 'inventory', label: 'Inventory & Site Curation', icon: Gem },
+  { id: 'archive', label: 'The Archive', icon: Archive },
 ];
 
 function stageIndex(stages, id) {
@@ -514,6 +518,168 @@ function InventoryCuration({ pieces, onUpdated }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* The Archive                                                          */
+/* ------------------------------------------------------------------ */
+function ArchiveCuration({ archiveItems, onUpdated }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [draft, setDraft] = useState({
+    title: '',
+    category: JEWELRY_CATEGORIES[0],
+    material: MATERIAL_OPTIONS[0].id,
+    image: '',
+    alt: '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const addItem = async (e) => {
+    e.preventDefault();
+    if (!draft.title || !draft.image) return;
+    setSaving(true);
+    const { error } = await supabase.from('archive_items').insert({
+      title: draft.title,
+      category: draft.category,
+      material: draft.material,
+      image_url: draft.image,
+      alt_text: draft.alt || draft.title,
+    });
+    setSaving(false);
+    if (error) {
+      alert(`Couldn't save that piece: ${error.message}`);
+      return;
+    }
+    setDraft({ title: '', category: JEWELRY_CATEGORIES[0], material: MATERIAL_OPTIONS[0].id, image: '', alt: '' });
+    setShowAddForm(false);
+    onUpdated();
+  };
+
+  const removeItem = async (item) => {
+    if (!confirm(`Remove "${item.title}" from The Archive? This can't be undone.`)) return;
+    setDeletingId(item.id);
+    const { error } = await supabase.from('archive_items').delete().eq('id', item.id);
+    setDeletingId(null);
+    if (error) {
+      alert(`Couldn't remove that piece: ${error.message}`);
+      return;
+    }
+    onUpdated();
+  };
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-on-surface-variant max-w-2xl">
+        Past 1-of-1 creations shown on the storefront's "The Archive" section — sold, but kept
+        as inspiration for "Request Similar Piece" commissions. Every piece here is inherently
+        one-of-one; there's no separate flag to set.
+      </p>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowAddForm((v) => !v)}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all"
+        >
+          <Plus className="w-4 h-4" /> Add Archive Piece
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={addItem}
+            className="overflow-hidden bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            <input
+              required
+              placeholder="Title *"
+              value={draft.title}
+              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+            />
+            <select
+              value={draft.category}
+              onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+            >
+              {JEWELRY_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <select
+              value={draft.material}
+              onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+            >
+              {MATERIAL_OPTIONS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <input
+              required
+              placeholder="Image URL *"
+              value={draft.image}
+              onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+            />
+            <input
+              placeholder="Image alt text (optional — falls back to title)"
+              value={draft.alt}
+              onChange={(e) => setDraft((d) => ({ ...d, alt: e.target.value }))}
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+            />
+            <button
+              type="submit"
+              disabled={saving}
+              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-on-surface text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save Piece'}
+            </button>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {archiveItems.map((item) => (
+          <div key={item.id} className="bg-white rounded-2xl shadow-cloud-sm overflow-hidden">
+            <div className="relative aspect-square bg-surface-container-low">
+              <img src={item.image} alt={item.alt ?? item.title} className="w-full h-full object-cover" />
+              <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                1-of-1
+              </span>
+            </div>
+            <div className="p-4 space-y-2">
+              <p className="font-sans text-sm font-medium text-on-surface">{item.title}</p>
+              <p className="text-xs text-on-surface-variant">
+                {item.category} • {MATERIAL_OPTIONS.find((m) => m.id === item.material)?.label ?? item.material}
+              </p>
+              <button
+                onClick={() => removeItem(item)}
+                disabled={deletingId === item.id}
+                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors bg-surface-container text-chile-rojo hover:bg-chile-rojo hover:text-white disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {deletingId === item.id ? 'Removing…' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        ))}
+        {archiveItems.length === 0 && (
+          <p className="col-span-full text-center text-sm text-on-surface-variant py-12">
+            The Archive is empty — add a past creation above.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Root                                                                  */
 /* ------------------------------------------------------------------ */
 export default function AdminView() {
@@ -521,6 +687,7 @@ export default function AdminView() {
   const [briefs, setBriefs] = useState(null);
   const [orders, setOrders] = useState(null);
   const [pieces, setPieces] = useState(null);
+  const [archiveItems, setArchiveItems] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
 
@@ -549,6 +716,14 @@ export default function AdminView() {
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (!cancelled) setPieces(error || !data ? [] : data.map(mapProductRow));
+      });
+
+    supabase
+      .from('archive_items')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!cancelled) setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
       });
 
     return () => {
@@ -616,6 +791,12 @@ export default function AdminView() {
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
             <InventoryCuration pieces={pieces} onUpdated={refresh} />
+          ))}
+        {activeTab === 'archive' &&
+          (archiveItems === null ? (
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : (
+            <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} />
           ))}
       </div>
     </div>
