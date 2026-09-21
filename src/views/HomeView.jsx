@@ -44,8 +44,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar }) {
             </h1>
 
             <p className="mt-7 max-w-md text-white/80 text-base sm:text-lg font-sans font-light drop-shadow-[0_1px_12px_rgba(0,0,0,0.3)]">
-              Handcrafted jewelry inspired by the tides — cast in gold, silver, and
-              salvaged sea glass for coastal permanence.
+              Handcrafted accessories inspired by the tides — non-tarnish finishes, natural
+              stones, and salvaged sea glass for coastal permanence.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
@@ -84,7 +84,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
             <div>
               <h2 className="font-serif text-3xl sm:text-4xl text-[#1d1c16] font-normal tracking-tight">
-                New Arrivals
+                New Release
               </h2>
               <p className="font-sans text-xs sm:text-sm text-[#57423b] mt-1.5 hidden sm:block">
                 Seasonal artifacts hand-sculpted in limited batches — hover to inspect
@@ -118,7 +118,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar }) {
                 Available Pieces
               </h2>
               <p className="font-sans text-xs sm:text-sm text-[#57423b] mt-1.5">
-                Singular artifacts forged for modern permanence
+                Singular artifacts hand-assembled for modern permanence
               </p>
             </div>
 

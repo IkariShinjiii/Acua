@@ -9,7 +9,7 @@ import {
   X,
   ArrowRight,
 } from 'lucide-react';
-import { JEWELRY_CATEGORIES, METAL_OPTIONS, BUDGET_TIERS } from '../data/commissionOptions';
+import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS, BUDGET_TIERS } from '../data/commissionOptions';
 
 export default function CommissionView({ prefill }) {
   const [formData, setFormData] = useState(() => ({
@@ -18,8 +18,8 @@ export default function CommissionView({ prefill }) {
     phone: '',
     timeline: 'Flexible (4-6 Weeks)',
     category: prefill?.category ?? 'Sculptural Ring',
-    metal: prefill?.metal ?? '18k-gold',
-    budget: '$800 – $1,500',
+    material: prefill?.material ?? 'non-tarnish-gold-tone',
+    budget: '₱45,000 – ₱84,000',
     narrative: prefill ? `Inspired by "${prefill.title}" from The Archive — ` : '',
   }));
 
@@ -165,7 +165,7 @@ export default function CommissionView({ prefill }) {
                     Custom Commissions
                   </h1>
                   <p className="text-xs sm:text-sm text-[#57423b] leading-relaxed font-sans">
-                    Collaborate directly with our master jeweler. From molten recycled gold to raw ocean pearls, we craft a singular artifact sculpted around your story.
+                    Collaborate directly with our master artisan. From non-tarnish premium alloys to raw natural stones and pearls, we hand-craft a singular piece sculpted around your story.
                   </p>
                 </div>
 
@@ -179,7 +179,7 @@ export default function CommissionView({ prefill }) {
                     />
                     <p className="text-xs text-[#57423b] leading-snug">
                       Inspired by <span className="font-semibold text-[#1d1c16]">{prefill.title}</span> from The Archive.
-                      We've pre-filled the category and metal below — adjust anything you'd like.
+                      We've pre-filled the category and material below — adjust anything you'd like.
                     </p>
                   </div>
                 )}
@@ -256,17 +256,17 @@ export default function CommissionView({ prefill }) {
                 </div>
 
                 {/* --------------------------------------------------- */}
-                {/* Section 2: Piece Category & Metal Preference       */}
+                {/* Section 2: Piece Category & Material Preference    */}
                 {/* --------------------------------------------------- */}
                 <div className="space-y-4 pt-2">
                   <span className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#57423b] block">
-                    02. Artifact Anatomy & Metals
+                    02. Artifact Anatomy & Materials
                   </span>
 
                   {/* Category Pill Buttons (Zero borders, soft cloud states) */}
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-[#1d1c16] block">
-                      Jewelry Category
+                      Accessory Category
                     </label>
                     <div className="flex flex-wrap gap-2 sm:gap-2.5">
                       {JEWELRY_CATEGORIES.map((cat) => {
@@ -289,18 +289,18 @@ export default function CommissionView({ prefill }) {
                     </div>
                   </div>
 
-                  {/* Metal Options (Border-free tactile cloud cards) */}
+                  {/* Material Options (Border-free tactile cloud cards) */}
                   <div className="space-y-2 pt-2">
                     <label className="text-xs font-medium text-[#1d1c16] block">
-                      Precious Metal Selection
+                      Material Selection
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {METAL_OPTIONS.map((metal) => {
-                        const isSelected = formData.metal === metal.id;
+                      {MATERIAL_OPTIONS.map((option) => {
+                        const isSelected = formData.material === option.id;
                         return (
                           <div
-                            key={metal.id}
-                            onClick={() => setFormData((prev) => ({ ...prev, metal: metal.id }))}
+                            key={option.id}
+                            onClick={() => setFormData((prev) => ({ ...prev, material: option.id }))}
                             className={`cursor-pointer p-4 rounded-2xl transition-all border-none ${
                               isSelected
                                 ? 'bg-white shadow-cloud text-[#1d1c16] ring-2 ring-chile-rojo'
@@ -308,7 +308,7 @@ export default function CommissionView({ prefill }) {
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-semibold">{metal.label}</span>
+                              <span className="text-xs font-semibold">{option.label}</span>
                               <div
                                 className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${
                                   isSelected ? 'bg-chile-rojo' : 'bg-[#ece8df]'
@@ -317,7 +317,7 @@ export default function CommissionView({ prefill }) {
                                 {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                               </div>
                             </div>
-                            <span className="text-[11px] text-[#57423b] block">{metal.note}</span>
+                            <span className="text-[11px] text-[#57423b] block">{option.note}</span>
                           </div>
                         );
                       })}
@@ -378,7 +378,7 @@ export default function CommissionView({ prefill }) {
                       required
                       value={formData.narrative}
                       onChange={handleInputChange}
-                      placeholder="Describe the desired contours, raw stone choices (Keshi pearl, natural carnelian, sea sapphire), molten textures, or the personal milestone behind this piece..."
+                      placeholder="Describe the desired contours, raw stone choices (Keshi pearl, natural carnelian, sea sapphire), bead textures, or the personal milestone behind this piece..."
                       className="cloud-input resize-none"
                     />
                   </div>
@@ -494,7 +494,7 @@ export default function CommissionView({ prefill }) {
           <p className="font-serif text-base tracking-widest text-[#1d1c16] uppercase">
             A C U A
           </p>
-          <p>© {new Date().getFullYear()} ACUA Artisanal Jewelry. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ACUA Handmade Accessories. All rights reserved.</p>
         </div>
       </footer>
 

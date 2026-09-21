@@ -107,7 +107,7 @@ function CommissionPipeline({ briefs, setBriefs }) {
                     />
                   </div>
                   <p className="text-xs text-[#57423b] mt-1">
-                    {brief.email} • {brief.category} • {brief.metal}
+                    {brief.email} • {brief.category} • {brief.material}
                   </p>
                   <p className="text-sm text-[#1d1c16]/80 mt-3 leading-relaxed max-w-2xl">
                     {brief.narrative}
@@ -127,7 +127,7 @@ function CommissionPipeline({ briefs, setBriefs }) {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Quote price (e.g. $950)"
+                        placeholder="Quote price (e.g. ₱50,000)"
                         value={quoteDrafts[brief.id] ?? ''}
                         onChange={(e) =>
                           setQuoteDrafts((prev) => ({ ...prev, [brief.id]: e.target.value }))
@@ -320,7 +320,7 @@ function InventoryCuration({ pieces, setPieces }) {
             />
             <input
               required
-              placeholder="Price (e.g. $220) *"
+              placeholder="Price (e.g. ₱12,000) *"
               value={draft.price}
               onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))}
               className="rounded-xl bg-[#f8f3ea] px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"

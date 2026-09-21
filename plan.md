@@ -8,8 +8,13 @@
 ## 1. Project overview & core identity
 
 - **Brand name**: Acua (strictly "Acua" — no secondary words like "Atelier").
-- **Brand identity**: high-end, artisanal handmade jewelry — 1-of-1 unique
-  artifacts plus repeatable collections.
+- **Brand identity**: high-end, handmade accessories — 1-of-1 unique
+  artifacts plus repeatable collections. **Not metal jewelry**: no solid
+  gold/silver, no metal casting or forging. Pieces mix synthetic and
+  natural materials with premium components and non-tarnish beads/pendants
+  (non-tarnish gold-tone or silver-tone alloy, not solid precious metal).
+  This corrects the original blueprint text below, which described the
+  brand as gold/silversmith jewelry — that was inaccurate.
 - **Aesthetic**: Dribbble-inspired minimalist luxury.
 - **Color palette**: warm sand/cream background (`#F9F6F0`), deep rich
   terracotta accents (`#A04723`), pure white component blocks (`bg-white`).
@@ -97,8 +102,9 @@ Border-free, single-page collaborative request form in clear stages:
 
 1. **Patron Details** — full name, email, phone/Instagram handle, desired
    timeline selector.
-2. **Artifact Anatomy & Metals** — jewelry category pills, precious metal
-   preference (e.g. Fairmined Gold, Recycled Silver).
+2. **Artifact Anatomy & Materials** — accessory category pills, material
+   preference (e.g. non-tarnish gold-tone alloy, natural & synthetic mix —
+   see the brand identity correction in §1).
 3. **Concept & Vision** — narrative text area, reference image upload.
 
 No payment is collected at submission — see §5.1 for the full resolved
@@ -260,7 +266,7 @@ quick-switcher in `App.jsx` for now, not linked from the public Navbar.
 
 The Archive's "Request Similar Piece" is also wired end-to-end: clicking it
 on any archived item navigates to the Commission form pre-filled with that
-item's category and metal (via a `commissionPrefill` state lifted to
+item's category and material (via a `commissionPrefill` state lifted to
 `App.jsx`), matching the resolved decision in §5.1. Availability-based
 branching in "Available Pieces" (sold-out → no cart, per §5.1) is not yet
 built — `AVAILABLE_PIECES` now has a `soldOut` field the admin can toggle,
@@ -306,7 +312,7 @@ Status: schema written, not yet connected to a live project.
     roles table).
   - `products` — the "Available Pieces" catalog; `is_one_of_one` +
     `sold_out` drive the §5.1 storefront branch.
-  - `archive_items` — past sold 1-of-1 pieces; `category`/`metal` seed the
+  - `archive_items` — past sold 1-of-1 pieces; `category`/`material` seed the
     Commission form pre-fill.
   - `commission_briefs` — mirrors `COMMISSION_STAGES` from
     `src/data/commissionBriefs.js` via a Postgres enum, so the mock data's

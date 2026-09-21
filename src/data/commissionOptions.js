@@ -2,20 +2,20 @@
 export const JEWELRY_CATEGORIES = [
   'Sculptural Ring',
   'Necklace / Choker',
-  'Molten Cuff',
+  'Statement Cuff',
   'Artisanal Earrings',
   'Ceremonial / Suite',
 ];
 
-export const METAL_OPTIONS = [
-  { id: '18k-gold', label: '18k Fairmined Gold', note: 'Rich molten luster' },
-  { id: '14k-rose', label: '14k Warm Rose Gold', note: 'Subtle blush tone' },
-  { id: '925-silver', label: '925 Recycled Silver', note: 'Cool chiseled finish' },
+export const MATERIAL_OPTIONS = [
+  { id: 'non-tarnish-gold-tone', label: 'Non-Tarnish Gold-Tone Alloy', note: 'Warm luster, won\'t fade or tarnish' },
+  { id: 'non-tarnish-silver-tone', label: 'Non-Tarnish Silver-Tone Alloy', note: 'Cool, clean finish that stays bright' },
+  { id: 'natural-synthetic-mix', label: 'Natural & Synthetic Mix', note: 'Premium beads, natural stone, and resin combined' },
 ];
 
 export const BUDGET_TIERS = [
-  { id: 'tier-1', range: '$400 – $800', label: 'Single Stone / Band' },
-  { id: 'tier-2', range: '$800 – $1,500', label: 'Molten Casting' },
-  { id: 'tier-3', range: '$1,500 – $3,000', label: 'Raw Pearl / Gem' },
-  { id: 'tier-4', range: '$3,000+', label: 'Heirloom Suite' },
+  { id: 'tier-1', range: '₱22,000 – ₱45,000', label: 'Single Stone / Band' },
+  { id: 'tier-2', range: '₱45,000 – ₱84,000', label: 'Handcrafted Assembly' },
+  { id: 'tier-3', range: '₱84,000 – ₱168,000', label: 'Raw Pearl / Gem' },
+  { id: 'tier-4', range: '₱168,000+', label: 'Heirloom Suite' },
 ];
