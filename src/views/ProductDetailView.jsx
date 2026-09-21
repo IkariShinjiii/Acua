@@ -29,6 +29,10 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
     };
   }, [productId]);
 
+  useEffect(() => {
+    document.title = product ? `${product.title} | ACUA` : 'ACUA | Handcrafted by the Coast';
+  }, [product]);
+
   if (product === undefined) {
     return <div className="min-h-screen bg-sand pt-40 text-center text-sm text-on-surface-variant">Loading…</div>;
   }

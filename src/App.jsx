@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { LogOut, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import CommissionView from './views/CommissionView';
 import HomeView from './views/HomeView';
@@ -27,6 +27,16 @@ const VIEW_LABELS = {
   admin: 'Admin',
   dashboard: 'Dashboard',
   product: 'Product',
+};
+
+const DEFAULT_TITLE = 'ACUA | Handcrafted by the Coast';
+// Every other view gets its own tab title so multiple tabs/history entries
+// are distinguishable — 'product' is deliberately left out here since
+// ProductDetailView overrides it with the actual piece's name once loaded.
+const DOCUMENT_TITLES = {
+  commission: 'Custom Request | ACUA',
+  admin: 'Admin | ACUA',
+  dashboard: 'My Account | ACUA',
 };
 
 // Real gate: only a signed-in account with profiles.is_admin = true sees
@@ -212,6 +222,11 @@ export default function App() {
   const [dashboardInitialTab, setDashboardInitialTab] = useState(undefined);
   const { user, signOut, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
+
+  useEffect(() => {
+    if (currentView === 'product') return; // ProductDetailView sets its own once loaded
+    document.title = DOCUMENT_TITLES[currentView] ?? DEFAULT_TITLE;
+  }, [currentView]);
 
   if (passwordRecovery) {
     return <ResetPasswordGate />;

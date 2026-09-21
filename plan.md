@@ -1593,3 +1593,21 @@ loses its stepper, the banner appears, the subtotal reflects only the
 available item (₱4,000 for 2× a ₱2,000 piece, correctly excluding the
 sold ₱1,000 one), and the "Email to Order" `mailto:` link's body includes
 the available item's title but not the sold-out one's.
+
+## 21. Every page showed the same browser tab title
+
+The whole site is one SPA view-switch, and `document.title` was never
+touched after the initial static `<title>` in `index.html` — every view
+(Home, Commission, My Account, Admin, every single product) showed the
+exact same "ACUA | Handcrafted by the Coast" tab title. Added a
+`useEffect` in `App.jsx` keyed on `currentView` that sets a distinct
+title per view (`Custom Request | ACUA`, `My Account | ACUA`,
+`Admin | ACUA`), and a separate effect in `ProductDetailView` that sets
+the tab title to the actual piece's name once it loads (falling back to
+the site default while loading or if the product isn't found), since
+`App.jsx` has no way to know which product is showing.
+
+Verified live: Home shows the default brand title, Custom Request shows
+"Custom Request | ACUA", and opening a piece from Available Pieces
+updates the tab to that piece's real name (e.g. "Horizon Line Bangle |
+ACUA") once its data loads.
