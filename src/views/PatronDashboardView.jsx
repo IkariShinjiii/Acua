@@ -119,7 +119,7 @@ export default function PatronDashboardView({ setCurrentView }) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-                  isActive ? 'bg-chile-rojo text-white' : 'bg-white text-on-surface hover:bg-surface-container shadow-cloud-sm'
+                  isActive ? 'bg-chile-rojo text-white' : 'bg-surface-elevated text-on-surface hover:bg-surface-container shadow-cloud-sm'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -144,7 +144,7 @@ export default function PatronDashboardView({ setCurrentView }) {
             {orders?.map((order) => {
               const idx = stageIndex(ORDER_STAGES, order.status);
               return (
-                <div key={order.id} className="bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6">
+                <div key={order.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
                       <h3 className="font-serif text-lg text-on-surface">
@@ -183,7 +183,7 @@ export default function PatronDashboardView({ setCurrentView }) {
             {briefs?.map((brief) => {
               const idx = stageIndex(COMMISSION_STAGES, brief.status);
               return (
-                <div key={brief.id} className="bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6">
+                <div key={brief.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
                       <h3 className="font-serif text-lg text-on-surface">{brief.category}</h3>

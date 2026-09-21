@@ -198,7 +198,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35 }}
-                  className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-white shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
+                  className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
                   onClick={() => onViewProduct?.(piece.id)}
                 >
                   {/* Square Aspect Ratio Product Thumbnail */}
@@ -211,7 +211,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     />
                     {piece.soldOut && (
                       <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
-                        <span className="bg-white text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                        <span className="bg-surface-elevated text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
                           Sold Out
                         </span>
                       </div>
@@ -335,7 +335,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     )}
                     <button
                       onClick={() => onRequestSimilar?.({ ...item, source: 'archive' })}
-                      className="bg-white text-chile-rojo font-sans text-[11px] font-semibold uppercase tracking-wider px-4 py-2 rounded-full shadow-sm hover:bg-sunset transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
+                      className="bg-surface-elevated text-chile-rojo font-sans text-[11px] font-semibold uppercase tracking-wider px-4 py-2 rounded-full shadow-sm hover:bg-sunset transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
                     >
                       Request Similar Piece
                     </button>

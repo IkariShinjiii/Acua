@@ -129,7 +129,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
                 setError('');
               }}
               className={`flex-1 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-                mode === m ? 'bg-white text-on-surface shadow-cloud-sm' : 'text-on-surface-variant bg-transparent'
+                mode === m ? 'bg-surface-elevated text-on-surface shadow-cloud-sm' : 'text-on-surface-variant bg-transparent'
               }`}
             >
               {m === 'login' ? 'Log In' : 'Sign Up'}

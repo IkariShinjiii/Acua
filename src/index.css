@@ -11,10 +11,41 @@
    - Large rounded organic radii (rounded-3xl / rounded-[32px])
    ========================================================================== */
 
+/* Theme-aware neutrals for light/dark mode. Each Tailwind token that reads
+   one of these (tailwind.config.js) resolves through rgb(var(...) /
+   <alpha-value>), so every `text-on-surface`, `bg-surface-container-low/80`
+   etc. across the app repaints on the .dark class toggle alone — no
+   `dark:` variant needed at any of the ~350 call sites. Brand accent colors
+   (chile-rojo/terracota/olive/sunset) are deliberately not here; they stay
+   flat hex and unchanged between themes since they're brand identity, not
+   surface/text neutrals. */
+:root {
+  --color-sand: 249 246 240; /* #F9F6F0 page background */
+  --color-on-surface: 29 28 22; /* #1d1c16 primary text */
+  --color-on-surface-variant: 87 66 59; /* #57423b secondary text */
+  --color-surface-elevated: 255 255 255; /* #ffffff card/input surfaces */
+  --color-surface-container-low: 248 243 234; /* #f8f3ea */
+  --color-surface-container: 242 237 228; /* #f2ede4 */
+  --color-surface-container-high: 236 232 223; /* #ece8df */
+  --color-outline-variant: 222 192 183; /* #dec0b7 borders */
+  color-scheme: light;
+}
+
+.dark {
+  --color-sand: 26 24 21; /* deep warm near-black, not cold gray */
+  --color-on-surface: 242 237 228;
+  --color-on-surface-variant: 201 184 174;
+  --color-surface-elevated: 36 32 25;
+  --color-surface-container-low: 42 37 30;
+  --color-surface-container: 50 44 35;
+  --color-surface-container-high: 58 51 41;
+  --color-outline-variant: 74 65 54;
+  color-scheme: dark;
+}
+
 @layer base {
   html {
-    @apply scroll-smooth antialiased;
-    background-color: #F9F6F0;
+    @apply scroll-smooth antialiased bg-sand;
   }
 
   body {
@@ -34,12 +65,12 @@
 @layer components {
   /* Border-Free "Cloud" Card Component */
   .cloud-card {
-    @apply border-none rounded-[32px] sm:rounded-[40px] bg-white/90 backdrop-blur-md shadow-cloud-lg transition-all duration-300;
+    @apply border-none rounded-[32px] sm:rounded-[40px] bg-surface-elevated/90 backdrop-blur-md shadow-cloud-lg transition-all duration-300;
   }
 
   /* Cloud Input Field: Zero borders, soft white/cream background, inset depth */
   .cloud-input {
-    @apply w-full border-none outline-none rounded-2xl bg-surface-container-low/80 px-4 py-3.5 text-sm text-on-surface placeholder:text-on-surface/40 shadow-input-inset focus:bg-white focus:shadow-cloud-sm transition-all duration-200;
+    @apply w-full border-none outline-none rounded-2xl bg-surface-container-low/80 px-4 py-3.5 text-sm text-on-surface placeholder:text-on-surface/40 shadow-input-inset focus:bg-surface-elevated focus:shadow-cloud-sm transition-all duration-200;
   }
 
   /* Primary High-Impact Brand Action Button */

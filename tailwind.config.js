@@ -8,8 +8,21 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Theme-aware neutrals: values live in CSS variables (src/index.css,
+        // :root vs .dark) so light/dark mode is one class toggle instead of
+        // a `dark:` variant on every one of the ~350 places these are used.
+        // Brand accents (chile-rojo/terracota/olive/sunset) stay flat hex —
+        // they're brand identity, not surface/text neutrals, and read fine
+        // against both themes unchanged.
+        "on-surface": "rgb(var(--color-on-surface) / <alpha-value>)",
+        "on-surface-variant": "rgb(var(--color-on-surface-variant) / <alpha-value>)",
+        "surface-elevated": "rgb(var(--color-surface-elevated) / <alpha-value>)",
+        "surface-container-low": "rgb(var(--color-surface-container-low) / <alpha-value>)",
+        "surface-container": "rgb(var(--color-surface-container) / <alpha-value>)",
+        "surface-container-high": "rgb(var(--color-surface-container-high) / <alpha-value>)",
+        "outline-variant": "rgb(var(--color-outline-variant) / <alpha-value>)",
+
         // Design Token Colors
-        "surface-container-high": "#ece8df",
         "on-error-container": "#93000a",
         "on-secondary-fixed": "#2d1600",
         "primary-fixed-dim": "#ffb59e",
@@ -26,13 +39,10 @@ export default {
         "surface-dim": "#ded9d1",
         "primary": "#ae431e",
         "on-primary-fixed-variant": "#842501",
-        "surface-container-low": "#f8f3ea",
         "surface-variant": "#e7e2d9",
         "secondary-container": "#d68224",
-        "surface-container": "#f2ede4",
         "secondary-fixed-dim": "#ffb875",
         "on-tertiary-container": "#ffffff",
-        "on-surface": "#1d1c16",
         "on-secondary-container": "#ffffff",
         "surface-container-lowest": "#ffffff",
         "on-primary-fixed": "#3a0b00",
@@ -48,9 +58,7 @@ export default {
         "on-tertiary": "#ffffff",
         "on-secondary-fixed-variant": "#6b3b00",
         "tertiary-fixed-dim": "#cbcb6e",
-        "outline-variant": "#dec0b7",
         "secondary": "#d68224",
-        "on-surface-variant": "#57423b",
         "on-secondary": "#ffffff",
         "error-container": "#ffdad6",
         "primary-container": "#ae431e",
@@ -65,7 +73,7 @@ export default {
 
         // Original Sand & Terracotta Palette
         sand: {
-          DEFAULT: '#F9F6F0',
+          DEFAULT: "rgb(var(--color-sand) / <alpha-value>)",
           50: '#FAF6F0',
           100: '#F6F1EB',
           200: '#EDE4D8',

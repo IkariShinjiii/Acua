@@ -83,7 +83,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             />
             {product.soldOut && (
               <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
-                <span className="bg-white text-on-surface text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full">
+                <span className="bg-surface-elevated text-on-surface text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full">
                   Sold Out
                 </span>
               </div>
@@ -106,7 +106,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
 
             <p className="text-sm text-on-surface/80 leading-relaxed mt-6">{product.description}</p>
 
-            <div className="mt-6 p-4 rounded-2xl bg-white shadow-cloud-sm">
+            <div className="mt-6 p-4 rounded-2xl bg-surface-elevated shadow-cloud-sm">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
                 Material
               </p>
@@ -127,7 +127,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                       plan.md 5.2 — so there's nothing for a quantity stepper
                       to control. */}
                   {!product.isOneOfOne && (
-                    <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
+                    <div className="flex items-center gap-3 bg-surface-elevated rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
                       <button
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                         className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"

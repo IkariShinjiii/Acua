@@ -58,7 +58,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                 </div>
               ) : (
                 items.map(({ product, quantity }) => (
-                  <div key={product.id} className="flex gap-3 bg-white rounded-2xl p-3 shadow-cloud-sm">
+                  <div key={product.id} className="flex gap-3 bg-surface-elevated rounded-2xl p-3 shadow-cloud-sm">
                     <button
                       onClick={() => {
                         onViewProduct(product.id);

@@ -49,7 +49,7 @@ function StatusBadge({ label, tone = 'neutral' }) {
 
 function StatCard({ icon: Icon, label, value }) {
   return (
-    <div className="flex items-center gap-4 bg-white rounded-2xl shadow-cloud-sm p-5">
+    <div className="flex items-center gap-4 bg-surface-elevated rounded-2xl shadow-cloud-sm p-5">
       <div className="w-11 h-11 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center flex-shrink-0">
         <Icon className="w-5 h-5" />
       </div>
@@ -145,7 +145,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
           const isDelivered = brief.status === 'delivered';
           const isSaving = saving === brief.id;
           return (
-            <div key={brief.id} className="bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6">
+            <div key={brief.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -198,7 +198,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
                         onChange={(e) =>
                           setQuoteDrafts((prev) => ({ ...prev, [brief.id]: e.target.value }))
                         }
-                        className="w-full rounded-full bg-surface-container-low px-4 py-2 text-xs text-on-surface border-none outline-none focus:bg-white shadow-input-inset"
+                        className="w-full rounded-full bg-surface-container-low px-4 py-2 text-xs text-on-surface border-none outline-none focus:bg-surface-elevated shadow-input-inset"
                       />
                       <button
                         onClick={() => sendQuote(brief)}
@@ -278,7 +278,7 @@ function OrderFulfillment({ orders, onUpdated }) {
         return (
           <div
             key={order.id}
-            className="bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -401,19 +401,19 @@ function InventoryCuration({ pieces, onUpdated }) {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={addPiece}
-            className="overflow-hidden bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
+            className="overflow-hidden bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
           >
             <input
               required
               placeholder="Title *"
               value={draft.title}
               onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             />
             <select
               value={draft.category}
               onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             >
               {FILTER_TABS.filter((t) => t !== 'All').map((t) => (
                 <option key={t} value={t}>
@@ -425,20 +425,20 @@ function InventoryCuration({ pieces, onUpdated }) {
               placeholder="Material"
               value={draft.material}
               onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             />
             <input
               required
               placeholder="Price (e.g. ₱12,000) *"
               value={draft.price}
               onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             />
             <input
               placeholder="Image URL (optional)"
               value={draft.image}
               onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             />
             <label className="sm:col-span-2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface-container-low text-sm text-on-surface cursor-pointer select-none">
               <input
@@ -462,7 +462,7 @@ function InventoryCuration({ pieces, onUpdated }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {pieces.map((piece) => (
-          <div key={piece.id} className="bg-white rounded-2xl shadow-cloud-sm overflow-hidden">
+          <div key={piece.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm overflow-hidden">
             <div className="relative aspect-square bg-surface-container-low">
               <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" />
               {piece.isOneOfOne && (
@@ -472,7 +472,7 @@ function InventoryCuration({ pieces, onUpdated }) {
               )}
               {piece.soldOut && (
                 <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
-                  <span className="bg-white text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                  <span className="bg-surface-elevated text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
                     Sold Out
                   </span>
                 </div>
@@ -589,19 +589,19 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={addItem}
-            className="overflow-hidden bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
+            className="overflow-hidden bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
           >
             <input
               required
               placeholder="Title *"
               value={draft.title}
               onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             />
             <select
               value={draft.category}
               onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             >
               {JEWELRY_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -612,7 +612,7 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
             <select
               value={draft.material}
               onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             >
               {MATERIAL_OPTIONS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -625,13 +625,13 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
               placeholder="Image URL *"
               value={draft.image}
               onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             />
             <input
               placeholder="Image alt text (optional — falls back to title)"
               value={draft.alt}
               onChange={(e) => setDraft((d) => ({ ...d, alt: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             />
             <button
               type="submit"
@@ -646,7 +646,7 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {archiveItems.map((item) => (
-          <div key={item.id} className="bg-white rounded-2xl shadow-cloud-sm overflow-hidden">
+          <div key={item.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm overflow-hidden">
             <div className="relative aspect-square bg-surface-container-low">
               <img src={item.image} alt={item.alt ?? item.title} className="w-full h-full object-cover" />
               <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
@@ -763,7 +763,7 @@ export default function AdminView() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-                  isActive ? 'bg-chile-rojo text-white' : 'bg-white text-on-surface hover:bg-surface-container shadow-cloud-sm'
+                  isActive ? 'bg-chile-rojo text-white' : 'bg-surface-elevated text-on-surface hover:bg-surface-container shadow-cloud-sm'
                 }`}
               >
                 <Icon className="w-4 h-4" />

@@ -799,3 +799,74 @@ configured for the production domain — a dashboard setting outside what
 SQL or the available MCP tools can read or change (see §6's earlier note
 on the same limitation). If the reset email arrives but the link 404s or
 lands somewhere unexpected, that setting is the first thing to check.
+
+## 7. Light / dark mode
+
+Full-site theming, added on request, plus a toggle in the navbar.
+
+**Approach**: the neutral/surface tokens (`sand`, `on-surface`,
+`on-surface-variant`, `surface-container-low/DEFAULT/high`, `outline-variant`,
+and a new `surface-elevated` token) were converted from flat hex in
+`tailwind.config.js` to `rgb(var(--color-x) / <alpha-value>)`, with the
+actual values defined once under `:root` (light) and `.dark`
+(`src/index.css`) — the `<alpha-value>` placeholder is what keeps every
+existing `/NN` opacity modifier (`bg-surface-container-low/80`,
+`text-on-surface/40`, etc.) working unchanged. That one change makes every
+one of the ~350 existing call sites across the app theme-aware without
+touching them individually — a `dark:` variant on each would have meant
+editing every file that uses these tokens. Brand accent colors (chile-rojo,
+terracota, olive, sunset) deliberately stay flat hex and unchanged between
+themes — they're brand identity, not surface/text neutrals, and read fine
+against both.
+
+`surface-elevated` is new: cards were using raw `bg-white` (42 occurrences)
+for their "elevated card" surface, which — unlike the neutrals above —
+isn't a token at all, just Tailwind's built-in `white`. Converting `white`
+itself would have been wrong (`text-white` on colored buttons, hero-image
+overlay text, etc. must stay literally white in both themes). Instead, the
+~40 *specifically card/input-surface* occurrences (`bg-white`,
+`focus:bg-white`, `hover:bg-white`, `hover:bg-white/80` — never
+`text-white`, `border-white`, or the two decorative `bg-white/20` divider
+lines in `App.jsx`'s dev nav bar) were converted to the new token via a
+scripted, reviewed pass across the 7 files that had them.
+
+`index.html` had its own hardcoded `bg-[#F9F6F0] text-[#1d1c16]` on
+`<body>`, predating the JSX-only hex-tokenization pass in §6.3 (which never
+scanned this file) — fixed to `bg-sand text-on-surface`, and it also gained
+a small blocking inline `<script>` in `<head>` that reads the saved theme
+(or falls back to `prefers-color-scheme`) and adds the `.dark` class before
+any paint, so there's no flash of the wrong theme on load.
+
+**`ThemeContext`** (`src/context/ThemeContext.jsx`) reads that already-set
+`.dark` class into React state on mount (rather than re-deriving it and
+risking a mismatch with what the inline script decided), and
+`toggleTheme()` flips the class, updates state, and persists the explicit
+choice to `localStorage` (`acua-theme`) — once toggled, that choice is
+always honored; it doesn't reactively follow further OS-level changes,
+which matches ordinary manual-toggle behavior.
+
+**Toggle placement**: `Navbar.jsx`, in the icon cluster next to Search /
+Cart / Account — visible at every breakpoint (unlike Search/Account, which
+are desktop-only) since it's compact enough to sit next to the mobile
+hamburger button too, giving mobile visitors direct access without opening
+the menu. Sun/Moon icon from `lucide-react`, `aria-label` describing the
+action that will happen (e.g. "Switch to dark mode" while in light mode).
+
+Verified end-to-end with Playwright: light mode renders pixel-identical to
+before this change (same hex values, just resolved through variables now);
+toggling adds/removes the `.dark` class and persists to `localStorage`;
+reloading the page keeps the chosen theme with no flash (confirmed via
+screenshot immediately after reload); the Commission form's cloud-card,
+inputs, and category/material selection all read correctly in dark mode;
+toggling back to light round-trips cleanly. Real screenshots of both
+themes on the storefront and the Commission form were reviewed directly,
+not just asserted via selectors.
+
+**Known limitation, not addressed this pass**: `shadow-cloud-*` /
+`shadow-input-inset` are hardcoded `rgba(38, 28, 20, ...)` — a dark shadow
+meant to read against a light card. In dark mode these are still applied
+but contribute little visible elevation cue against an already-dark
+background (harmless, just a minor loss of depth). Making shadows
+theme-aware too would need the same CSS-variable treatment applied to
+`boxShadow` values in `tailwind.config.js` — straightforward if wanted, just
+out of scope for this pass.

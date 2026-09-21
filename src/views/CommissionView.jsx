@@ -390,7 +390,7 @@ export default function CommissionView({ prefill }) {
                             className={`px-4 py-2.5 rounded-full text-xs font-medium tracking-wide transition-all border-none ${
                               isSelected
                                 ? 'bg-chile-rojo text-white shadow-terracotta-glow font-semibold'
-                                : 'bg-surface-container-low/90 text-on-surface hover:bg-white shadow-input-inset'
+                                : 'bg-surface-container-low/90 text-on-surface hover:bg-surface-elevated shadow-input-inset'
                             }`}
                           >
                             {cat}
@@ -414,8 +414,8 @@ export default function CommissionView({ prefill }) {
                             onClick={() => setFormData((prev) => ({ ...prev, material: option.id }))}
                             className={`cursor-pointer p-4 rounded-2xl transition-all border-none ${
                               isSelected
-                                ? 'bg-white shadow-cloud text-on-surface ring-2 ring-chile-rojo'
-                                : 'bg-surface-container-low/70 hover:bg-white/80 shadow-input-inset text-on-surface'
+                                ? 'bg-surface-elevated shadow-cloud text-on-surface ring-2 ring-chile-rojo'
+                                : 'bg-surface-container-low/70 hover:bg-surface-elevated/80 shadow-input-inset text-on-surface'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
@@ -425,7 +425,7 @@ export default function CommissionView({ prefill }) {
                                   isSelected ? 'bg-chile-rojo' : 'bg-surface-container-high'
                                 }`}
                               >
-                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-surface-elevated" />}
                               </div>
                             </div>
                             <span className="text-[11px] text-on-surface-variant block">{option.note}</span>
@@ -458,7 +458,7 @@ export default function CommissionView({ prefill }) {
                           className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all border-none ${
                             isSelected
                               ? 'bg-chile-rojo text-white shadow-terracotta-glow font-semibold'
-                              : 'bg-surface-container-low/80 hover:bg-white text-on-surface shadow-input-inset'
+                              : 'bg-surface-container-low/80 hover:bg-surface-elevated text-on-surface shadow-input-inset'
                           }`}
                         >
                           <div className="text-xs sm:text-sm font-semibold">{tier.range}</div>
@@ -507,8 +507,8 @@ export default function CommissionView({ prefill }) {
                       onDrop={handleDrop}
                       className={`relative rounded-3xl p-6 sm:p-8 text-center transition-all border-none ${
                         dragActive
-                          ? 'bg-white shadow-cloud ring-2 ring-chile-rojo'
-                          : 'bg-surface-container-low/60 hover:bg-white/80 shadow-input-inset'
+                          ? 'bg-surface-elevated shadow-cloud ring-2 ring-chile-rojo'
+                          : 'bg-surface-container-low/60 hover:bg-surface-elevated/80 shadow-input-inset'
                       }`}
                     >
                       <input
@@ -521,7 +521,7 @@ export default function CommissionView({ prefill }) {
                       />
 
                       <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                        <div className="w-10 h-10 rounded-full bg-white shadow-cloud-sm flex items-center justify-center text-chile-rojo">
+                        <div className="w-10 h-10 rounded-full bg-surface-elevated shadow-cloud-sm flex items-center justify-center text-chile-rojo">
                           <UploadCloud className="w-5 h-5 stroke-[1.75]" />
                         </div>
                         <div className="text-xs sm:text-sm font-medium text-on-surface">
@@ -546,7 +546,7 @@ export default function CommissionView({ prefill }) {
                         {uploadedImages.map((img, idx) => (
                           <div
                             key={idx}
-                            className="relative rounded-2xl overflow-hidden bg-white p-2 shadow-cloud-sm flex items-center gap-2"
+                            className="relative rounded-2xl overflow-hidden bg-surface-elevated p-2 shadow-cloud-sm flex items-center gap-2"
                           >
                             <img
                               src={img.preview}

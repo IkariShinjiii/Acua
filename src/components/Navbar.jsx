@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingBag, User, Menu, X } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, X, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart, onOpenSearch, onAccountClick }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,6 +130,19 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               aria-label="Account Profile"
             >
               <User className="w-[18px] h-[18px] stroke-[1.5]" />
+            </button>
+
+            <button
+              onClick={toggleTheme}
+              className={`inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-[18px] h-[18px] stroke-[1.5]" />
+              ) : (
+                <Moon className="w-[18px] h-[18px] stroke-[1.5]" />
+              )}
             </button>
 
             {/* Mobile Menu Toggle */}
