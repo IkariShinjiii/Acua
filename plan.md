@@ -1237,3 +1237,37 @@ that exists, same caveat as the navbar's still-text-only wordmark.
 
 Verified live: all meta tag values read correctly from the rendered page
 (`og:title`, `og:image`, `twitter:card`, `theme-color`).
+
+## 14. Initial-load preloader
+
+Added on request: a branded splash shown for the gap between HTML parse
+and React mounting — previously a blank page on a cold load, most visible
+on a slow connection.
+
+**Implementation, and why it's plain HTML/CSS instead of a React
+component**: the whole point is to cover the wait for the JS bundle (and
+the Tailwind CSS bundle) to download and execute, so the preloader can't
+itself depend on either — it's written as inline `<style>` and static
+markup directly in `index.html`, using literal hex values rather than the
+app's Tailwind tokens. It respects the same two conventions those tokens
+would have: dark mode, via a plain `html.dark #initial-loader` CSS
+selector reading the same `.dark` class the existing no-flash theme
+script already sets before paint; and `prefers-reduced-motion`, via a
+plain media query disabling both animations (the pulsing wordmark, the
+sliding progress bar) since neither conveys information that's lost by
+going static.
+
+**How it disappears with no removal code**: the markup sits *inside*
+`<div id="root">` as `#root`'s only child. `createRoot(...).render(...)`
+in `main.jsx` replaces the *entire* contents of `#root` on its first
+commit — so the moment React actually mounts, the preloader is gone
+automatically, with nothing on the React side needing to know it ever
+existed.
+
+Verified two ways: confirmed the preloader markup is present in the real
+built `dist/index.html` output (not just the dev source); and, using a
+Playwright session with Chrome DevTools Protocol network throttling
+(~50kbps, simulating the slow-connection case this actually matters for),
+confirmed the preloader is genuinely visible and rendered correctly
+during the load, and confirmed it's fully replaced once the real
+homepage content mounts afterward.

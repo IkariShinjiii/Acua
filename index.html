@@ -54,10 +54,79 @@
       } catch (e) {}
     })();
   </script>
+
+  <!-- Preloader styling lives here, inline, rather than in the Tailwind
+       bundle it's meant to cover the wait for — it has to be visible the
+       instant HTML parses, with no dependency on the JS/CSS it's masking
+       the load time of. -->
+  <style>
+    #initial-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      background: #F9F6F0;
+    }
+    html.dark #initial-loader {
+      background: #1A1815;
+    }
+    #initial-loader .wordmark {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 26px;
+      letter-spacing: 0.35em;
+      color: #1D1C16;
+      animation: initial-loader-pulse 1.6s ease-in-out infinite;
+    }
+    html.dark #initial-loader .wordmark {
+      color: #F2EDE4;
+    }
+    #initial-loader .bar {
+      position: relative;
+      width: 120px;
+      height: 2px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(174, 67, 30, 0.15);
+    }
+    #initial-loader .bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 40%;
+      border-radius: 999px;
+      background: #AE431E;
+      animation: initial-loader-slide 1.2s ease-in-out infinite;
+    }
+    @keyframes initial-loader-pulse {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 1; }
+    }
+    @keyframes initial-loader-slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #initial-loader .wordmark,
+      #initial-loader .bar::after {
+        animation: none;
+      }
+    }
+  </style>
 </head>
 
 <body class="bg-sand text-on-surface antialiased selection:bg-chile-rojo selection:text-white">
-  <div id="root"></div>
+  <div id="root">
+    <!-- React's first render replaces everything inside #root, so this
+         disappears the instant the app mounts — no removal code needed. -->
+    <div id="initial-loader" aria-hidden="true">
+      <span class="wordmark">ACUA</span>
+      <div class="bar"></div>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
