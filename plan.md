@@ -529,3 +529,65 @@ AdminView as a temporarily-created confirmed admin account and confirmed the
 thumbnail actually rendered (a real signed `storage/v1/object/sign/...` URL,
 zero console errors) — then deleted the storage object, the test brief, and
 the test admin account.
+
+### 6.3 Design-system consolidation, a11y fix, security hardening, bundle split
+
+A self-directed pass (no client material needed) covering frontend, backend,
+and design-system work in one sitting:
+
+- **Palette conflict resolved.** `design.md` now names the four-color brand
+  board canonical over the single-terracotta spec — see the "Color palette"
+  section there for the full reasoning.
+- **~250 hard-coded hex colors tokenized.** `tailwind.config.js` already
+  defined tokens for `#1d1c16`, `#57423b`, `#f8f3ea`, `#f2ede4`, `#ece8df`,
+  and `#dec0b7` (plus a new `sand` DEFAULT added for `#F9F6F0`), but almost
+  every component used the raw hex directly instead of the token. Replaced
+  every occurrence across 12 files with the matching token class —
+  byte-identical rendering (same hex values), verified via build + the
+  bundled mechanical detector + before/after screenshots of Home and
+  Commission.
+- **A11y fix**: the commission form's remove-attachment button had no
+  `aria-label` and a ~22px hit target (below the 44px touch-target
+  guideline). Added the label and enlarged the hit area.
+- **Backend security hardening**: Supabase's advisor flagged
+  `public.is_admin()` as directly callable via `/rest/v1/rpc/is_admin` by
+  anyone, signed in or not — it's a `SECURITY DEFINER` function meant only
+  for internal use inside RLS policies, never a public endpoint. Migration
+  `0008` moves it to a new `private` schema (not exposed by PostgREST) and
+  repoints all 16 policies that referenced it to the fully-qualified name;
+  RLS evaluation happens inside Postgres itself, so policies keep working
+  even though the schema isn't API-exposed. Verified via a real signed-in
+  session (not just admin SQL access): anon storefront reads still work,
+  an admin account still sees all commission briefs/orders through RLS, and
+  `supabase.rpc('is_admin')` now 404s instead of executing.
+- **Real functional gap fixed**: the commission upload box's own copy
+  promised "JPEG, PNG, HEIC or sketches up to 15MB each," but nothing
+  enforced it — the `accept=""` attribute only filters the native file
+  picker, not drag-and-drop, so an oversized file or an arbitrary file type
+  dropped onto the box would silently attempt to upload. `CommissionView`
+  now validates both type (MIME sniff with an extension fallback, since
+  some browsers report no MIME type for HEIC) and the 15MB cap on every
+  file, client-side, before it's ever added to the form. A submitted brief
+  also now tells the patron in the confirmation screen if any of their
+  attachments failed to upload, instead of silently dropping them.
+- **Bundle-size warning addressed** (partially): `AdminView` and
+  `PatronDashboardView` are now `React.lazy`-loaded behind their respective
+  auth gates instead of bundled into the main chunk every anonymous
+  storefront visitor downloads — real chunks now split out
+  (`AdminView-*.js` ~17KB, `PatronDashboardView-*.js` ~5KB gzipped ~4.5KB
+  and ~2KB respectively). The main chunk is still >500KB; the remainder is
+  `framer-motion` and `@supabase/supabase-js`, both genuinely needed by the
+  public storefront itself, so further code-splitting wasn't pursued in
+  this pass.
+
+Verified via a single combined Playwright pass: oversized-file rejection,
+wrong-file-type rejection, a valid file still accepted cleanly, a full brief
+submission with a real upload, and both `AdminGate`/`PatronGate` rendering
+correctly through their new lazy boundaries — zero console errors. All test
+data (brief, storage object, two temporary admin accounts used across the
+RLS-migration smoke test and the cleanup pass) deleted afterward.
+
+**Still open, still blocked on the client**: real payment integration
+(needs a provider decision), the real product catalog (needs
+photos/prices), and the product detail page layout (needs the reference
+image that was never viewable this session).

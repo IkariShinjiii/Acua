@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { LogOut } from 'lucide-react';
 import CommissionView from './views/CommissionView';
 import HomeView from './views/HomeView';
-import AdminView from './views/AdminView';
-import PatronDashboardView from './views/PatronDashboardView';
 import ProductDetailView from './views/ProductDetailView';
 import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
@@ -11,6 +9,16 @@ import CartDrawer from './components/CartDrawer';
 import SearchOverlay from './components/SearchOverlay';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
+
+// Split out of the main bundle: every anonymous storefront visitor pays for
+// these otherwise, despite being gated behind a login/admin check that most
+// of them never pass.
+const AdminView = lazy(() => import('./views/AdminView'));
+const PatronDashboardView = lazy(() => import('./views/PatronDashboardView'));
+
+const ViewLoadingFallback = () => (
+  <div className="pt-40 text-center text-sm text-on-surface-variant">Loading…</div>
+);
 
 const VIEW_LABELS = {
   home: 'Home',
@@ -55,7 +63,11 @@ function AdminGate() {
     );
   }
 
-  return <AdminView />;
+  return (
+    <Suspense fallback={<ViewLoadingFallback />}>
+      <AdminView />
+    </Suspense>
+  );
 }
 
 // Real gate: any signed-in account (signup allowed, unlike the admin gate).
@@ -74,7 +86,11 @@ function PatronGate({ setCurrentView }) {
     );
   }
 
-  return <PatronDashboardView setCurrentView={setCurrentView} />;
+  return (
+    <Suspense fallback={<ViewLoadingFallback />}>
+      <PatronDashboardView setCurrentView={setCurrentView} />
+    </Suspense>
+  );
 }
 
 /**

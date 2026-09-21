@@ -14,6 +14,19 @@ import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS, BUDGET_TIERS } from '../data/comm
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
+// Matches the "JPEG, PNG, HEIC or sketches up to 15MB each" copy on the
+// upload box itself — the accept="" attribute only filters the native file
+// picker, not drag-and-drop, so this is the only real gate.
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const ACCEPTED_EXTENSIONS = /\.(jpe?g|png|heic|heif|pdf)$/i;
+
+function isAcceptedFileType(file) {
+  // Some browsers/OSes report an empty or generic MIME type for HEIC, so
+  // the extension is checked as a fallback rather than trusting file.type alone.
+  if (/^image\/|^application\/pdf$/.test(file.type)) return true;
+  return ACCEPTED_EXTENSIONS.test(file.name);
+}
+
 export default function CommissionView({ prefill }) {
   const { user } = useAuth();
   const [formData, setFormData] = useState(() => ({
@@ -31,7 +44,9 @@ export default function CommissionView({ prefill }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [fileError, setFileError] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [failedUploadCount, setFailedUploadCount] = useState(0);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,13 +79,29 @@ export default function CommissionView({ prefill }) {
   };
 
   const handleFiles = (files) => {
-    const validFiles = Array.from(files).map((file) => ({
-      file,
-      name: file.name,
-      size: (file.size / 1024).toFixed(1) + ' KB',
-      preview: URL.createObjectURL(file),
-    }));
-    setUploadedImages((prev) => [...prev, ...validFiles]);
+    const accepted = [];
+    const rejected = [];
+    for (const file of Array.from(files)) {
+      if (!isAcceptedFileType(file)) {
+        rejected.push(`${file.name} (unsupported file type)`);
+      } else if (file.size > MAX_FILE_BYTES) {
+        rejected.push(`${file.name} (over 15MB)`);
+      } else {
+        accepted.push(file);
+      }
+    }
+
+    setFileError(rejected.length > 0 ? `Not added — ${rejected.join(', ')}.` : '');
+
+    if (accepted.length > 0) {
+      const validFiles = accepted.map((file) => ({
+        file,
+        name: file.name,
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        preview: URL.createObjectURL(file),
+      }));
+      setUploadedImages((prev) => [...prev, ...validFiles]);
+    }
   };
 
   const removeFile = (index) => {
@@ -92,16 +123,20 @@ export default function CommissionView({ prefill }) {
     // so an anonymous patron has no way to attach paths after the fact.
     const briefId = crypto.randomUUID();
     const uploadedPaths = [];
+    let failedUploads = 0;
     for (const [idx, img] of uploadedImages.entries()) {
       const ext = img.name.includes('.') ? img.name.split('.').pop() : 'jpg';
       const path = `${briefId}/${idx}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('commission-references')
         .upload(path, img.file, { contentType: img.file.type });
-      if (!uploadError) {
+      if (uploadError) {
+        failedUploads += 1;
+      } else {
         uploadedPaths.push(path);
       }
     }
+    setFailedUploadCount(failedUploads);
 
     const { error } = await supabase.from('commission_briefs').insert({
       id: briefId,
@@ -184,11 +219,22 @@ export default function CommissionView({ prefill }) {
                   <span>Next: concept sketch & quote within 48 hours</span>
                 </div>
 
+                {failedUploadCount > 0 && (
+                  <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3 text-left">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      Your brief was received, but {failedUploadCount === 1 ? 'one reference image' : `${failedUploadCount} reference images`} failed to upload. Mention it to us at {formData.email} and we'll get it sorted.
+                    </span>
+                  </div>
+                )}
+
                 <div className="pt-4">
                   <button
                     onClick={() => {
                       setIsSubmitted(false);
                       setUploadedImages([]);
+                      setFileError('');
+                      setFailedUploadCount(0);
                     }}
                     className="px-6 py-2.5 rounded-full bg-surface-container-high/60 hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors border-none"
                   >
@@ -467,6 +513,13 @@ export default function CommissionView({ prefill }) {
                         </p>
                       </div>
                     </div>
+
+                    {fileError && (
+                      <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3 mt-3">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{fileError}</span>
+                      </div>
+                    )}
 
                     {/* Image Previews */}
                     {uploadedImages.length > 0 && (
