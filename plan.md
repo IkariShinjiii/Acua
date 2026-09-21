@@ -627,3 +627,37 @@ browser context loads with zero errors; a product temporarily flagged
 stepper, caps at 1 in the cart, and hides the cart's own "+" button;
 Escape closes the cart drawer. The temporary flag was reverted immediately
 after the test.
+
+### 6.5 "Request Similar" prefill: two real, confirmed data bugs
+
+Tracing every call site of `onRequestSimilar` (HomeView's sold-out grid
+button, HomeView's Archive section, ProductDetailView's sold-out state)
+into `CommissionView`'s `prefill` prop turned up two bugs that were both
+live in production right now, not hypothetical:
+
+- **Copy accuracy**: the prefill banner and the auto-filled narrative
+  always said "from The Archive," regardless of whether the piece actually
+  came from Archive (past, sold, 1-of-1 creations) or was simply a
+  currently sold-out item in Available Pieces. Each call site now tags its
+  payload with `source: 'catalog' | 'archive'`, and `CommissionView` picks
+  the right label.
+- **Material mismatch (confirmed reachable today)**: `archive_items.material`
+  intentionally holds a `MATERIAL_OPTIONS` id (per the comment in
+  `seed.sql`), but `products.material` holds free descriptive text for the
+  storefront card — e.g. the currently sold-out "Woven Sand Bracelet" has
+  `material = "Non-Tarnish Gold-Tone Beads & Waxed Cord"`. Clicking
+  "Request Similar" on it fed that raw string straight into
+  `formData.material`, which matched none of the three `MATERIAL_OPTIONS`
+  ids — every material card would silently show as unselected, directly
+  contradicting the banner's claim that material was pre-filled.
+  `CommissionView` now validates `prefill.material` against the known ids
+  before trusting it; when it doesn't match (i.e. it came from a product,
+  not an archive item), it falls back to the default material id and
+  folds the real description into the narrative instead
+  (`"...(similar material: Non-Tarnish Gold-Tone Beads & Waxed Cord) — "`)
+  so the information isn't lost.
+
+Verified against the real, currently sold-out "Woven Sand Bracelet" and a
+real Archive tile via Playwright: correct source label for each, exactly
+one material card selected in both cases (never zero), and the fallback
+narrative text reads correctly.

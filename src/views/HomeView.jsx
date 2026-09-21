@@ -237,7 +237,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onRequestSimilar?.(piece);
+                            onRequestSimilar?.({ ...piece, source: 'catalog' });
                           }}
                           className="text-[11px] font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
                         >
@@ -316,7 +316,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       </p>
                     )}
                     <button
-                      onClick={() => onRequestSimilar?.(item)}
+                      onClick={() => onRequestSimilar?.({ ...item, source: 'archive' })}
                       className="bg-white text-chile-rojo font-sans text-[11px] font-semibold uppercase tracking-wider px-4 py-2 rounded-full shadow-sm hover:bg-sunset transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
                     >
                       Request Similar Piece

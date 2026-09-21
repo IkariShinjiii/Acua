@@ -116,7 +116,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             <div className="mt-8">
               {product.soldOut ? (
                 <button
-                  onClick={() => onRequestSimilar?.(product)}
+                  onClick={() => onRequestSimilar?.({ ...product, source: 'catalog' })}
                   className="w-full sm:w-auto bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer"
                 >
                   Request Similar Piece

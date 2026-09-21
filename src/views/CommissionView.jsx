@@ -27,17 +27,36 @@ function isAcceptedFileType(file) {
   return ACCEPTED_EXTENSIONS.test(file.name);
 }
 
+const VALID_MATERIAL_IDS = new Set(MATERIAL_OPTIONS.map((option) => option.id));
+
 export default function CommissionView({ prefill }) {
   const { user } = useAuth();
+  // "Request Similar" fires from three places: a sold-out storefront piece
+  // (HomeView's grid, ProductDetailView) or an actual past Archive piece
+  // (HomeView's Archive section) — only the latter is really "from The
+  // Archive," so the copy below can't hardcode that phrase.
+  const prefillSourceLabel = prefill?.source === 'archive' ? 'The Archive' : 'Available Pieces';
+  // archive_items.material holds a MATERIAL_OPTIONS id, but products.material
+  // holds free descriptive text for the storefront card (e.g. "Non-Tarnish
+  // Gold-Tone Chain & Freshwater Pearl") — matching neither option id here
+  // would otherwise leave every material card silently unselected while the
+  // banner claims it was pre-filled. Fall back to the default id and keep
+  // the real description in the narrative instead.
+  const prefillMaterialId =
+    prefill?.material && VALID_MATERIAL_IDS.has(prefill.material) ? prefill.material : undefined;
   const [formData, setFormData] = useState(() => ({
     fullName: '',
     email: user?.email ?? '',
     phone: '',
     timeline: 'Flexible (4-6 Weeks)',
     category: prefill?.category ?? 'Sculptural Ring',
-    material: prefill?.material ?? 'non-tarnish-gold-tone',
+    material: prefillMaterialId ?? 'non-tarnish-gold-tone',
     budget: '₱45,000 – ₱84,000',
-    narrative: prefill ? `Inspired by "${prefill.title}" from The Archive — ` : '',
+    narrative: prefill
+      ? `Inspired by "${prefill.title}" from ${prefillSourceLabel}${
+          prefillMaterialId ? '' : ` (similar material: ${prefill.material})`
+        } — `
+      : '',
   }));
 
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -261,7 +280,7 @@ export default function CommissionView({ prefill }) {
                   </p>
                 </div>
 
-                {/* Archive reference banner — only when arriving via "Request Similar Piece" */}
+                {/* Reference banner — only when arriving via "Request Similar" */}
                 {prefill && (
                   <div className="flex items-center gap-3 max-w-xl mx-auto p-3 rounded-2xl bg-surface-container-low/80 shadow-input-inset">
                     <img
@@ -270,7 +289,7 @@ export default function CommissionView({ prefill }) {
                       className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
                     />
                     <p className="text-xs text-on-surface-variant leading-snug">
-                      Inspired by <span className="font-semibold text-on-surface">{prefill.title}</span> from The Archive.
+                      Inspired by <span className="font-semibold text-on-surface">{prefill.title}</span> from {prefillSourceLabel}.
                       We've pre-filled the category and material below — adjust anything you'd like.
                     </p>
                   </div>
