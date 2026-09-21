@@ -65,9 +65,9 @@ function StageTracker({ stages, currentId }) {
   );
 }
 
-export default function PatronDashboardView({ setCurrentView }) {
+export default function PatronDashboardView({ setCurrentView, initialTab }) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState(initialTab ?? 'orders');
   const [orders, setOrders] = useState(null);
   const [briefs, setBriefs] = useState(null);
 

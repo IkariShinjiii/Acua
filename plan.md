@@ -1422,3 +1422,68 @@ Verified live across every real combination: navbar over the hero photo
 scrolled in dark mode (cream, legible), and the footer (cream, directly
 on the terracotta background, no box) — four screenshots, one per state,
 all reviewed directly.
+
+## 18. Footer rebuilt as one shared, professional component
+
+The client asked for the footer to look like it came from an established
+company, and for its links to actually work. Auditing what existed turned
+up real, confirmed problems, not just a thin design:
+
+- **Three broken links**: `href="#sustainability"`, `#shipping`,
+  `#returns` pointed at page sections that don't exist anywhere on the
+  site — clicking them did nothing.
+- **A stale hardcoded copyright**: `© 2024 ACUA` in `HomeView`'s footer,
+  two years wrong, while `CommissionView`'s *separate* footer already
+  computed `{new Date().getFullYear()}` correctly — the two footers had
+  drifted from each other.
+- **Two different footers already existed** (`HomeView`'s full one,
+  `CommissionView`'s much thinner text-only one), and **two real pages had
+  no footer at all** — `ProductDetailView` and `PatronDashboardView`.
+- **A related, previously-undiscovered navigation bug**, found while
+  building the new footer's own "Collections" link and wanting to reuse
+  a *working* pattern rather than copy a broken one: the navbar's
+  "Collections" button called `setCurrentView('home')` and then
+  `document.getElementById('available-pieces')` in the same tick. That
+  only works if you're already on the home page — from anywhere else, the
+  element isn't in the DOM yet when the lookup runs (React's state update
+  hasn't committed), so the scroll silently no-ops. Confirmed live before
+  fixing: navigating to Custom Request, then clicking Collections, landed
+  correctly on Home but left `scrollY` at `0` instead of scrolling down.
+  Fixed with the same `setTimeout` delay pattern `ProductDetailView`
+  already used correctly elsewhere, applied to both the desktop nav
+  button and the mobile drawer's copy — and used correctly from the start
+  in the new footer's version.
+
+**Fix**: a single `src/components/Footer.jsx`, rendered once from
+`App.jsx` for every view except `admin` (an internal business tool, not
+a public storefront page, doesn't carry the marketing footer — matching
+ordinary practice), rather than duplicated per-view. Four columns, all
+linking to real, working destinations only — nothing invented:
+Brand (real logo mark, tagline, Instagram/Facebook), Shop (Shop,
+Collections, Custom Request), Account (My Account, Track a Commission),
+Get in Touch (real email, real Instagram handle, real city). A bottom bar
+with the dynamic copyright year and the brand tagline.
+
+**"Track a Commission" is a real deep link, not a disguised duplicate of
+"My Account"**: both used to point at the exact same thing with no
+distinction. Added a `dashboardInitialTab` piece of state in `App.jsx`
+(reset on every other navigation, the same rule `commissionPrefill`
+already follows) and a `goToDashboardTab` handler, threaded through
+`PatronGate` to `PatronDashboardView`'s `activeTab` initial state — so
+this link now opens directly to the Custom Commissions tab, not just the
+account page in general.
+
+**Deliberately not invented**: Sustainability/Shipping/Returns/Privacy/
+Terms pages. There's no real content for any of them, and shipping
+windows, return policies, and legal terms are the kind of thing a real
+business needs to decide and can carry real consequences if guessed
+wrong — removed the broken links rather than filling them with
+plausible-sounding but unverified policy text.
+
+Verified live end-to-end, not just visually: the footer is present on
+Home, Commission, and the product detail page, and absent on Admin;
+the dynamic year reads correctly (2026, not stale); no broken anchor
+text remains; the footer's own Shop, Collections (including the
+just-fixed cross-page scroll), and Custom Request links were each
+clicked and confirmed to land in the right place; the email link
+resolves to a real `mailto:` address.

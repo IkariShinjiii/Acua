@@ -18,6 +18,18 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Switching view and reading the DOM in the same tick doesn't work from
+  // any page other than home: setCurrentView's re-render hasn't committed
+  // yet, so #available-pieces isn't in the DOM when getElementById runs
+  // right after it — the scroll silently no-ops. The short delay gives
+  // HomeView a chance to actually mount first.
+  const goToCollections = () => {
+    setCurrentView('home');
+    setTimeout(() => {
+      document.getElementById('available-pieces')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  };
+
   // Translucent over the hero image (home, unscrolled); solid everywhere
   // else — including while the mobile drawer is open, so the header
   // doesn't sit as a translucent strip of hero photo directly above the
@@ -89,11 +101,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
             </button>
 
             <button
-              onClick={() => {
-                setCurrentView('home');
-                const el = document.getElementById('available-pieces');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={goToCollections}
               className={`text-xs uppercase tracking-[0.2em] transition-colors py-1 font-medium bg-transparent border-none cursor-pointer ${textBase} ${accentHover}`}
             >
               Collections
@@ -198,10 +206,8 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               </button>
               <button
                 onClick={() => {
-                  setCurrentView('home');
+                  goToCollections();
                   setMobileMenuOpen(false);
-                  const el = document.getElementById('available-pieces');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
               >

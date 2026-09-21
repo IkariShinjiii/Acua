@@ -613,17 +613,6 @@ export default function CommissionView({ prefill }) {
 
         </motion.div>
       </main>
-
-      {/* FOOTER */}
-      <footer className="bg-surface-container-high/50 border-none py-12 text-center text-xs text-on-surface-variant">
-        <div className="max-w-7xl mx-auto px-4 space-y-2">
-          <p className="font-serif text-base tracking-widest text-on-surface uppercase">
-            A C U A
-          </p>
-          <p>© {new Date().getFullYear()} ACUA Handmade Accessories. All rights reserved.</p>
-        </div>
-      </footer>
-
     </div>
   );
 }

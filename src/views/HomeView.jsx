@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check } from 'lucide-react';
-import { InstagramIcon, FacebookIcon } from '../components/SocialIcons';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
-import logoMarkCream from '../assets/logo-mark-cream.png';
 import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -347,62 +345,6 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
           </div>
         </section>
       </main>
-
-      {/* 5. Deep Terracotta Footer */}
-      <footer className="w-full mt-auto bg-chile-rojo text-white">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <img src={logoMarkCream} alt="ACUA" className="h-12 w-auto" />
-            <span className="text-xs uppercase tracking-widest text-sunset opacity-95 font-medium mt-1 font-sans">
-              NATURALLY ROOTED. INTENTIONALLY DESIGNED.
-            </span>
-          </div>
-
-          <nav className="flex flex-wrap justify-center gap-6 md:gap-8 text-xs font-sans uppercase tracking-wider font-semibold">
-            <a className="text-white/80 hover:text-white transition-colors" href="#sustainability">
-              Sustainability
-            </a>
-            <a className="text-white/80 hover:text-white transition-colors" href="#shipping">
-              Shipping
-            </a>
-            <a className="text-white/80 hover:text-white transition-colors" href="#returns">
-              Returns
-            </a>
-            <a
-              className="text-white/80 hover:text-white transition-colors"
-              href="mailto:acuavibe@gmail.com"
-            >
-              Contact
-            </a>
-          </nav>
-
-          <div className="flex flex-col items-center md:items-end gap-3">
-            <div className="flex items-center gap-4">
-              <a
-                href="https://www.instagram.com/acua_ph/"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="ACUA on Instagram"
-                className="text-white/80 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
-              >
-                <InstagramIcon className="w-[18px] h-[18px]" />
-              </a>
-              <a
-                href="https://www.facebook.com/profile.php?id=61577296311917"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="ACUA on Facebook"
-                className="text-white/80 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
-              >
-                <FacebookIcon className="w-[18px] h-[18px]" />
-              </a>
-            </div>
-            <div className="text-xs font-sans uppercase tracking-wider text-white/70 text-center md:text-right">
-              © 2024 ACUA. HANDCRAFTED BY THE COAST.
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

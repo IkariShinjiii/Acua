@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
 import CartDrawer from './components/CartDrawer';
 import SearchOverlay from './components/SearchOverlay';
+import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
 
@@ -71,7 +72,7 @@ function AdminGate() {
 }
 
 // Real gate: any signed-in account (signup allowed, unlike the admin gate).
-function PatronGate({ setCurrentView }) {
+function PatronGate({ setCurrentView, initialTab }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -88,7 +89,7 @@ function PatronGate({ setCurrentView }) {
 
   return (
     <Suspense fallback={<ViewLoadingFallback />}>
-      <PatronDashboardView setCurrentView={setCurrentView} />
+      <PatronDashboardView setCurrentView={setCurrentView} initialTab={initialTab} />
     </Suspense>
   );
 }
@@ -205,6 +206,10 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Set only via goToDashboardTab below, and reset on any other
+  // navigation — same "don't carry over a stale deep-link" rule as
+  // commissionPrefill, just for which patron-dashboard tab opens first.
+  const [dashboardInitialTab, setDashboardInitialTab] = useState(undefined);
   const { user, signOut, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
 
@@ -214,12 +219,19 @@ export default function App() {
 
   const navigateTo = (view) => {
     setCommissionPrefill(null);
+    setDashboardInitialTab(undefined);
     setCurrentView(view);
   };
 
   const handleRequestSimilar = (item) => {
     setCommissionPrefill(item);
     setCurrentView('commission');
+  };
+
+  const goToDashboardTab = (tab) => {
+    setCommissionPrefill(null);
+    setDashboardInitialTab(tab);
+    setCurrentView('dashboard');
   };
 
   const handleViewProduct = (productId) => {
@@ -284,13 +296,22 @@ export default function App() {
       )}
       {currentView === 'commission' && <CommissionView prefill={commissionPrefill} />}
       {currentView === 'admin' && <AdminGate />}
-      {currentView === 'dashboard' && <PatronGate setCurrentView={navigateTo} />}
+      {currentView === 'dashboard' && (
+        <PatronGate setCurrentView={navigateTo} initialTab={dashboardInitialTab} />
+      )}
       {currentView === 'product' && (
         <ProductDetailView
           productId={selectedProductId}
           setCurrentView={navigateTo}
           onRequestSimilar={handleRequestSimilar}
         />
+      )}
+
+      {/* Shared across every storefront-facing view — not the admin
+          dashboard, which (like most internal business tools) doesn't
+          carry the public marketing footer. */}
+      {currentView !== 'admin' && (
+        <Footer setCurrentView={navigateTo} onTrackCommission={() => goToDashboardTab('commissions')} />
       )}
     </div>
   );
