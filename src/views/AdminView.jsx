@@ -183,6 +183,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                             src={url}
                             alt={`Reference ${i + 1}`}
                             className="w-14 h-14 rounded-xl object-cover shadow-cloud-sm hover:opacity-80 transition-opacity"
+                            loading="lazy"
                           />
                         </a>
                       ))}

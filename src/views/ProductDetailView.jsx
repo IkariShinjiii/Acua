@@ -83,6 +83,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
               src={product.image}
               alt={product.title}
               className="w-full h-full object-cover"
+              fetchPriority="high"
               onError={(e) => handleImageError(e, product.fallback)}
             />
             {product.soldOut && (

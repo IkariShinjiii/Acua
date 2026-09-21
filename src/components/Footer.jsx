@@ -29,7 +29,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-10">
           <div className="col-span-2 sm:col-span-1 flex flex-col items-start gap-3">
-            <img src={logoMarkCream} alt="ACUA" className="h-12 w-auto" />
+            <img src={logoMarkCream} alt="ACUA" className="h-12 w-auto" loading="lazy" />
             <p className="text-xs text-white/75 leading-relaxed max-w-[220px]">
               Handmade coastal accessories, hand-assembled in Iloilo City, Philippines.
             </p>

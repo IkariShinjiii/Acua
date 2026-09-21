@@ -134,6 +134,7 @@ export default function ReviewReel({ onSelectProduct }) {
                 src={item.image}
                 alt={item.title}
                 draggable={false}
+                loading="lazy"
                 onError={(e) => handleImageError(e, item.fallback)}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 pointer-events-none" />

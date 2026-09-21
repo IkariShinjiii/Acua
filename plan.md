@@ -1628,3 +1628,35 @@ links — which already close it themselves — aren't double-handled).
 Verified live on a mobile viewport: opening via the toggle, then
 pressing Escape, closes it; reopening, then tapping the hero section
 well outside the header, also closes it.
+
+## 23. Image loading performance pass
+
+- **The home hero image was invisible to the browser's preload
+  scanner.** It's a CSS `background-image` on a `<div>`, not an `<img>`,
+  so — unlike an `<img src>` the scanner can start fetching the moment it
+  sees the raw HTML — the browser only requests it once CSS is parsed and
+  styles are resolved, well after the fact for what's almost certainly
+  the page's largest contentful paint element. Added
+  `<link rel="preload" as="image" fetchpriority="high">` in `index.html`
+  pointing at the same URL, so the fetch starts immediately.
+- **The product detail page's main image** (the largest visible element
+  the instant that page loads) had no `fetchPriority`, so it competed
+  for bandwidth on equal footing with everything else on the page.
+  Added `fetchPriority="high"`.
+- **The "New Release" reel's images** — below the fold on every load,
+  since the reel sits right after a full-viewport-height hero — were
+  loading eagerly, unlike every other below-fold image in the app
+  (product grid cards, the Archive section). Added `loading="lazy"`,
+  along with a few smaller misses found in the same sweep: the cart
+  drawer's item thumbnails, the footer's logo, and admin's commission
+  reference-image thumbnails.
+- Added a minimal `public/robots.txt` (`Allow: /`) — standard practice
+  for a real deployed site, and one of the only two things worth having
+  for a single-URL SPA like this one (a `sitemap.xml` wouldn't add
+  anything, since there are no other crawlable URLs to list without
+  real routing).
+
+Verified via a temporary Playwright check: no new console errors or
+warnings after the change, the preload `<link>` and the image's
+`fetchpriority="high"` both render correctly in the live DOM, and the
+hero section still renders pixel-identical to before.
