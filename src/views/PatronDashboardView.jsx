@@ -28,8 +28,8 @@ function EmptyState({ icon: Icon, title, body, ctaLabel, onCta }) {
       <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto">
         <Icon className="w-5 h-5" />
       </div>
-      <h3 className="font-serif text-lg text-[#1d1c16]">{title}</h3>
-      <p className="text-sm text-[#57423b] max-w-sm mx-auto">{body}</p>
+      <h3 className="font-serif text-lg text-on-surface">{title}</h3>
+      <p className="text-sm text-on-surface-variant max-w-sm mx-auto">{body}</p>
       {ctaLabel && (
         <button
           onClick={onCta}
@@ -51,12 +51,12 @@ function StageTracker({ stages, currentId }) {
         <React.Fragment key={s.id}>
           <div
             className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-              i <= idx ? 'bg-chile-rojo' : 'bg-[#ece8df]'
+              i <= idx ? 'bg-chile-rojo' : 'bg-surface-container-high'
             }`}
             title={s.label}
           />
           {i < stages.length - 1 && (
-            <div className={`h-px flex-1 ${i < idx ? 'bg-chile-rojo' : 'bg-[#ece8df]'}`} />
+            <div className={`h-px flex-1 ${i < idx ? 'bg-chile-rojo' : 'bg-surface-container-high'}`} />
           )}
         </React.Fragment>
       ))}
@@ -103,14 +103,14 @@ export default function PatronDashboardView({ setCurrentView }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased">
+    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <div className="mb-8">
-          <h1 className="font-serif text-2xl sm:text-3xl text-[#1d1c16]">My Dashboard</h1>
-          <p className="text-xs text-[#57423b] mt-1">Signed in as {user?.email}</p>
+          <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">My Dashboard</h1>
+          <p className="text-xs text-on-surface-variant mt-1">Signed in as {user?.email}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-[#dec0b7]/30 pb-4">
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-outline-variant/30 pb-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -119,7 +119,7 @@ export default function PatronDashboardView({ setCurrentView }) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-                  isActive ? 'bg-chile-rojo text-white' : 'bg-white text-[#1d1c16] hover:bg-[#f2ede4] shadow-cloud-sm'
+                  isActive ? 'bg-chile-rojo text-white' : 'bg-white text-on-surface hover:bg-surface-container shadow-cloud-sm'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -131,7 +131,7 @@ export default function PatronDashboardView({ setCurrentView }) {
 
         {activeTab === 'orders' && (
           <div className="space-y-4">
-            {orders === null && <p className="text-sm text-[#57423b] text-center py-16">Loading…</p>}
+            {orders === null && <p className="text-sm text-on-surface-variant text-center py-16">Loading…</p>}
             {orders?.length === 0 && (
               <EmptyState
                 icon={ShoppingBag}
@@ -147,10 +147,10 @@ export default function PatronDashboardView({ setCurrentView }) {
                 <div key={order.id} className="bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
-                      <h3 className="font-serif text-lg text-[#1d1c16]">
+                      <h3 className="font-serif text-lg text-on-surface">
                         {order.product?.title ?? 'Order'}
                       </h3>
-                      <p className="text-xs text-[#57423b] mt-0.5">
+                      <p className="text-xs text-on-surface-variant mt-0.5">
                         ₱{(order.total_cents / 100).toLocaleString()} • Placed{' '}
                         {new Date(order.created_at).toLocaleDateString()}
                         {order.tracking_number && ` • Tracking: ${order.tracking_number}`}
@@ -170,7 +170,7 @@ export default function PatronDashboardView({ setCurrentView }) {
 
         {activeTab === 'commissions' && (
           <div className="space-y-4">
-            {briefs === null && <p className="text-sm text-[#57423b] text-center py-16">Loading…</p>}
+            {briefs === null && <p className="text-sm text-on-surface-variant text-center py-16">Loading…</p>}
             {briefs?.length === 0 && (
               <EmptyState
                 icon={Hammer}
@@ -186,8 +186,8 @@ export default function PatronDashboardView({ setCurrentView }) {
                 <div key={brief.id} className="bg-white rounded-2xl shadow-cloud-sm p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
-                      <h3 className="font-serif text-lg text-[#1d1c16]">{brief.category}</h3>
-                      <p className="text-xs text-[#57423b] mt-0.5">
+                      <h3 className="font-serif text-lg text-on-surface">{brief.category}</h3>
+                      <p className="text-xs text-on-surface-variant mt-0.5">
                         {brief.material} • Submitted {new Date(brief.created_at).toLocaleDateString()}
                         {brief.quote_price_cents &&
                           ` • Quote: ₱${(brief.quote_price_cents / 100).toLocaleString()}`}
@@ -199,7 +199,7 @@ export default function PatronDashboardView({ setCurrentView }) {
                     />
                   </div>
                   {brief.narrative && (
-                    <p className="text-sm text-[#1d1c16]/80 mt-3 leading-relaxed">{brief.narrative}</p>
+                    <p className="text-sm text-on-surface/80 mt-3 leading-relaxed">{brief.narrative}</p>
                   )}
                   <StageTracker stages={COMMISSION_STAGES} currentId={brief.status} />
                 </div>

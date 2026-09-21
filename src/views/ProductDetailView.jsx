@@ -30,14 +30,14 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
   }, [productId]);
 
   if (product === undefined) {
-    return <div className="min-h-screen bg-[#F9F6F0] pt-40 text-center text-sm text-[#57423b]">Loading…</div>;
+    return <div className="min-h-screen bg-sand pt-40 text-center text-sm text-on-surface-variant">Loading…</div>;
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#F9F6F0] flex items-center justify-center pt-20">
+      <div className="min-h-screen bg-sand flex items-center justify-center pt-20">
         <div className="text-center space-y-3">
-          <p className="text-sm text-[#57423b]">That piece couldn't be found.</p>
+          <p className="text-sm text-on-surface-variant">That piece couldn't be found.</p>
           <button
             onClick={() => setCurrentView('home')}
             className="text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors"
@@ -56,14 +56,14 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased">
+    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <button
           onClick={() => {
             setCurrentView('home');
             setTimeout(() => document.getElementById('available-pieces')?.scrollIntoView(), 50);
           }}
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#57423b] hover:text-chile-rojo transition-colors mb-8 border-none bg-transparent cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-chile-rojo transition-colors mb-8 border-none bg-transparent cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Available Pieces
         </button>
@@ -73,7 +73,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="relative aspect-square rounded-[24px] sm:rounded-[32px] overflow-hidden bg-[#f8f3ea] shadow-[0_12px_35px_-8px_rgba(38,28,20,0.08)]"
+            className="relative aspect-square rounded-[24px] sm:rounded-[32px] overflow-hidden bg-surface-container-low shadow-[0_12px_35px_-8px_rgba(38,28,20,0.08)]"
           >
             <img
               src={product.image}
@@ -82,8 +82,8 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
               onError={(e) => handleImageError(e, product.fallback)}
             />
             {product.soldOut && (
-              <div className="absolute inset-0 bg-[#1d1c16]/60 flex items-center justify-center">
-                <span className="bg-white text-[#1d1c16] text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full">
+              <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
+                <span className="bg-white text-on-surface text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-full">
                   Sold Out
                 </span>
               </div>
@@ -94,18 +94,18 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-chile-rojo mb-3">
               {product.category}
             </span>
-            <h1 className="font-serif text-3xl sm:text-4xl text-[#1d1c16] leading-tight">
+            <h1 className="font-serif text-3xl sm:text-4xl text-on-surface leading-tight">
               {product.title}
             </h1>
             <p className="text-2xl font-semibold text-terracota mt-4">{product.price}</p>
 
-            <p className="text-sm text-[#1d1c16]/80 leading-relaxed mt-6">{product.description}</p>
+            <p className="text-sm text-on-surface/80 leading-relaxed mt-6">{product.description}</p>
 
             <div className="mt-6 p-4 rounded-2xl bg-white shadow-cloud-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#57423b] mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
                 Material
               </p>
-              <p className="text-sm text-[#1d1c16]">{product.material}</p>
+              <p className="text-sm text-on-surface">{product.material}</p>
             </div>
 
             <div className="mt-8">
@@ -121,7 +121,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                   <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
                     <button
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="w-7 h-7 rounded-full bg-[#f2ede4] flex items-center justify-center border-none cursor-pointer text-[#1d1c16] hover:bg-[#ece8df]"
+                      className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-3.5 h-3.5" />
@@ -129,7 +129,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                     <span className="text-sm w-5 text-center">{quantity}</span>
                     <button
                       onClick={() => setQuantity((q) => q + 1)}
-                      className="w-7 h-7 rounded-full bg-[#f2ede4] flex items-center justify-center border-none cursor-pointer text-[#1d1c16] hover:bg-[#ece8df]"
+                      className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -154,12 +154,12 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
               )}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-[#dec0b7]/30 space-y-3">
-              <div className="flex items-center gap-2 text-xs text-[#57423b]">
+            <div className="mt-8 pt-6 border-t border-outline-variant/30 space-y-3">
+              <div className="flex items-center gap-2 text-xs text-on-surface-variant">
                 <ShieldCheck className="w-4 h-4 text-chile-rojo flex-shrink-0" />
                 <span>Handmade in small batches — every piece is one-of-a-kind</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-[#57423b]">
+              <div className="flex items-center gap-2 text-xs text-on-surface-variant">
                 <Truck className="w-4 h-4 text-chile-rojo flex-shrink-0" />
                 <span>Ships nationwide from Iloilo City</span>
               </div>

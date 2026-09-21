@@ -16,20 +16,20 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
 
   // Translucent over the hero image (home, unscrolled); solid everywhere else.
   const isTransparent = currentView === 'home' && !isScrolled;
-  const textBase = isTransparent ? 'text-white/85' : 'text-[#57423b]';
-  const textStrong = isTransparent ? 'text-white' : 'text-[#1d1c16]';
+  const textBase = isTransparent ? 'text-white/85' : 'text-on-surface-variant';
+  const textStrong = isTransparent ? 'text-white' : 'text-on-surface';
   const accent = isTransparent ? 'text-sunset' : 'text-chile-rojo';
   const accentHover = isTransparent ? 'hover:text-sunset' : 'hover:text-chile-rojo';
   const accentBar = isTransparent ? 'bg-sunset' : 'bg-chile-rojo';
   const groupAccentHover = isTransparent ? 'group-hover:text-sunset' : 'group-hover:text-chile-rojo';
-  const ringOffset = isTransparent ? 'focus-visible:ring-offset-[#1d1c16]' : 'focus-visible:ring-offset-[#F9F6F0]';
+  const ringOffset = isTransparent ? 'focus-visible:ring-offset-on-surface' : 'focus-visible:ring-offset-sand';
 
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 w-full transition-all duration-500 ${
         isTransparent
           ? 'bg-transparent py-6'
-          : 'bg-[#F9F6F0]/95 backdrop-blur-md shadow-[0_4px_20px_-2px_rgba(38,28,20,0.04)] py-3'
+          : 'bg-sand/95 backdrop-blur-md shadow-[0_4px_20px_-2px_rgba(38,28,20,0.04)] py-3'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -154,7 +154,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="md:hidden bg-[#F9F6F0] border-b border-[#dec0b7]/30 px-6 py-6 shadow-lg"
+            className="md:hidden bg-sand border-b border-outline-variant/30 px-6 py-6 shadow-lg"
           >
             <div className="flex flex-col space-y-4">
               <button
@@ -162,7 +162,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('home');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-chile-rojo bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-chile-rojo bg-transparent border-none"
               >
                 Shop
               </button>
@@ -173,7 +173,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   const el = document.getElementById('available-pieces');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-chile-rojo bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-chile-rojo bg-transparent border-none"
               >
                 Collections
               </button>
@@ -182,7 +182,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('commission');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-[#1d1c16] hover:text-chile-rojo bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-chile-rojo bg-transparent border-none"
               >
                 Custom Request
               </button>

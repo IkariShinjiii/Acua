@@ -27,7 +27,7 @@ function AdminGate() {
   const { user, isAdmin, loading, profileLoading, signOut } = useAuth();
 
   if (loading || (user && profileLoading)) {
-    return <div className="pt-40 text-center text-sm text-[#57423b]">Checking access…</div>;
+    return <div className="pt-40 text-center text-sm text-on-surface-variant">Checking access…</div>;
   }
 
   if (!user) {
@@ -41,8 +41,8 @@ function AdminGate() {
   if (!isAdmin) {
     return (
       <div className="max-w-6xl mx-auto px-4 pt-32 pb-24 text-center space-y-4">
-        <p className="text-sm text-[#57423b]">
-          Signed in as <strong className="text-[#1d1c16]">{user.email}</strong>, but this account
+        <p className="text-sm text-on-surface-variant">
+          Signed in as <strong className="text-on-surface">{user.email}</strong>, but this account
           isn't an admin.
         </p>
         <button
@@ -63,7 +63,7 @@ function PatronGate({ setCurrentView }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="pt-40 text-center text-sm text-[#57423b]">Checking access…</div>;
+    return <div className="pt-40 text-center text-sm text-on-surface-variant">Checking access…</div>;
   }
 
   if (!user) {
@@ -109,10 +109,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-[#1d1c16] font-sans">
+    <div className="min-h-screen bg-sand text-on-surface font-sans">
       {/* Dev Navigation Quick-Switcher Bar — not a real route, just a way to
           reach the (now real-auth-gated) AdminView until real routing exists. */}
-      <aside className="fixed bottom-4 right-4 z-50 bg-[#1d1c16]/90 backdrop-blur-md text-white text-[11px] px-3.5 py-2 rounded-full shadow-cloud flex items-center gap-2">
+      <aside className="fixed bottom-4 right-4 z-50 bg-on-surface/90 backdrop-blur-md text-white text-[11px] px-3.5 py-2 rounded-full shadow-cloud flex items-center gap-2">
         <span className="text-white/60 font-medium">Active View:</span>
         <span className="font-semibold text-sunset">{VIEW_LABELS[currentView]}</span>
         <span className="w-px h-3 bg-white/20" />

@@ -18,11 +18,11 @@
   }
 
   body {
-    @apply font-sans text-[#1d1c16] bg-[#F9F6F0] min-h-screen selection:bg-chile-rojo selection:text-white;
+    @apply font-sans text-on-surface bg-sand min-h-screen selection:bg-chile-rojo selection:text-white;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight font-normal text-[#1d1c16];
+    @apply font-serif tracking-tight font-normal text-on-surface;
   }
 
   /* Universal reset for form inputs: enforce clean borderless cloud appearance */
@@ -39,7 +39,7 @@
 
   /* Cloud Input Field: Zero borders, soft white/cream background, inset depth */
   .cloud-input {
-    @apply w-full border-none outline-none rounded-2xl bg-[#f8f3ea]/80 px-4 py-3.5 text-sm text-[#1d1c16] placeholder:text-[#1d1c16]/40 shadow-input-inset focus:bg-white focus:shadow-cloud-sm transition-all duration-200;
+    @apply w-full border-none outline-none rounded-2xl bg-surface-container-low/80 px-4 py-3.5 text-sm text-on-surface placeholder:text-on-surface/40 shadow-input-inset focus:bg-white focus:shadow-cloud-sm transition-all duration-200;
   }
 
   /* Primary High-Impact Brand Action Button */

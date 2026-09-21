@@ -16,23 +16,29 @@
 
 ## Color palette
 
-| Token         | Hex       | Role                                              |
-| ------------- | --------- | -------------------------------------------------- |
-| `sand`        | `#F9F6F0` | Global background (warm sand/cream)                |
-| `terracotta`  | `#A04723` | Primary accent — CTAs, active states, footer block |
-| `white`       | `#FFFFFF` | Component block background (cards, forms)          |
+**Resolved**: the codebase's four-color brand board is canonical, not the
+single `#A04723` terracotta this master spec originally called for. The
+client supplied both as separate instructions at different points; the
+four-color board was implemented consistently across every component
+(navbar, cards, buttons, forms, footer, carousels) over many later passes,
+while the single-terracotta version was never built. Reverting to one flat
+accent color at this point would be a real regression — it would strip the
+olive/sunset variation that now carries filter states, secondary accents,
+and gradient warmth throughout the site — for no benefit the client has
+asked for. This entry replaces the single-color table below as the source
+of truth; treat any future single-terracotta reference in older docs as
+superseded.
 
-This is a deliberately narrow palette: one warm neutral, one deep accent, and
-white for elevated surfaces. Don't introduce additional accent hues without
-updating this document first.
+| Token         | Hex       | Role                                                |
+| ------------- | --------- | ---------------------------------------------------- |
+| `sand`        | `#F9F6F0` | Global background (warm sand/cream)                  |
+| `chile-rojo`  | `#AE431E` | Primary accent — CTAs, active states, footer block   |
+| `terracota`   | `#D68224` | Secondary accent — hover states, gradient warmth     |
+| `olive`       | `#8A8B35` | Tertiary accent — "done" states, quiet emphasis      |
+| `sunset`      | `#EAC891` | Soft highlight — gradient warmth, subtle fills       |
+| `white`       | `#FFFFFF` | Component block background (cards, forms)            |
 
-> **Conflict to resolve**: an earlier pass on this project implemented a
-> four-color brand board (Chile Rojo `#AE431E`, Terracota `#D68224`, Olive
-> `#8A8B35`, Sunset `#EAC891`) across every component, replacing a previously
-> inconsistent color set. This master spec calls for a single terracotta
-> (`#A04723`) instead. These are two different, specific hex values for
-> "terracotta" from two different instructions — pick one before the next
-> implementation pass. See the note at the bottom of this file.
+Don't introduce additional accent hues without updating this document first.
 
 ## Shape & elevation
 
@@ -74,15 +80,9 @@ Framer Motion for:
 
 ## Current implementation vs. this spec
 
-The live codebase (Vite + React, plain CSS/JS — see `plan.md`) currently
-implements a **different, four-color** palette end-to-end (Chile Rojo,
-Terracota, Olive, Sunset) rather than the single-terracotta `#A04723` system
-described above, and its hero/cards use a mix of cream (`#F9F6F0`) and
-tinted-neutral surfaces rather than strict `bg-white` component blocks. The
-structural conventions (rounded corners, soft shadows, borderless cards,
-serif + Inter type, lucide icons, Framer Motion) already match this spec.
-
-Before the next implementation pass touches color, confirm with the client
-which palette is canonical — the four-color brand board or the single
-`#A04723` terracotta — since they were given as two separate, conflicting
-instructions.
+The live codebase (Vite + React — see `plan.md`) implements the four-color
+palette above end-to-end, and its hero/cards use a mix of cream (`#F9F6F0`)
+and tinted-neutral surfaces rather than strict `bg-white` component blocks —
+both now treated as intentional rather than gaps. The structural conventions
+(rounded corners, soft shadows, borderless cards, serif + Inter type, lucide
+icons, Framer Motion) already matched this spec and still do.

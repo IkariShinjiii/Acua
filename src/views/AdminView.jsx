@@ -35,7 +35,7 @@ function StatusBadge({ label, tone = 'neutral' }) {
       ? 'bg-olive/15 text-olive'
       : tone === 'active'
       ? 'bg-chile-rojo/10 text-chile-rojo'
-      : 'bg-[#ece8df] text-[#57423b]';
+      : 'bg-surface-container-high text-on-surface-variant';
   return (
     <span className={`px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${toneClass}`}>
       {label}
@@ -50,8 +50,8 @@ function StatCard({ icon: Icon, label, value }) {
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-2xl font-serif text-[#1d1c16] leading-none">{value}</p>
-        <p className="text-xs text-[#57423b] mt-1">{label}</p>
+        <p className="text-2xl font-serif text-on-surface leading-none">{value}</p>
+        <p className="text-xs text-on-surface-variant mt-1">{label}</p>
       </div>
     </div>
   );
@@ -117,7 +117,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
         <button
           onClick={() => setStatusFilter('all')}
           className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-            statusFilter === 'all' ? 'bg-[#1d1c16] text-white' : 'bg-[#f2ede4] text-[#1d1c16] hover:bg-[#ece8df]'
+            statusFilter === 'all' ? 'bg-on-surface text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
           }`}
         >
           All
@@ -127,7 +127,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
             key={s.id}
             onClick={() => setStatusFilter(s.id)}
             className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-              statusFilter === s.id ? 'bg-[#1d1c16] text-white' : 'bg-[#f2ede4] text-[#1d1c16] hover:bg-[#ece8df]'
+              statusFilter === s.id ? 'bg-on-surface text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
             }`}
           >
             {s.label}
@@ -145,21 +145,21 @@ function CommissionPipeline({ briefs, onUpdated }) {
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-serif text-lg text-[#1d1c16]">{brief.full_name}</h3>
+                    <h3 className="font-serif text-lg text-on-surface">{brief.full_name}</h3>
                     <StatusBadge
                       label={COMMISSION_STAGES[idx].label}
                       tone={isDelivered ? 'done' : 'active'}
                     />
                   </div>
-                  <p className="text-xs text-[#57423b] mt-1">
+                  <p className="text-xs text-on-surface-variant mt-1">
                     {brief.email} • {brief.category} • {brief.material}
                   </p>
                   {brief.narrative && (
-                    <p className="text-sm text-[#1d1c16]/80 mt-3 leading-relaxed max-w-2xl">
+                    <p className="text-sm text-on-surface/80 mt-3 leading-relaxed max-w-2xl">
                       {brief.narrative}
                     </p>
                   )}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-[#57423b]">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[11px] text-on-surface-variant">
                     {brief.budget_range && <span>Budget: {brief.budget_range}</span>}
                     {brief.timeline && <span>Timeline: {brief.timeline}</span>}
                     {!brief.reference_image_urls?.length && <span>0 reference images</span>}
@@ -194,7 +194,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
                         onChange={(e) =>
                           setQuoteDrafts((prev) => ({ ...prev, [brief.id]: e.target.value }))
                         }
-                        className="w-full rounded-full bg-[#f8f3ea] px-4 py-2 text-xs text-[#1d1c16] border-none outline-none focus:bg-white shadow-input-inset"
+                        className="w-full rounded-full bg-surface-container-low px-4 py-2 text-xs text-on-surface border-none outline-none focus:bg-white shadow-input-inset"
                       />
                       <button
                         onClick={() => sendQuote(brief)}
@@ -235,7 +235,7 @@ function CommissionPipeline({ briefs, onUpdated }) {
           );
         })}
         {visible.length === 0 && (
-          <p className="text-center text-sm text-[#57423b] py-12">No briefs in this stage.</p>
+          <p className="text-center text-sm text-on-surface-variant py-12">No briefs in this stage.</p>
         )}
       </div>
     </div>
@@ -278,14 +278,14 @@ function OrderFulfillment({ orders, onUpdated }) {
           >
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-serif text-lg text-[#1d1c16]">#{order.id.slice(0, 8)}</h3>
+                <h3 className="font-serif text-lg text-on-surface">#{order.id.slice(0, 8)}</h3>
                 <StatusBadge label={ORDER_STAGES[idx].label} tone={idx === ORDER_STAGES.length - 1 ? 'done' : 'active'} />
               </div>
-              <p className="text-xs text-[#57423b] mt-1">
+              <p className="text-xs text-on-surface-variant mt-1">
                 {order.patron?.full_name || order.patron?.email || 'Guest'} •{' '}
                 {order.product?.title ?? 'Item unavailable'}
               </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-[#57423b]">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-on-surface-variant">
                 <span>Total: {formatPeso(order.total_cents / 100)}</span>
                 <span>Placed {new Date(order.created_at).toLocaleDateString()}</span>
                 {order.tracking_number && <span>Tracking: {order.tracking_number}</span>}
@@ -308,7 +308,7 @@ function OrderFulfillment({ orders, onUpdated }) {
         );
       })}
       {orders.length === 0 && (
-        <p className="text-center text-sm text-[#57423b] py-12">No orders yet.</p>
+        <p className="text-center text-sm text-on-surface-variant py-12">No orders yet.</p>
       )}
     </div>
   );
@@ -384,12 +384,12 @@ function InventoryCuration({ pieces, onUpdated }) {
               placeholder="Title *"
               value={draft.title}
               onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-              className="rounded-xl bg-[#f8f3ea] px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
             />
             <select
               value={draft.category}
               onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-              className="rounded-xl bg-[#f8f3ea] px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
             >
               {FILTER_TABS.filter((t) => t !== 'All').map((t) => (
                 <option key={t} value={t}>
@@ -401,25 +401,25 @@ function InventoryCuration({ pieces, onUpdated }) {
               placeholder="Material"
               value={draft.material}
               onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
-              className="rounded-xl bg-[#f8f3ea] px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
             />
             <input
               required
               placeholder="Price (e.g. ₱12,000) *"
               value={draft.price}
               onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))}
-              className="rounded-xl bg-[#f8f3ea] px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset"
             />
             <input
               placeholder="Image URL (optional)"
               value={draft.image}
               onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
-              className="rounded-xl bg-[#f8f3ea] px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
+              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
             />
             <button
               type="submit"
               disabled={saving}
-              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-[#1d1c16] text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-on-surface text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save Piece'}
             </button>
@@ -430,25 +430,25 @@ function InventoryCuration({ pieces, onUpdated }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {pieces.map((piece) => (
           <div key={piece.id} className="bg-white rounded-2xl shadow-cloud-sm overflow-hidden">
-            <div className="relative aspect-square bg-[#f8f3ea]">
+            <div className="relative aspect-square bg-surface-container-low">
               <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" />
               {piece.soldOut && (
-                <div className="absolute inset-0 bg-[#1d1c16]/60 flex items-center justify-center">
-                  <span className="bg-white text-[#1d1c16] text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
+                  <span className="bg-white text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
                     Sold Out
                   </span>
                 </div>
               )}
             </div>
             <div className="p-4 space-y-2">
-              <p className="font-sans text-sm font-medium text-[#1d1c16]">{piece.title}</p>
-              <p className="text-xs text-[#57423b]">{piece.category} • {piece.price}</p>
+              <p className="font-sans text-sm font-medium text-on-surface">{piece.title}</p>
+              <p className="text-xs text-on-surface-variant">{piece.category} • {piece.price}</p>
               <button
                 onClick={() => toggleSoldOut(piece)}
                 className={`w-full mt-2 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
                   piece.soldOut
-                    ? 'bg-[#f2ede4] text-[#1d1c16] hover:bg-[#ece8df]'
-                    : 'bg-[#1d1c16] text-white hover:opacity-90'
+                    ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                    : 'bg-on-surface text-white hover:opacity-90'
                 }`}
               >
                 {piece.soldOut ? 'Mark Available' : 'Mark Sold Out'}
@@ -457,7 +457,7 @@ function InventoryCuration({ pieces, onUpdated }) {
           </div>
         ))}
         {pieces.length === 0 && (
-          <p className="col-span-full text-center text-sm text-[#57423b] py-12">
+          <p className="col-span-full text-center text-sm text-on-surface-variant py-12">
             No pieces yet — add one above.
           </p>
         )}
@@ -514,15 +514,15 @@ export default function AdminView() {
   const soldOutCount = pieces?.filter((p) => p.soldOut).length ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased">
+    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center">
             <LayoutDashboard className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="font-serif text-2xl sm:text-3xl text-[#1d1c16]">ACUA Admin</h1>
-            <p className="text-xs text-[#57423b]">Owner operations dashboard</p>
+            <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">ACUA Admin</h1>
+            <p className="text-xs text-on-surface-variant">Owner operations dashboard</p>
           </div>
         </div>
 
@@ -532,7 +532,7 @@ export default function AdminView() {
           <StatCard icon={Gem} label="Pieces Marked Sold Out" value={soldOutCount} />
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-[#dec0b7]/30 pb-4">
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-outline-variant/30 pb-4">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -541,7 +541,7 @@ export default function AdminView() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-                  isActive ? 'bg-chile-rojo text-white' : 'bg-white text-[#1d1c16] hover:bg-[#f2ede4] shadow-cloud-sm'
+                  isActive ? 'bg-chile-rojo text-white' : 'bg-white text-on-surface hover:bg-surface-container shadow-cloud-sm'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -554,19 +554,19 @@ export default function AdminView() {
 
         {activeTab === 'commissions' &&
           (briefs === null ? (
-            <p className="text-center text-sm text-[#57423b] py-16">Loading…</p>
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
             <CommissionPipeline briefs={briefs} onUpdated={refresh} />
           ))}
         {activeTab === 'orders' &&
           (orders === null ? (
-            <p className="text-center text-sm text-[#57423b] py-16">Loading…</p>
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
             <OrderFulfillment orders={orders} onUpdated={refresh} />
           ))}
         {activeTab === 'inventory' &&
           (pieces === null ? (
-            <p className="text-center text-sm text-[#57423b] py-16">Loading…</p>
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
           ) : (
             <InventoryCuration pieces={pieces} onUpdated={refresh} />
           ))}

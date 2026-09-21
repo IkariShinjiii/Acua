@@ -46,7 +46,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-[#1d1c16]/70 z-[100] flex items-start justify-center pt-24 px-4"
+          className="fixed inset-0 bg-on-surface/70 z-[100] flex items-start justify-center pt-24 px-4"
           onClick={onClose}
         >
           <motion.div
@@ -54,21 +54,21 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl bg-[#F9F6F0] rounded-3xl shadow-2xl overflow-hidden"
+            className="w-full max-w-xl bg-sand rounded-3xl shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center gap-3 p-5 border-b border-[#dec0b7]/30">
-              <Search className="w-5 h-5 text-[#57423b] flex-shrink-0" />
+            <div className="flex items-center gap-3 p-5 border-b border-outline-variant/30">
+              <Search className="w-5 h-5 text-on-surface-variant flex-shrink-0" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, category, or material…"
-                className="flex-1 bg-transparent border-none outline-none text-[#1d1c16] placeholder:text-[#57423b]/60 text-sm"
+                className="flex-1 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/60 text-sm"
               />
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-[#f2ede4] transition-colors border-none bg-transparent cursor-pointer text-[#1d1c16] flex-shrink-0"
+                className="p-1.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0"
                 aria-label="Close search"
               >
                 <X className="w-4 h-4" />
@@ -77,12 +77,12 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
 
             <div className="max-h-[60vh] overflow-y-auto">
               {q && results.length === 0 && (
-                <p className="text-center text-sm text-[#57423b] py-12">
+                <p className="text-center text-sm text-on-surface-variant py-12">
                   No pieces match "{query}".
                 </p>
               )}
               {!q && (
-                <p className="text-center text-sm text-[#57423b] py-12">
+                <p className="text-center text-sm text-on-surface-variant py-12">
                   Start typing to search Available Pieces.
                 </p>
               )}
@@ -93,9 +93,9 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                     onSelectProduct(piece.id);
                     onClose();
                   }}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-[#f2ede4] transition-colors border-none bg-transparent cursor-pointer text-left"
+                  className="w-full flex items-center gap-4 p-4 hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-left"
                 >
-                  <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#f8f3ea]">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low">
                     <img
                       src={piece.image}
                       alt={piece.title}
@@ -104,8 +104,8 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#1d1c16] truncate">{piece.title}</p>
-                    <p className="text-xs text-[#57423b]">{piece.category} • {piece.material}</p>
+                    <p className="text-sm font-medium text-on-surface truncate">{piece.title}</p>
+                    <p className="text-xs text-on-surface-variant">{piece.category} • {piece.material}</p>
                   </div>
                   <span className="text-sm font-semibold text-terracota flex-shrink-0">
                     {piece.price}

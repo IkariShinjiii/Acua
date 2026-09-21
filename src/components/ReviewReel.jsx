@@ -65,8 +65,8 @@ export default function ReviewReel({ onSelectProduct }) {
   return (
     <div className="relative w-full overflow-hidden py-4 select-none">
       {/* Editorial Edge Vignette Masking (matches Framer ReviewReel overflow clip with soft fading) */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-r from-[#F9F6F0] via-[#F9F6F0]/80 to-transparent z-10" />
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-l from-[#F9F6F0] via-[#F9F6F0]/80 to-transparent z-10" />
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-r from-sand via-sand/80 to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-l from-sand via-sand/80 to-transparent z-10" />
 
       {/* Draggable / auto-drifting ticker track — real drag physics (mouse,
           touch, and trackpad) via Framer Motion, same as a native carousel. */}
@@ -92,7 +92,7 @@ export default function ReviewReel({ onSelectProduct }) {
             className="w-[280px] sm:w-[320px] shrink-0 select-none group cursor-pointer"
           >
             {/* Strict Portrait Aspect Ratio Card */}
-            <div className="relative aspect-[4/5] w-full rounded-2xl sm:rounded-3xl overflow-hidden mb-4 shadow-[0_10px_30px_-8px_rgba(174,67,30,0.08)] group-hover:shadow-[0_20px_45px_-10px_rgba(174,67,30,0.18)] transition-all duration-500 bg-[#EDE4D8]">
+            <div className="relative aspect-[4/5] w-full rounded-2xl sm:rounded-3xl overflow-hidden mb-4 shadow-[0_10px_30px_-8px_rgba(174,67,30,0.08)] group-hover:shadow-[0_20px_45px_-10px_rgba(174,67,30,0.18)] transition-all duration-500 bg-sand-200">
               <img
                 className="w-full h-full object-cover pointer-events-none transition-transform duration-700 group-hover:scale-108"
                 src={item.image}
@@ -104,7 +104,7 @@ export default function ReviewReel({ onSelectProduct }) {
 
               {/* Subtle Pill Tag */}
               <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-full bg-[#FEF9F0]/85 backdrop-blur-md text-[10px] uppercase font-semibold tracking-widest text-[#1d1c16] shadow-sm">
+                <span className="px-3 py-1 rounded-full bg-surface/85 backdrop-blur-md text-[10px] uppercase font-semibold tracking-widest text-on-surface shadow-sm">
                   1-of-1 Relic
                 </span>
               </div>
@@ -113,10 +113,10 @@ export default function ReviewReel({ onSelectProduct }) {
             {/* Product Meta */}
             <div className="flex justify-between items-start px-2">
               <div>
-                <h3 className="font-sans text-base text-[#1d1c16] font-medium group-hover:text-chile-rojo transition-colors">
+                <h3 className="font-sans text-base text-on-surface font-medium group-hover:text-chile-rojo transition-colors">
                   {item.title}
                 </h3>
-                <p className="font-sans text-xs text-[#57423b] mt-0.5 font-light">
+                <p className="font-sans text-xs text-on-surface-variant mt-0.5 font-light">
                   {item.material}
                 </p>
               </div>

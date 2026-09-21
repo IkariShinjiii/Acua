@@ -65,6 +65,7 @@ export default {
 
         // Original Sand & Terracotta Palette
         sand: {
+          DEFAULT: '#F9F6F0',
           50: '#FAF6F0',
           100: '#F6F1EB',
           200: '#EDE4D8',

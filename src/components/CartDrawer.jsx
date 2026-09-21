@@ -16,20 +16,20 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#1d1c16]/50 z-[90]"
+            className="fixed inset-0 bg-on-surface/50 z-[90]"
           />
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-[#F9F6F0] z-[100] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-sand z-[100] shadow-2xl flex flex-col"
           >
-            <div className="flex items-center justify-between p-5 border-b border-[#dec0b7]/30">
-              <h2 className="font-serif text-xl text-[#1d1c16]">Your Cart</h2>
+            <div className="flex items-center justify-between p-5 border-b border-outline-variant/30">
+              <h2 className="font-serif text-xl text-on-surface">Your Cart</h2>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-[#f2ede4] transition-colors border-none bg-transparent cursor-pointer text-[#1d1c16]"
+                className="p-2 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface"
                 aria-label="Close cart"
               >
                 <X className="w-5 h-5" />
@@ -42,7 +42,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                   <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto">
                     <ShoppingBag className="w-5 h-5" />
                   </div>
-                  <p className="text-sm text-[#57423b]">Your cart is empty.</p>
+                  <p className="text-sm text-on-surface-variant">Your cart is empty.</p>
                 </div>
               ) : (
                 items.map(({ product, quantity }) => (
@@ -52,7 +52,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                         onViewProduct(product.id);
                         onClose();
                       }}
-                      className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#f8f3ea] border-none cursor-pointer p-0"
+                      className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0"
                     >
                       <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
                     </button>
@@ -62,7 +62,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                           onViewProduct(product.id);
                           onClose();
                         }}
-                        className="text-sm font-medium text-[#1d1c16] hover:text-chile-rojo transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full"
+                        className="text-sm font-medium text-on-surface hover:text-chile-rojo transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full"
                       >
                         {product.title}
                       </button>
@@ -70,7 +70,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                       <div className="flex items-center gap-2 mt-2">
                         <button
                           onClick={() => setQuantity(product.id, quantity - 1)}
-                          className="w-6 h-6 rounded-full bg-[#f2ede4] flex items-center justify-center border-none cursor-pointer text-[#1d1c16] hover:bg-[#ece8df]"
+                          className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
                           aria-label="Decrease quantity"
                         >
                           <Minus className="w-3 h-3" />
@@ -78,7 +78,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                         <span className="text-xs w-4 text-center">{quantity}</span>
                         <button
                           onClick={() => setQuantity(product.id, quantity + 1)}
-                          className="w-6 h-6 rounded-full bg-[#f2ede4] flex items-center justify-center border-none cursor-pointer text-[#1d1c16] hover:bg-[#ece8df]"
+                          className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
                           aria-label="Increase quantity"
                         >
                           <Plus className="w-3 h-3" />
@@ -87,7 +87,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                     </div>
                     <button
                       onClick={() => removeItem(product.id)}
-                      className="text-[#57423b] hover:text-chile-rojo transition-colors border-none bg-transparent cursor-pointer p-1 h-fit"
+                      className="text-on-surface-variant hover:text-chile-rojo transition-colors border-none bg-transparent cursor-pointer p-1 h-fit"
                       aria-label={`Remove ${product.title}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -98,10 +98,10 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
             </div>
 
             {items.length > 0 && (
-              <div className="p-5 border-t border-[#dec0b7]/30 space-y-3">
+              <div className="p-5 border-t border-outline-variant/30 space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#57423b]">Subtotal</span>
-                  <span className="font-semibold text-[#1d1c16]">{formatPeso(subtotalCents / 100)}</span>
+                  <span className="text-on-surface-variant">Subtotal</span>
+                  <span className="font-semibold text-on-surface">{formatPeso(subtotalCents / 100)}</span>
                 </div>
                 <a
                   href={`mailto:acuavibe@gmail.com?subject=${encodeURIComponent(
@@ -115,7 +115,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                 >
                   Email to Order
                 </a>
-                <p className="text-[10px] text-[#57423b] text-center leading-relaxed">
+                <p className="text-[10px] text-on-surface-variant text-center leading-relaxed">
                   Online checkout isn't live yet — this drafts an email with your cart so we can
                   confirm payment and shipping directly.
                 </p>

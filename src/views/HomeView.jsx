@@ -56,11 +56,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       : pieces.filter((p) => p.category === activeFilter);
 
   return (
-    <div className="bg-[#F9F6F0] text-[#1d1c16] font-sans antialiased min-h-screen flex flex-col selection:bg-chile-rojo selection:text-white">
+    <div className="bg-sand text-on-surface font-sans antialiased min-h-screen flex flex-col selection:bg-chile-rojo selection:text-white">
       <main className="flex-grow">
 
         {/* 1. Hero Section */}
-        <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#1d1c16]">
+        <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-on-surface">
           <div
             className="absolute inset-0 bg-cover bg-center w-full h-full"
             style={{
@@ -69,7 +69,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             }}
           />
           {/* Warm Overlay Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1d1c16]/70 via-[#1d1c16]/40 to-[#1d1c16]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-on-surface/70 via-on-surface/40 to-on-surface" />
 
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
             <h1 className="font-serif text-white text-[2.75rem] leading-[1.05] sm:text-6xl md:text-7xl tracking-tight max-w-3xl drop-shadow-[0_2px_20px_rgba(0,0,0,0.25)]">
@@ -89,13 +89,13 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   const el = document.getElementById('available-pieces');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-[#1d1c16]"
+                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-on-surface"
               >
                 SHOP NEW COLLECTION
               </button>
               <button
                 onClick={() => setCurrentView('commission')}
-                className="border border-white/40 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full hover:border-sunset hover:text-sunset transition-colors duration-300 inline-flex items-center justify-center bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-[#1d1c16]"
+                className="border border-white/40 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full hover:border-sunset hover:text-sunset transition-colors duration-300 inline-flex items-center justify-center bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-on-surface"
               >
                 CUSTOM REQUEST
               </button>
@@ -118,10 +118,10 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
         <section className="w-full mb-28 sm:mb-36 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
             <div>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#1d1c16] font-normal tracking-tight">
+              <h2 className="font-serif text-3xl sm:text-4xl text-on-surface font-normal tracking-tight">
                 New Release
               </h2>
-              <p className="font-sans text-xs sm:text-sm text-[#57423b] mt-1.5 hidden sm:block">
+              <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1.5 hidden sm:block">
                 Seasonal artifacts hand-sculpted in limited batches — hover to inspect
               </p>
             </div>
@@ -149,10 +149,10 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
         >
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
-              <h2 className="font-serif text-3xl sm:text-4xl text-[#1d1c16] font-normal tracking-tight">
+              <h2 className="font-serif text-3xl sm:text-4xl text-on-surface font-normal tracking-tight">
                 Available Pieces
               </h2>
-              <p className="font-sans text-xs sm:text-sm text-[#57423b] mt-1.5">
+              <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1.5">
                 Singular artifacts hand-assembled for modern permanence
               </p>
             </div>
@@ -167,8 +167,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     onClick={() => setActiveFilter(tab)}
                     className={`px-6 py-2.5 rounded-full font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer border-none ${
                       isActive
-                        ? 'bg-[#1d1c16] text-white shadow-md active:scale-95'
-                        : 'bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] hover:bg-sunset/30 hover:border-terracota/40'
+                        ? 'bg-on-surface text-white shadow-md active:scale-95'
+                        : 'bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-sunset/30 hover:border-terracota/40'
                     }`}
                   >
                     {tab}
@@ -179,10 +179,10 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
           </div>
 
           {pieces === null && (
-            <p className="text-center text-sm text-[#57423b] py-16">Loading pieces…</p>
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading pieces…</p>
           )}
           {pieces !== null && filteredPieces.length === 0 && (
-            <p className="text-center text-sm text-[#57423b] py-16">
+            <p className="text-center text-sm text-on-surface-variant py-16">
               No pieces in this category yet.
             </p>
           )}
@@ -202,7 +202,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   onClick={() => onViewProduct?.(piece.id)}
                 >
                   {/* Square Aspect Ratio Product Thumbnail */}
-                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#f8f3ea] mb-5">
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-surface-container-low mb-5">
                     <img
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       src={piece.image}
@@ -210,8 +210,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       onError={(e) => handleImageError(e, piece.fallback)}
                     />
                     {piece.soldOut && (
-                      <div className="absolute inset-0 bg-[#1d1c16]/60 flex items-center justify-center">
-                        <span className="bg-white text-[#1d1c16] text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                      <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
+                        <span className="bg-white text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
                           Sold Out
                         </span>
                       </div>
@@ -221,15 +221,15 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   {/* Card Description & Action Row */}
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="font-sans text-base sm:text-lg text-[#1d1c16] font-medium mb-1.5 group-hover:text-chile-rojo transition-colors">
+                      <h3 className="font-sans text-base sm:text-lg text-on-surface font-medium mb-1.5 group-hover:text-chile-rojo transition-colors">
                         {piece.title}
                       </h3>
-                      <p className="font-sans text-xs text-[#57423b] line-clamp-2 mb-4 leading-relaxed font-light">
+                      <p className="font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
                         {piece.description}
                       </p>
                     </div>
 
-                    <div className="flex justify-between items-center pt-3 border-t border-[#f2ede4]">
+                    <div className="flex justify-between items-center pt-3 border-t border-surface-container">
                       <span className="font-sans text-base text-terracota font-semibold">
                         {piece.price}
                       </span>
@@ -252,7 +252,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                           className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
                             addedItem === piece.id
                               ? 'bg-chile-rojo text-white'
-                              : 'bg-[#f8f3ea] text-chile-rojo hover:bg-chile-rojo hover:text-white'
+                              : 'bg-surface-container-low text-chile-rojo hover:bg-chile-rojo hover:text-white'
                           }`}
                           aria-label={`Add ${piece.title} to cart`}
                         >
@@ -273,7 +273,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
           <div className="mt-14 text-center">
             <button
               onClick={() => setActiveFilter('All')}
-              className="px-8 py-3.5 rounded-full bg-[#f2ede4] border border-[#dec0b7]/30 text-[#1d1c16] font-sans text-xs font-semibold tracking-widest uppercase hover:bg-[#ece8df] hover:border-terracota/50 transition-colors shadow-sm cursor-pointer"
+              className="px-8 py-3.5 rounded-full bg-surface-container border border-outline-variant/30 text-on-surface font-sans text-xs font-semibold tracking-widest uppercase hover:bg-surface-container-high hover:border-terracota/50 transition-colors shadow-sm cursor-pointer"
             >
               LOAD MORE
             </button>
@@ -281,13 +281,13 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
         </section>
 
         {/* 4. The Archive: Bespoke Creations Showcase */}
-        <section className="bg-[#f8f3ea] py-24 sm:py-32 border-t border-[#dec0b7]/20">
+        <section className="bg-surface-container-low py-24 sm:py-32 border-t border-outline-variant/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="font-serif text-3xl sm:text-5xl text-[#1d1c16] mb-4 font-normal tracking-tight">
+              <h2 className="font-serif text-3xl sm:text-5xl text-on-surface mb-4 font-normal tracking-tight">
                 The Archive
               </h2>
-              <p className="font-sans text-sm sm:text-base text-[#57423b] leading-relaxed font-light">
+              <p className="font-sans text-sm sm:text-base text-on-surface-variant leading-relaxed font-light">
                 Past 1-of-1 creations. Sold out, but forever inspiring. Browse the
                 archive to spark ideas for your custom coastal piece.
               </p>
@@ -298,7 +298,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
               {archiveItems?.map((item) => (
                 <div
                   key={item.id}
-                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] bg-[#ede4d8]`}
+                  className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] bg-sand-200`}
                 >
                   <img
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 filter grayscale-[20%] group-hover:grayscale-0"
@@ -329,7 +329,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             <div className="text-center">
               <button
                 onClick={() => setCurrentView('commission')}
-                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-wider h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f3ea]"
+                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-wider h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
               >
                 START A CUSTOM REQUEST
               </button>
@@ -342,8 +342,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       <footer className="w-full mt-auto bg-chile-rojo text-white">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <div className="bg-[#F9F6F0] px-4 py-2 rounded-lg shadow-sm inline-flex items-center justify-center">
-              <span className="font-serif text-2xl tracking-[0.22em] text-[#1d1c16] font-normal uppercase">
+            <div className="bg-sand px-4 py-2 rounded-lg shadow-sm inline-flex items-center justify-center">
+              <span className="font-serif text-2xl tracking-[0.22em] text-on-surface font-normal uppercase">
                 ACUA
               </span>
             </div>
