@@ -698,3 +698,27 @@ one click, the cart drawer shows quantity 1 (not 3) at the right subtotal,
 and a simulated pre-existing corrupted cart (quantity 3, written directly
 to localStorage) is clamped back to 1 on the next page load. Flag reverted
 after.
+
+### 6.7 Admin had no way to actually set is_one_of_one
+
+Found while looking for more standalone work: every fix in 6.4–6.6 assumed
+an admin could flag a piece as one-of-one, but `AdminView`'s "Add New
+Piece" form and each existing piece's card had no such control anywhere —
+the only way to ever set `products.is_one_of_one` was a raw SQL `UPDATE`,
+which isn't something the actual business owner using this dashboard can
+do. The whole cart-cap/badge system built over the last two passes was
+unreachable in practice without this.
+
+Added:
+- A "This is a 1-of-1 unique piece" checkbox in the Add New Piece form,
+  wired into the insert.
+- A "1-of-1" badge on each existing piece's thumbnail in the Inventory tab
+  (same styling as the storefront's own badge), and a second toggle button
+  next to "Mark Sold Out" / "Mark Available" so admins can flag or unflag
+  any existing piece after the fact too.
+
+Verified end-to-end as a real (temporarily-provisioned, since-removed)
+admin account: added a test piece with the checkbox checked, confirmed the
+badge and toggle button reflected `is_one_of_one = true`, toggled it back
+off, and confirmed the database row updated correctly both times before
+cleaning up the test piece and account.

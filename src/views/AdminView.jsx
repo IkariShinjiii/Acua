@@ -319,13 +319,32 @@ function OrderFulfillment({ orders, onUpdated }) {
 /* ------------------------------------------------------------------ */
 function InventoryCuration({ pieces, onUpdated }) {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [draft, setDraft] = useState({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '' });
+  const [draft, setDraft] = useState({
+    title: '',
+    category: FILTER_TABS[1],
+    material: '',
+    price: '',
+    image: '',
+    isOneOfOne: false,
+  });
   const [saving, setSaving] = useState(false);
 
   const toggleSoldOut = async (piece) => {
     const { error } = await supabase
       .from('products')
       .update({ sold_out: !piece.soldOut })
+      .eq('id', piece.id);
+    if (error) {
+      alert(`Couldn't update that piece: ${error.message}`);
+      return;
+    }
+    onUpdated();
+  };
+
+  const toggleOneOfOne = async (piece) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ is_one_of_one: !piece.isOneOfOne })
       .eq('id', piece.id);
     if (error) {
       alert(`Couldn't update that piece: ${error.message}`);
@@ -348,13 +367,14 @@ function InventoryCuration({ pieces, onUpdated }) {
         draft.image ||
         'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80',
       sold_out: false,
+      is_one_of_one: draft.isOneOfOne,
     });
     setSaving(false);
     if (error) {
       alert(`Couldn't save that piece: ${error.message}`);
       return;
     }
-    setDraft({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '' });
+    setDraft({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '', isOneOfOne: false });
     setShowAddForm(false);
     onUpdated();
   };
@@ -416,6 +436,15 @@ function InventoryCuration({ pieces, onUpdated }) {
               onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-white shadow-input-inset sm:col-span-2"
             />
+            <label className="sm:col-span-2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface-container-low text-sm text-on-surface cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={draft.isOneOfOne}
+                onChange={(e) => setDraft((d) => ({ ...d, isOneOfOne: e.target.checked }))}
+                className="w-4 h-4 accent-chile-rojo cursor-pointer"
+              />
+              This is a 1-of-1 unique piece (only one unit will ever be sold)
+            </label>
             <button
               type="submit"
               disabled={saving}
@@ -432,6 +461,11 @@ function InventoryCuration({ pieces, onUpdated }) {
           <div key={piece.id} className="bg-white rounded-2xl shadow-cloud-sm overflow-hidden">
             <div className="relative aspect-square bg-surface-container-low">
               <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" />
+              {piece.isOneOfOne && (
+                <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                  1-of-1
+                </span>
+              )}
               {piece.soldOut && (
                 <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
                   <span className="bg-white text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
@@ -443,16 +477,29 @@ function InventoryCuration({ pieces, onUpdated }) {
             <div className="p-4 space-y-2">
               <p className="font-sans text-sm font-medium text-on-surface">{piece.title}</p>
               <p className="text-xs text-on-surface-variant">{piece.category} • {piece.price}</p>
-              <button
-                onClick={() => toggleSoldOut(piece)}
-                className={`w-full mt-2 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
-                  piece.soldOut
-                    ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
-                    : 'bg-on-surface text-white hover:opacity-90'
-                }`}
-              >
-                {piece.soldOut ? 'Mark Available' : 'Mark Sold Out'}
-              </button>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => toggleSoldOut(piece)}
+                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
+                    piece.soldOut
+                      ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                      : 'bg-on-surface text-white hover:opacity-90'
+                  }`}
+                >
+                  {piece.soldOut ? 'Mark Available' : 'Mark Sold Out'}
+                </button>
+                <button
+                  onClick={() => toggleOneOfOne(piece)}
+                  title="Toggle whether only one unit of this piece will ever be sold"
+                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
+                    piece.isOneOfOne
+                      ? 'bg-chile-rojo text-white hover:brightness-90'
+                      : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                  }`}
+                >
+                  {piece.isOneOfOne ? '1-of-1 ✓' : 'Mark 1-of-1'}
+                </button>
+              </div>
             </div>
           </div>
         ))}
