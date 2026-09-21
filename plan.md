@@ -1487,3 +1487,15 @@ text remains; the footer's own Shop, Collections (including the
 just-fixed cross-page scroll), and Custom Request links were each
 clicked and confirmed to land in the right place; the email link
 resolves to a real `mailto:` address.
+
+**Follow-up fix — missing keyboard focus indicator**: only the two
+social icon links (copied from the old footer code) carried the app's
+standard `focus-visible:ring-2 ... focus-visible:ring-offset-chile-rojo`
+treatment. The other seven interactive elements sharing the new
+`linkClass` — Shop, Collections, Custom Request, My Account, Track a
+Commission, the email link, and the @acua_ph link — had no custom focus
+styling at all, inconsistent with every other interactive element in the
+app (navbar buttons/icons, CTAs). Added the same ring treatment to
+`linkClass` itself. Verified live: tabbing to the "Shop" button and to
+the mailto link both now compute a visible two-layer box-shadow ring
+(`chile-rojo` inner ring, `sunset`-tinted offset) instead of no ring.

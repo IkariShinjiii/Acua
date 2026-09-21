@@ -21,7 +21,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
   };
 
   const linkClass =
-    'text-left text-sm text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0';
+    'text-left text-sm text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo';
   const headingClass = 'text-[11px] uppercase tracking-widest font-semibold text-sunset';
 
   return (
