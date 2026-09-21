@@ -1162,3 +1162,38 @@ click, since the marquee's continuous auto-drift means Playwright's
 normal "wait until stable" check never resolves — not a real issue, an
 actual visitor can click a moving element fine) opens a product detail
 page whose `<h1>` title matches the clicked card's title exactly.
+
+## 12. More mock necklaces and bracelets — and a real image-accuracy bug
+
+Requested more placeholder catalog variety in the two categories ACUA
+actually makes. Added 8 new `products` rows (4 Necklaces, 4 Bracelets;
+copy matches the established non-tarnish/natural-material brand voice; 2
+flagged `is_one_of_one` for variety): Moonlit Shell Pendant, Coral Drift
+Choker, Tidepool Layered Necklace, Salt Air Bar Necklace, Driftwood Bead
+Bracelet, Sea Foam Chain Bracelet, Knotted Reef Cuff, Horizon Line Bangle.
+
+**Every candidate stock photo was downloaded and actually viewed before
+use** — a real, avoidable failure mode discovered mid-task: Unsplash
+photo *titles and search context* ("gold bracelet", "necklace with
+pendant") are frequently wrong. Several image ids that looked right by
+association turned out, on inspection, to show rings or earrings instead.
+Trusting a filename or a prior product's category association wasn't
+good enough. This surfaced a real, live bug in the process: **"Pearl Drop
+Chain," a real necklace product that's been on the storefront the whole
+session, has been showing a photo of blue crystal earrings** the entire
+time — an original seeding mistake from early in the project, only
+caught now by actually looking at the pixels instead of trusting the
+prior work. Fixed alongside the new products: Pearl Drop Chain now shows
+a real pearl necklace image; Azure Drop Pendant's and Woven Sand
+Bracelet's *fallback* images (also wrong or, in Woven Sand Bracelet's
+case, a dead 404 link) were corrected too.
+
+Every one of the 11 live products (3 original + 8 new) now has both its
+primary and fallback image verified by eye to actually depict the
+labeled category — no product in `Necklaces` or `Bracelets` shows a ring
+or earring anywhere, primary or fallback.
+
+Verified live: all 8 new titles render with descriptions/prices, the two
+`is_one_of_one` badges show correctly, zero failed image requests, and a
+full-page screenshot was reviewed directly confirming every card matches
+its stated category.
