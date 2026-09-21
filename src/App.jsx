@@ -231,7 +231,7 @@ export default function App() {
     <div className="min-h-screen bg-sand text-on-surface font-sans">
       {/* Dev Navigation Quick-Switcher Bar — not a real route, just a way to
           reach the (now real-auth-gated) AdminView until real routing exists. */}
-      <aside className="fixed bottom-4 right-4 z-50 bg-on-surface/90 backdrop-blur-md text-white text-[11px] px-3.5 py-2 rounded-full shadow-cloud flex items-center gap-2">
+      <aside className="fixed bottom-4 right-4 z-50 bg-ink/90 backdrop-blur-md text-white text-[11px] px-3.5 py-2 rounded-full shadow-cloud flex items-center gap-2">
         <span className="text-white/60 font-medium">Active View:</span>
         <span className="font-semibold text-sunset">{VIEW_LABELS[currentView]}</span>
         <span className="w-px h-3 bg-white/20" />

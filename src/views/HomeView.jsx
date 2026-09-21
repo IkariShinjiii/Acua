@@ -170,7 +170,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     onClick={() => setActiveFilter(tab)}
                     className={`px-6 py-2.5 rounded-full font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer border-none ${
                       isActive
-                        ? 'bg-on-surface text-white shadow-md active:scale-95'
+                        ? 'bg-ink text-white shadow-md active:scale-95'
                         : 'bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-sunset/30 hover:border-terracota/40'
                     }`}
                   >

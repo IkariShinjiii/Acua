@@ -123,7 +123,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
         <button
           onClick={() => setStatusFilter('all')}
           className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-            statusFilter === 'all' ? 'bg-on-surface text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+            statusFilter === 'all' ? 'bg-ink text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
           }`}
         >
           All
@@ -133,7 +133,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
             key={s.id}
             onClick={() => setStatusFilter(s.id)}
             className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
-              statusFilter === s.id ? 'bg-on-surface text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+              statusFilter === s.id ? 'bg-ink text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
             }`}
           >
             {s.label}
@@ -458,7 +458,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
             <button
               type="submit"
               disabled={saving}
-              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-on-surface text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save Piece'}
             </button>
@@ -493,7 +493,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
                   className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
                     piece.soldOut
                       ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
-                      : 'bg-on-surface text-white hover:opacity-90'
+                      : 'bg-ink text-white hover:opacity-90'
                   }`}
                 >
                   {piece.soldOut ? 'Mark Available' : 'Mark Sold Out'}
@@ -644,7 +644,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <button
               type="submit"
               disabled={saving}
-              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-on-surface text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save Piece'}
             </button>

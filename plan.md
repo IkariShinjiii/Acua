@@ -1011,3 +1011,37 @@ Verified with a real dark-mode screenshot of the hero after the fix: the
 photo shows the same top-to-bottom darkening treatment as before,
 matching the original light-mode design intent, with the rest of the page
 correctly in dark mode around it.
+
+### 9.1 Same bug class, three more places ("the buttons too")
+
+The client followed up with another screenshot: the category filter
+pills (Available Pieces) were washing out the same way. Same root cause,
+different shape — `bg-on-surface text-white`, a "solid dark pill, white
+label" pattern used for active/primary buttons, not a photo scrim. In
+light mode `on-surface` is near-black, so the pairing works; in dark mode
+it flips to near-white, leaving white text on a near-white pill —
+illegible, not washed-out-bright exactly, but the same underlying mistake
+as §9 (a token meant to invert with the theme, used somewhere that must
+not invert). Fixed by swapping to the new fixed `ink` token from §9
+everywhere this exact pairing appeared: the Available Pieces active
+filter pill, the Commission Pipeline's status filter pills, both "Save
+Piece" submit buttons (Inventory and Archive tabs), the Inventory tab's
+"Mark Sold Out" button, and — found while sweeping for the rest of this
+pattern, not from the report — the fixed dev nav "Active View" pill in
+`App.jsx`, which had the identical bug.
+
+**A fourth, inverted variant of the same mistake**, also found in that
+sweep: `ReviewReel`'s "1-of-1 Relic" badge (the New Release marquee,
+visible in the client's screenshot) paired a *static* light background
+(`bg-surface`, the leftover flat Material token, not the theme-aware
+`surface-elevated`) with the *theme-aware* `text-on-surface`. In dark
+mode the text flipped light while the background stayed light too —
+white-on-white, the mirror image of the pill bug. Fixed by swapping to
+`bg-surface-elevated`, which now correctly inverts together with the text
+color it's paired with.
+
+Verified computationally (the active filter pill's computed background
+resolved to `rgb(29, 28, 22)` — exactly the `ink` value — with white
+text, in a real dark-mode browser session) and visually via screenshot
+(the "Sold Out" badge and the dev nav pill both read correctly as dark
+pills with legible white text in dark mode).

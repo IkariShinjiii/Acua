@@ -104,7 +104,7 @@ export default function ReviewReel({ onSelectProduct }) {
 
               {/* Subtle Pill Tag */}
               <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-full bg-surface/85 backdrop-blur-md text-[10px] uppercase font-semibold tracking-widest text-on-surface shadow-sm">
+                <span className="px-3 py-1 rounded-full bg-surface-elevated/85 backdrop-blur-md text-[10px] uppercase font-semibold tracking-widest text-on-surface shadow-sm">
                   1-of-1 Relic
                 </span>
               </div>
