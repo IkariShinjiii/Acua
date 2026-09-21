@@ -833,9 +833,19 @@ scripted, reviewed pass across the 7 files that had them.
 `index.html` had its own hardcoded `bg-[#F9F6F0] text-[#1d1c16]` on
 `<body>`, predating the JSX-only hex-tokenization pass in §6.3 (which never
 scanned this file) — fixed to `bg-sand text-on-surface`, and it also gained
-a small blocking inline `<script>` in `<head>` that reads the saved theme
-(or falls back to `prefers-color-scheme`) and adds the `.dark` class before
-any paint, so there's no flash of the wrong theme on load.
+a small blocking inline `<script>` in `<head>` that adds the `.dark` class
+before any paint, so there's no flash of the wrong theme on load.
+
+**Default is always light, never the OS preference** (changed on request
+after the initial ship, which had followed `prefers-color-scheme` for a
+first-time visitor). The inline script now only checks
+`localStorage.getItem('acua-theme') === 'dark'` — nothing saved means
+light, full stop, regardless of the visitor's OS setting. Dark only turns
+on once someone explicitly uses the navbar toggle, and *that* choice is
+what persists on their next visit. Verified with Playwright contexts
+forcing both a dark and a light OS `colorScheme`: both land on light by
+default, and an explicit toggle to dark still survives a reload even
+under a dark OS preference.
 
 **`ThemeContext`** (`src/context/ThemeContext.jsx`) reads that already-set
 `.dark` class into React state on mount (rather than re-deriving it and
