@@ -8,13 +8,17 @@ import {
   ShieldCheck,
   X,
   ArrowRight,
+  AlertCircle,
 } from 'lucide-react';
 import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS, BUDGET_TIERS } from '../data/commissionOptions';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 export default function CommissionView({ prefill }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState(() => ({
     fullName: '',
-    email: '',
+    email: user?.email ?? '',
     phone: '',
     timeline: 'Flexible (4-6 Weeks)',
     category: prefill?.category ?? 'Sculptural Ring',
@@ -26,6 +30,7 @@ export default function CommissionView({ prefill }) {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [dragActive, setDragActive] = useState(false);
 
   const handleInputChange = (e) => {
@@ -71,14 +76,33 @@ export default function CommissionView({ prefill }) {
     setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
     setIsSubmitting(true);
-    // Simulate brief submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-    }, 1100);
+
+    // Reference image upload to Supabase Storage isn't wired yet — the
+    // brief still saves without them rather than blocking submission on it.
+    const { error } = await supabase.from('commission_briefs').insert({
+      user_id: user?.id ?? null,
+      full_name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone || null,
+      category: formData.category,
+      material: formData.material,
+      budget_range: formData.budget,
+      timeline: formData.timeline || null,
+      narrative: formData.narrative || null,
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      setSubmitError(error.message);
+      return;
+    }
+
+    setIsSubmitted(true);
   };
 
   return (
@@ -456,6 +480,13 @@ export default function CommissionView({ prefill }) {
                 {/* --------------------------------------------------- */}
                 {/* SUBMISSION FOOTER (Deep Terracotta Button)           */}
                 {/* --------------------------------------------------- */}
+                {submitError && (
+                  <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>{submitError}</span>
+                  </div>
+                )}
+
                 <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-[#dec0b7]/30">
                   <div className="flex items-center gap-2 text-xs text-[#57423b]">
                     <ShieldCheck className="w-4 h-4 text-chile-rojo flex-shrink-0" />

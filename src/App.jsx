@@ -3,11 +3,12 @@ import { LogOut } from 'lucide-react';
 import CommissionView from './views/CommissionView';
 import HomeView from './views/HomeView';
 import AdminView from './views/AdminView';
+import PatronDashboardView from './views/PatronDashboardView';
 import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
 import { useAuth } from './context/AuthContext';
 
-const VIEW_LABELS = { home: 'Home', commission: 'Commission', admin: 'Admin' };
+const VIEW_LABELS = { home: 'Home', commission: 'Commission', admin: 'Admin', dashboard: 'Dashboard' };
 
 // Real gate: only a signed-in account with profiles.is_admin = true sees
 // AdminView. Accounts are provisioned by hand (Supabase dashboard + a SQL
@@ -45,6 +46,25 @@ function AdminGate() {
   }
 
   return <AdminView />;
+}
+
+// Real gate: any signed-in account (signup allowed, unlike the admin gate).
+function PatronGate({ setCurrentView }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="pt-40 text-center text-sm text-[#57423b]">Checking access…</div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 pt-32 pb-24">
+        <AuthForm title="My Account" subtitle="Log in or create an account to track your orders and commissions." />
+      </div>
+    );
+  }
+
+  return <PatronDashboardView setCurrentView={setCurrentView} />;
 }
 
 /**
@@ -103,6 +123,7 @@ export default function App() {
         setCurrentView={navigateTo}
         cartCount={cartCount}
         onOpenCart={() => alert("Cart preview activated")}
+        onAccountClick={() => navigateTo('dashboard')}
       />
 
       {currentView === 'home' && (
@@ -110,6 +131,7 @@ export default function App() {
       )}
       {currentView === 'commission' && <CommissionView prefill={commissionPrefill} />}
       {currentView === 'admin' && <AdminGate />}
+      {currentView === 'dashboard' && <PatronGate setCurrentView={navigateTo} />}
     </div>
   );
 }

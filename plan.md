@@ -128,6 +128,21 @@ Central hub for customers and commissioners:
   table for the 1:1 mapping (this is where an earlier draft of the flow
   diagram was ambiguous).
 
+  **Built** — `src/views/PatronDashboardView.jsx`, gated by real auth (any
+  signed-in account; unlike AdminGate, signup is allowed here) behind the
+  Navbar's Account icon (previously dead — wired to this in the same
+  pass). Unlike AdminView, this one queries Supabase for real from the
+  start rather than mock data first: both tabs read the patron's own rows
+  (`orders`/`commission_briefs` scoped to `user_id = auth.uid()` via the
+  RLS policies from §6), with a `StageTracker` dot-and-line visualization
+  and proper empty states linking back to Shop / Custom Request. This only
+  works because `CommissionView`'s submit handler was switched from a fake
+  `setTimeout` to a real `commission_briefs` insert in the same pass —
+  verified end-to-end with a live test submission, confirmed in the
+  database via direct query, then cleaned up. Reference image upload to
+  Supabase Storage is still not wired — the form accepts files for local
+  preview only, they aren't persisted.
+
 ### E. Client admin dashboard (`app/admin/page.tsx`)
 
 Secure, role-based restricted route for the business owner:

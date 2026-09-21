@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Menu, X } from 'lucide-react';
 
-export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart }) {
+export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart, onAccountClick }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -123,6 +123,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
             </button>
 
             <button
+              onClick={onAccountClick}
               className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label="Account Profile"
             >
