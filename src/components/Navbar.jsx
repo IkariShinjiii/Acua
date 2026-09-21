@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Menu, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +9,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const headerRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +18,27 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Matches CartDrawer/SearchOverlay: Escape closes it, same as tapping
+  // outside — otherwise this is the only overlay in the app a keyboard or
+  // touch user has no way to dismiss except re-pressing the toggle itself.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+    const onPointerDown = (e) => {
+      if (headerRef.current && !headerRef.current.contains(e.target)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [mobileMenuOpen]);
 
   // Switching view and reading the DOM in the same tick doesn't work from
   // any page other than home: setCurrentView's re-render hasn't committed
@@ -55,6 +77,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
 
   return (
     <header
+      ref={headerRef}
       className={`fixed top-0 inset-x-0 z-50 w-full transition-all duration-500 ${
         isTransparent
           ? 'bg-transparent py-6'

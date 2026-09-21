@@ -1611,3 +1611,20 @@ Verified live: Home shows the default brand title, Custom Request shows
 "Custom Request | ACUA", and opening a piece from Available Pieces
 updates the tab to that piece's real name (e.g. "Horizon Line Bangle |
 ACUA") once its data loads.
+
+## 22. Mobile nav menu had no Escape or outside-tap dismissal
+
+`CartDrawer` and `SearchOverlay` both close on Escape and (via their
+click-catching backdrop) on an outside click — the mobile hamburger
+drawer in `Navbar` had neither. Once opened, the only way to close it was
+the toggle button itself or tapping one of its own links; pressing
+Escape did nothing, and tapping anywhere else on the page (the hero
+image, the logo) left it sitting open. Added the same pattern: an Escape
+listener, and a `pointerdown` listener on `document` that closes the menu
+if the tap/click lands outside the `<header>` element (guarded with a
+ref so clicks on the header's own toggle button or the drawer's own
+links — which already close it themselves — aren't double-handled).
+
+Verified live on a mobile viewport: opening via the toggle, then
+pressing Escape, closes it; reopening, then tapping the hero section
+well outside the header, also closes it.
