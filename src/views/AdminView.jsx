@@ -477,7 +477,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
                 </span>
               )}
               {piece.soldOut && (
-                <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
+                <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">
                   <span className="bg-surface-elevated text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
                     Sold Out
                   </span>

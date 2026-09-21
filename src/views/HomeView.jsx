@@ -60,7 +60,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       <main className="flex-grow">
 
         {/* 1. Hero Section */}
-        <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-on-surface">
+        <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-ink">
           <div
             className="absolute inset-0 bg-cover bg-center w-full h-full"
             style={{
@@ -68,8 +68,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                 "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85')",
             }}
           />
-          {/* Warm Overlay Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-on-surface/70 via-on-surface/40 to-on-surface" />
+          {/* Warm Overlay Gradient — darkens the photo for white text, so it
+              stays fixed-dark regardless of theme (bg-ink, not the
+              theme-aware on-surface, which would invert to near-white and
+              wash the photo out in dark mode). */}
+          <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/40 to-ink" />
 
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
             <h1 className="font-serif text-white text-[2.75rem] leading-[1.05] sm:text-6xl md:text-7xl tracking-tight max-w-3xl drop-shadow-[0_2px_20px_rgba(0,0,0,0.25)]">
@@ -89,13 +92,13 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   const el = document.getElementById('available-pieces');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-on-surface"
+                className="bg-chile-rojo hover:brightness-90 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
                 SHOP NEW COLLECTION
               </button>
               <button
                 onClick={() => setCurrentView('commission')}
-                className="border border-white/40 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full hover:border-sunset hover:text-sunset transition-colors duration-300 inline-flex items-center justify-center bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-on-surface"
+                className="border border-white/40 text-white font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full hover:border-sunset hover:text-sunset transition-colors duration-300 inline-flex items-center justify-center bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
                 CUSTOM REQUEST
               </button>
@@ -211,7 +214,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       onError={(e) => handleImageError(e, piece.fallback)}
                     />
                     {piece.soldOut && (
-                      <div className="absolute inset-0 bg-on-surface/60 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">
                         <span className="bg-surface-elevated text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
                           Sold Out
                         </span>

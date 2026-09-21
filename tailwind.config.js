@@ -26,6 +26,12 @@ export default {
         "surface-container-high": "rgb(var(--color-surface-container-high) / <alpha-value>)",
         "outline-variant": "rgb(var(--color-outline-variant) / <alpha-value>)",
         "accent": "rgb(var(--color-accent) / <alpha-value>)",
+        // Fixed, theme-invariant near-black — for scrims that darken a
+        // *photograph* (hero gradient, "Sold Out" badge overlays) rather
+        // than a page surface. These must never invert with the theme, or
+        // dark mode turns them into a wash of near-white light over the
+        // photo instead of a darkening scrim.
+        "ink": "#1d1c16",
 
         // Design Token Colors
         "on-error-container": "#93000a",

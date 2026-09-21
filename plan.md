@@ -971,3 +971,43 @@ ambiguous `Mark Sold Out`/`Mark Available` button-text match in the test
 script toggled the wrong two seed products — caught via direct DB query
 immediately after and corrected back to the original seed state (Woven
 Sand Bracelet sold out, Solitary Tidal Ear Cuff available) before finishing.
+
+## 9. Dark-mode bug: hero photo washed out white (user-reported)
+
+The client reported the hero looking "too bright" in dark mode via a
+screenshot of the live production site. Root cause: the hero's darkening
+scrim (`from-on-surface/70 via-on-surface/40 to-on-surface`, a gradient
+meant to darken the beach photo enough for white text to read over it)
+reused the theme-aware `on-surface` token — near-black in light mode
+(correct), but near-*white* in dark mode, since that's the same token used
+for readable body text everywhere else on a dark page. In dark mode the
+"darkening" gradient was actually washing the photo out with a translucent
+white overlay — the opposite of its purpose.
+
+The fix: `on-surface` is the wrong tool here regardless of theme, because
+darkening a fixed photograph isn't a theme concern — the photo itself
+never changes between light and dark mode, so its scrim shouldn't either.
+Added a new **fixed, non-theme-aware** token, `ink` (`#1d1c16`, flat hex,
+no CSS variable), and swapped every place a photo-darkening scrim or its
+related focus-ring offset had been (incorrectly) built on `on-surface`:
+
+- `HomeView`'s hero section background, gradient scrim, and its two CTA
+  buttons' `ring-offset`.
+- `Navbar`'s `ring-offset` for the transparent state (the navbar as it
+  appears over that same hero photo, before scrolling).
+- The "Sold Out" badge overlay on a product photo, in all three places it
+  appears: the Available Pieces grid (`HomeView`), the product detail page
+  (`ProductDetailView`), and the Inventory tab's piece cards (`AdminView`)
+  — all three had the exact same bug for the exact same reason.
+
+**Deliberately left unchanged**: `CartDrawer`'s and `SearchOverlay`'s modal
+backdrop scrims, and the dev nav bar's background in `App.jsx`, also use
+`on-surface` at partial opacity. Those dim the *page itself* behind a
+modal, not a fixed photograph, so whether they should invert with the
+theme is a separate, more debatable design question the client didn't
+raise — out of scope for this specific bug report.
+
+Verified with a real dark-mode screenshot of the hero after the fix: the
+photo shows the same top-to-bottom darkening treatment as before,
+matching the original light-mode design intent, with the rest of the page
+correctly in dark mode around it.

@@ -24,7 +24,10 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
   const accentHover = isTransparent ? 'hover:text-sunset' : 'hover:text-accent';
   const accentBar = isTransparent ? 'bg-sunset' : 'bg-chile-rojo';
   const groupAccentHover = isTransparent ? 'group-hover:text-sunset' : 'group-hover:text-accent';
-  const ringOffset = isTransparent ? 'focus-visible:ring-offset-on-surface' : 'focus-visible:ring-offset-sand';
+  // Transparent state sits over the fixed-dark hero photo (bg-ink, same
+  // fix as HomeView's scrim) — not the theme-aware surface, which would
+  // put a near-white ring offset over the photo in dark mode.
+  const ringOffset = isTransparent ? 'focus-visible:ring-offset-ink' : 'focus-visible:ring-offset-sand';
 
   return (
     <header
