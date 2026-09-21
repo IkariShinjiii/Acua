@@ -52,7 +52,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
   if (signupSuccess) {
     return (
       <div className="text-center py-8 space-y-3 max-w-sm mx-auto">
-        <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto">
           <UserPlus className="w-6 h-6" />
         </div>
         <h3 className="font-serif text-xl text-on-surface">Check your email</h3>
@@ -64,7 +64,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             setSignupSuccess(false);
             setMode('login');
           }}
-          className="text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors"
+          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
         >
           Back to log in
         </button>
@@ -75,7 +75,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
   if (resetSent) {
     return (
       <div className="text-center py-8 space-y-3 max-w-sm mx-auto">
-        <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto">
           <KeyRound className="w-6 h-6" />
         </div>
         <h3 className="font-serif text-xl text-on-surface">Check your email</h3>
@@ -88,7 +88,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             setResetSent(false);
             setMode('login');
           }}
-          className="text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors"
+          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
         >
           Back to log in
         </button>
@@ -99,7 +99,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
   return (
     <div className="max-w-sm mx-auto">
       <div className="text-center mb-6">
-        <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto mb-3">
+        <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto mb-3">
           {mode === 'login' ? (
             <LogIn className="w-5 h-5" />
           ) : mode === 'forgot' ? (
@@ -176,14 +176,14 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
               setMode('forgot');
               setError('');
             }}
-            className="block text-xs font-medium text-on-surface-variant hover:text-chile-rojo transition-colors bg-transparent border-none cursor-pointer p-0"
+            className="block text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0"
           >
             Forgot password?
           </button>
         )}
 
         {error && (
-          <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3">
+          <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -206,7 +206,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
               setMode('login');
               setError('');
             }}
-            className="block mx-auto text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors bg-transparent border-none cursor-pointer"
+            className="block mx-auto text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer"
           >
             Back to log in
           </button>

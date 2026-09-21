@@ -51,7 +51,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {items.length === 0 ? (
                 <div className="text-center py-16 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto">
+                  <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto">
                     <ShoppingBag className="w-5 h-5" />
                   </div>
                   <p className="text-sm text-on-surface-variant">Your cart is empty.</p>
@@ -74,7 +74,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                           onViewProduct(product.id);
                           onClose();
                         }}
-                        className="text-sm font-medium text-on-surface hover:text-chile-rojo transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full"
+                        className="text-sm font-medium text-on-surface hover:text-accent transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full"
                       >
                         {product.title}
                       </button>
@@ -101,7 +101,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                     </div>
                     <button
                       onClick={() => removeItem(product.id)}
-                      className="text-on-surface-variant hover:text-chile-rojo transition-colors border-none bg-transparent cursor-pointer p-1 h-fit"
+                      className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-1 h-fit"
                       aria-label={`Remove ${product.title}`}
                     >
                       <Trash2 className="w-4 h-4" />

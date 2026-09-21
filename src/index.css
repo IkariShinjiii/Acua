@@ -28,6 +28,11 @@
   --color-surface-container: 242 237 228; /* #f2ede4 */
   --color-surface-container-high: 236 232 223; /* #ece8df */
   --color-outline-variant: 222 192 183; /* #dec0b7 borders */
+  /* chile-rojo (174 67 30) itself, for use as small/foreground text and
+     icons (error banners, links, active nav states) rather than as a
+     button background. Same value as chile-rojo in light mode, since it
+     already reads fine (5.4:1+) against a light page. */
+  --color-accent: 174 67 30;
   color-scheme: light;
 }
 
@@ -40,6 +45,16 @@
   --color-surface-container: 50 44 35;
   --color-surface-container-high: 58 51 41;
   --color-outline-variant: 74 65 54;
+  /* Flat chile-rojo drops to ~2.8:1 as foreground text/icons against these
+     dark surfaces (WCAG AA needs 4.5:1 for text) — it's dark enough itself
+     to nearly disappear into a near-black page. Brightened to #FF8058,
+     which clears 4.5:1 against every dark surface token above *and* the
+     10%-tint error-banner background (bg-accent/10) — the tightest real
+     case, since blending a small amount of a bright color into an already-
+     dark background barely lifts it. bg-chile-rojo (buttons, with white
+     text on top) is untouched and still uses flat chile-rojo, since that
+     pairing was never affected by the page background. */
+  --color-accent: 255 128 88;
   color-scheme: dark;
 }
 

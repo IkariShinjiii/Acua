@@ -38,7 +38,7 @@ function StatusBadge({ label, tone = 'neutral' }) {
     tone === 'done'
       ? 'bg-olive/15 text-olive'
       : tone === 'active'
-      ? 'bg-chile-rojo/10 text-chile-rojo'
+      ? 'bg-chile-rojo/10 text-accent'
       : 'bg-surface-container-high text-on-surface-variant';
   return (
     <span className={`px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${toneClass}`}>
@@ -50,7 +50,7 @@ function StatusBadge({ label, tone = 'neutral' }) {
 function StatCard({ icon: Icon, label, value }) {
   return (
     <div className="flex items-center gap-4 bg-surface-elevated rounded-2xl shadow-cloud-sm p-5">
-      <div className="w-11 h-11 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center flex-shrink-0">
+      <div className="w-11 h-11 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center flex-shrink-0">
         <Icon className="w-5 h-5" />
       </div>
       <div>
@@ -661,7 +661,7 @@ function ArchiveCuration({ archiveItems, onUpdated }) {
               <button
                 onClick={() => removeItem(item)}
                 disabled={deletingId === item.id}
-                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors bg-surface-container text-chile-rojo hover:bg-chile-rojo hover:text-white disabled:opacity-50"
+                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors bg-surface-container text-accent hover:bg-chile-rojo hover:text-white disabled:opacity-50"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {deletingId === item.id ? 'Removing…' : 'Remove'}
@@ -739,7 +739,7 @@ export default function AdminView() {
     <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center">
             <LayoutDashboard className="w-5 h-5" />
           </div>
           <div>

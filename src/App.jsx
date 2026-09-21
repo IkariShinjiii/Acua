@@ -55,7 +55,7 @@ function AdminGate() {
         </p>
         <button
           onClick={signOut}
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" /> Log out
         </button>
@@ -140,7 +140,7 @@ function ResetPasswordGate() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="text-center mb-6">
-              <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto mb-3">
+              <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto mb-3">
                 <KeyRound className="w-5 h-5" />
               </div>
               <h2 className="font-serif text-2xl text-on-surface">Set a New Password</h2>
@@ -167,7 +167,7 @@ function ResetPasswordGate() {
               className="cloud-input"
             />
             {error && (
-              <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3">
+              <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -181,7 +181,7 @@ function ResetPasswordGate() {
                 clearPasswordRecovery();
                 signOut();
               }}
-              className="block mx-auto text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-chile-rojo transition-colors bg-transparent border-none cursor-pointer"
+              className="block mx-auto text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer"
             >
               Cancel and log out
             </button>

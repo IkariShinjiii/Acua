@@ -14,7 +14,7 @@ function StatusBadge({ label, done }) {
   return (
     <span
       className={`px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
-        done ? 'bg-olive/15 text-olive' : 'bg-chile-rojo/10 text-chile-rojo'
+        done ? 'bg-olive/15 text-olive' : 'bg-chile-rojo/10 text-accent'
       }`}
     >
       {label}
@@ -25,7 +25,7 @@ function StatusBadge({ label, done }) {
 function EmptyState({ icon: Icon, title, body, ctaLabel, onCta }) {
   return (
     <div className="text-center py-16 space-y-3">
-      <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-chile-rojo flex items-center justify-center mx-auto">
+      <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto">
         <Icon className="w-5 h-5" />
       </div>
       <h3 className="font-serif text-lg text-on-surface">{title}</h3>
@@ -33,7 +33,7 @@ function EmptyState({ icon: Icon, title, body, ctaLabel, onCta }) {
       {ctaLabel && (
         <button
           onClick={onCta}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
         >
           {ctaLabel} <ArrowRight className="w-3.5 h-3.5" />
         </button>

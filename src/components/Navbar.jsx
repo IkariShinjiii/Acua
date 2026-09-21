@@ -20,10 +20,10 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
   const isTransparent = currentView === 'home' && !isScrolled;
   const textBase = isTransparent ? 'text-white/85' : 'text-on-surface-variant';
   const textStrong = isTransparent ? 'text-white' : 'text-on-surface';
-  const accent = isTransparent ? 'text-sunset' : 'text-chile-rojo';
-  const accentHover = isTransparent ? 'hover:text-sunset' : 'hover:text-chile-rojo';
+  const accent = isTransparent ? 'text-sunset' : 'text-accent';
+  const accentHover = isTransparent ? 'hover:text-sunset' : 'hover:text-accent';
   const accentBar = isTransparent ? 'bg-sunset' : 'bg-chile-rojo';
-  const groupAccentHover = isTransparent ? 'group-hover:text-sunset' : 'group-hover:text-chile-rojo';
+  const groupAccentHover = isTransparent ? 'group-hover:text-sunset' : 'group-hover:text-accent';
   const ringOffset = isTransparent ? 'focus-visible:ring-offset-on-surface' : 'focus-visible:ring-offset-sand';
 
   return (
@@ -177,7 +177,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('home');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-chile-rojo bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
               >
                 Shop
               </button>
@@ -188,7 +188,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   const el = document.getElementById('available-pieces');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-chile-rojo bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
               >
                 Collections
               </button>
@@ -197,7 +197,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('commission');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-chile-rojo bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
               >
                 Custom Request
               </button>

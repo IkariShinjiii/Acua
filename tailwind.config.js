@@ -11,9 +11,13 @@ export default {
         // Theme-aware neutrals: values live in CSS variables (src/index.css,
         // :root vs .dark) so light/dark mode is one class toggle instead of
         // a `dark:` variant on every one of the ~350 places these are used.
-        // Brand accents (chile-rojo/terracota/olive/sunset) stay flat hex —
-        // they're brand identity, not surface/text neutrals, and read fine
-        // against both themes unchanged.
+        // Most brand accents (terracota/olive/sunset) stay flat hex — brand
+        // identity, not surface/text neutrals, and used as backgrounds or
+        // large/graphical elements where they read fine unchanged. `accent`
+        // is the one exception: it's chile-rojo used as small foreground
+        // text/icons (error banners, links, active states), which needs a
+        // brighter dark-mode value or it nearly disappears against a near-
+        // black page — see the CSS variable comments for the contrast math.
         "on-surface": "rgb(var(--color-on-surface) / <alpha-value>)",
         "on-surface-variant": "rgb(var(--color-on-surface-variant) / <alpha-value>)",
         "surface-elevated": "rgb(var(--color-surface-elevated) / <alpha-value>)",
@@ -21,6 +25,7 @@ export default {
         "surface-container": "rgb(var(--color-surface-container) / <alpha-value>)",
         "surface-container-high": "rgb(var(--color-surface-container-high) / <alpha-value>)",
         "outline-variant": "rgb(var(--color-outline-variant) / <alpha-value>)",
+        "accent": "rgb(var(--color-accent) / <alpha-value>)",
 
         // Design Token Colors
         "on-error-container": "#93000a",

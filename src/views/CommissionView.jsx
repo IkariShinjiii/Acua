@@ -217,12 +217,12 @@ export default function CommissionView({ prefill }) {
                 transition={{ duration: 0.4 }}
                 className="text-center py-12 sm:py-16 space-y-6 max-w-md mx-auto"
               >
-                <div className="w-16 h-16 rounded-full bg-chile-rojo/10 flex items-center justify-center mx-auto text-chile-rojo shadow-cloud-sm">
+                <div className="w-16 h-16 rounded-full bg-chile-rojo/10 flex items-center justify-center mx-auto text-accent shadow-cloud-sm">
                   <CheckCircle2 className="w-8 h-8 stroke-[1.5]" />
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[11px] uppercase tracking-[0.25em] font-semibold text-chile-rojo">
+                  <span className="text-[11px] uppercase tracking-[0.25em] font-semibold text-accent">
                     Brief Received
                   </span>
                   <h2 className="font-serif text-3xl text-on-surface font-normal">
@@ -234,12 +234,12 @@ export default function CommissionView({ prefill }) {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-surface-container-low/80 shadow-input-inset text-xs text-on-surface-variant flex items-center justify-center gap-2">
-                  <Clock className="w-4 h-4 text-chile-rojo flex-shrink-0" />
+                  <Clock className="w-4 h-4 text-accent flex-shrink-0" />
                   <span>Next: concept sketch & quote within 48 hours</span>
                 </div>
 
                 {failedUploadCount > 0 && (
-                  <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3 text-left">
+                  <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3 text-left">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>
                       Your brief was received, but {failedUploadCount === 1 ? 'one reference image' : `${failedUploadCount} reference images`} failed to upload. Mention it to us at {formData.email} and we'll get it sorted.
@@ -269,7 +269,7 @@ export default function CommissionView({ prefill }) {
 
                 {/* Form Header */}
                 <div className="text-center max-w-xl mx-auto space-y-2.5">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-chile-rojo/10 text-chile-rojo mb-1">
+                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-chile-rojo/10 text-accent mb-1">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <h1 className="font-serif text-3xl sm:text-4xl lg:text-[42px] text-on-surface font-normal leading-[1.15]">
@@ -521,11 +521,11 @@ export default function CommissionView({ prefill }) {
                       />
 
                       <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                        <div className="w-10 h-10 rounded-full bg-surface-elevated shadow-cloud-sm flex items-center justify-center text-chile-rojo">
+                        <div className="w-10 h-10 rounded-full bg-surface-elevated shadow-cloud-sm flex items-center justify-center text-accent">
                           <UploadCloud className="w-5 h-5 stroke-[1.75]" />
                         </div>
                         <div className="text-xs sm:text-sm font-medium text-on-surface">
-                          <span className="text-chile-rojo font-semibold underline underline-offset-2">Click to select files</span> or drag and drop
+                          <span className="text-accent font-semibold underline underline-offset-2">Click to select files</span> or drag and drop
                         </div>
                         <p className="text-[10px] text-on-surface-variant">
                           JPEG, PNG, HEIC or sketches up to 15MB each
@@ -534,7 +534,7 @@ export default function CommissionView({ prefill }) {
                     </div>
 
                     {fileError && (
-                      <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3 mt-3">
+                      <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3 mt-3">
                         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                         <span>{fileError}</span>
                       </div>
@@ -561,7 +561,7 @@ export default function CommissionView({ prefill }) {
                               type="button"
                               onClick={() => removeFile(idx)}
                               aria-label={`Remove ${img.name}`}
-                              className="p-2.5 -m-1 rounded-full text-on-surface-variant hover:text-chile-rojo border-none bg-transparent"
+                              className="p-2.5 -m-1 rounded-full text-on-surface-variant hover:text-accent border-none bg-transparent"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -576,7 +576,7 @@ export default function CommissionView({ prefill }) {
                 {/* SUBMISSION FOOTER (Deep Terracotta Button)           */}
                 {/* --------------------------------------------------- */}
                 {submitError && (
-                  <div className="flex items-start gap-2 text-xs text-chile-rojo bg-chile-rojo/10 rounded-xl p-3">
+                  <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>{submitError}</span>
                   </div>
@@ -584,7 +584,7 @@ export default function CommissionView({ prefill }) {
 
                 <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-outline-variant/30">
                   <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                    <ShieldCheck className="w-4 h-4 text-chile-rojo flex-shrink-0" />
+                    <ShieldCheck className="w-4 h-4 text-accent flex-shrink-0" />
                     <span>Complimentary consultation • Zero financial obligation</span>
                   </div>
 

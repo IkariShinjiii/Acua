@@ -127,7 +127,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </div>
 
             <a
-              className="font-sans text-xs font-semibold text-chile-rojo hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase"
+              className="font-sans text-xs font-semibold text-accent hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase"
               href="#available-pieces"
             >
               VIEW ALL
@@ -226,7 +226,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   {/* Card Description & Action Row */}
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="font-sans text-base sm:text-lg text-on-surface font-medium mb-1.5 group-hover:text-chile-rojo transition-colors">
+                      <h3 className="font-sans text-base sm:text-lg text-on-surface font-medium mb-1.5 group-hover:text-accent transition-colors">
                         {piece.title}
                       </h3>
                       <p className="font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
@@ -244,7 +244,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                             e.stopPropagation();
                             onRequestSimilar?.({ ...piece, source: 'catalog' });
                           }}
-                          className="text-[11px] font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
+                          className="text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
                         >
                           Request Similar
                         </button>
@@ -270,7 +270,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                           className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
                             addedItem === piece.id
                               ? 'bg-chile-rojo text-white'
-                              : 'bg-surface-container-low text-chile-rojo hover:bg-chile-rojo hover:text-white'
+                              : 'bg-surface-container-low text-accent hover:bg-chile-rojo hover:text-white'
                           }`}
                           aria-label={`Add ${piece.title} to cart`}
                         >
@@ -335,7 +335,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     )}
                     <button
                       onClick={() => onRequestSimilar?.({ ...item, source: 'archive' })}
-                      className="bg-surface-elevated text-chile-rojo font-sans text-[11px] font-semibold uppercase tracking-wider px-4 py-2 rounded-full shadow-sm hover:bg-sunset transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
+                      className="bg-surface-elevated text-accent font-sans text-[11px] font-semibold uppercase tracking-wider px-4 py-2 rounded-full shadow-sm hover:bg-sunset transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
                     >
                       Request Similar Piece
                     </button>

@@ -40,7 +40,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
           <p className="text-sm text-on-surface-variant">That piece couldn't be found.</p>
           <button
             onClick={() => setCurrentView('home')}
-            className="text-xs font-semibold uppercase tracking-wider text-chile-rojo hover:text-terracota transition-colors"
+            className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
           >
             Back to Shop
           </button>
@@ -63,7 +63,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             setCurrentView('home');
             setTimeout(() => document.getElementById('available-pieces')?.scrollIntoView(), 50);
           }}
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-chile-rojo transition-colors mb-8 border-none bg-transparent cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors mb-8 border-none bg-transparent cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Available Pieces
         </button>
@@ -91,7 +91,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
           </motion.div>
 
           <div className="flex flex-col">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-chile-rojo mb-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-accent mb-3">
               {product.category}
             </span>
             <h1 className="font-serif text-3xl sm:text-4xl text-on-surface leading-tight">
@@ -99,7 +99,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             </h1>
             <p className="text-2xl font-semibold text-terracota mt-4">{product.price}</p>
             {product.isOneOfOne && !product.soldOut && (
-              <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-chile-rojo bg-chile-rojo/10 rounded-full px-3 py-1 mt-3">
+              <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent bg-chile-rojo/10 rounded-full px-3 py-1 mt-3">
                 One of one — once it's gone, it's gone
               </span>
             )}
@@ -166,11 +166,11 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
 
             <div className="mt-8 pt-6 border-t border-outline-variant/30 space-y-3">
               <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                <ShieldCheck className="w-4 h-4 text-chile-rojo flex-shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-accent flex-shrink-0" />
                 <span>Handmade in small batches — every piece is one-of-a-kind</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                <Truck className="w-4 h-4 text-chile-rojo flex-shrink-0" />
+                <Truck className="w-4 h-4 text-accent flex-shrink-0" />
                 <span>Ships nationwide from Iloilo City</span>
               </div>
             </div>

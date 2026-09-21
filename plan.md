@@ -870,3 +870,40 @@ background (harmless, just a minor loss of depth). Making shadows
 theme-aware too would need the same CSS-variable treatment applied to
 `boxShadow` values in `tailwind.config.js` — straightforward if wanted, just
 out of scope for this pass.
+
+### 7.1 Dark-mode contrast regression found and fixed: `text-chile-rojo`
+
+Self-directed QA pass on §7 right after shipping it, using the standard
+WCAG relative-luminance contrast formula computed for every real
+text/background pairing in both themes (not just eyeballing screenshots).
+Every neutral pairing (`on-surface`/`on-surface-variant` on any
+`surface-*`/`sand` background) came back well above AA (7.6:1–15.8:1) in
+both themes — the CSS-variable approach held up. `text-chile-rojo`,
+however, did not: it's used everywhere as small foreground text and icons
+(error banners, active nav links, "Request Similar" links, the upload
+box's "Click to select files") on top of the page's own background, and
+while that reads at 5.4–5.8:1 against the light theme, chile-rojo is dark
+enough itself that it drops to **~2.8–3.0:1** against the new dark
+surfaces — a real accessibility regression introduced by §7, not a
+pre-existing issue.
+
+Fixed with a new theme-aware `accent` token (`rgb(var(--color-accent) /
+<alpha-value>)`): light mode keeps flat chile-rojo (`174 67 30`, already
+fine), dark mode uses a brightened `255 128 88` (`#FF8058`) tuned to clear
+4.5:1 against *every* dark surface token, including the tightest real
+case — the 10%-opacity tint error banners use for their background
+(`bg-chile-rojo/10`), where blending a small amount of foreground color
+into an already-dark background barely lifts the contrast at all. `bg-
+chile-rojo` (buttons, always paired with `text-white` on top) is
+untouched — that pairing was never affected by the page background and
+holds at 5.8:1 in both themes. Every `text-chile-rojo` call site
+(`text-`, `hover:text-`, `group-hover:text-` — 51 occurrences across 10
+files) was mechanically converted to `text-accent`; verified computationally
+(4.7–7.2:1 across all dark surfaces afterward, all comfortably above AA)
+and visually (a real dark-mode screenshot of the Commission form).
+
+**Noted but explicitly out of scope**: `text-terracota`, `text-olive`, and
+`text-sunset` also fail AA as foreground text in **light mode**
+(2.75–3.34:1) — but that's pre-existing, not something §7 introduced or
+regressed, so it wasn't touched in this pass. Worth a dedicated look if
+asked, separate from the dark-mode work.

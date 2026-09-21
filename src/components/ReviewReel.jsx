@@ -113,7 +113,7 @@ export default function ReviewReel({ onSelectProduct }) {
             {/* Product Meta */}
             <div className="flex justify-between items-start px-2">
               <div>
-                <h3 className="font-sans text-base text-on-surface font-medium group-hover:text-chile-rojo transition-colors">
+                <h3 className="font-sans text-base text-on-surface font-medium group-hover:text-accent transition-colors">
                   {item.title}
                 </h3>
                 <p className="font-sans text-xs text-on-surface-variant mt-0.5 font-light">
