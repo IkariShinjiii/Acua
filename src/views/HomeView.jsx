@@ -162,7 +162,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   <button
                     key={tab}
                     onClick={() => setActiveFilter(tab)}
-                    className={`px-6 py-2.5 rounded-full font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer border-none ${
+                    className={`px-6 py-2.5 rounded-full font-sans text-xs font-semibold tracking-wider uppercase transition-all duration-300 cursor-pointer border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                       isActive
                         ? 'bg-ink text-white shadow-md active:scale-95'
                         : 'bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-sunset/30 hover:border-terracota/40'
@@ -195,8 +195,24 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35 }}
-                  className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
+                  className="group cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
                   onClick={() => onViewProduct?.(piece.id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${piece.title}`}
+                  onKeyDown={(e) => {
+                    // Ignore keydowns that bubbled up from the nested Add to
+                    // Cart / Request Similar buttons — those already handle
+                    // their own activation and stop the click from
+                    // navigating, but keydown bubbles regardless, so without
+                    // this guard pressing Enter on either button would also
+                    // fire this card's navigation.
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onViewProduct?.(piece.id);
+                    }
+                  }}
                 >
                   {/* Square Aspect Ratio Product Thumbnail */}
                   <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-surface-container-low mb-5">
@@ -242,7 +258,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                             e.stopPropagation();
                             onRequestSimilar?.({ ...piece, source: 'catalog' });
                           }}
-                          className="text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer"
+                          className="text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         >
                           Request Similar
                         </button>
@@ -265,7 +281,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                             e.stopPropagation();
                             handleAdd(piece);
                           }}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
                             addedItem === piece.id
                               ? 'bg-chile-rojo text-white'
                               : 'bg-surface-container-low text-accent hover:bg-chile-rojo hover:text-white'
@@ -314,7 +330,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     loading="lazy"
                     onError={(e) => handleImageError(e, item.fallback)}
                   />
-                  <div className="absolute inset-0 bg-chile-rojo/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4 text-center backdrop-blur-[2px]">
+                  <div className="absolute inset-0 bg-chile-rojo/60 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4 text-center backdrop-blur-[2px]">
                     <span className="bg-terracota text-white font-sans text-xs font-semibold px-4 py-2 rounded-full tracking-wider shadow-sm">
                       1-OF-1
                     </span>

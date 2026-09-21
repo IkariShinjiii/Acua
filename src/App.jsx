@@ -182,7 +182,7 @@ function ResetPasswordGate() {
                 clearPasswordRecovery();
                 signOut();
               }}
-              className="block mx-auto text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer"
+              className="block mx-auto text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
             >
               Cancel and log out
             </button>
@@ -249,7 +249,7 @@ export default function App() {
         <span className="w-px h-3 bg-white/20" />
         <button
           onClick={() => navigateTo(currentView === 'admin' ? 'home' : 'admin')}
-          className="text-white/60 hover:text-sunset transition-colors border-none bg-transparent cursor-pointer font-medium underline underline-offset-2"
+          className="text-white/60 hover:text-sunset transition-colors border-none bg-transparent cursor-pointer font-medium underline underline-offset-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
         >
           {currentView === 'admin' ? 'Exit Admin' : 'Admin'}
         </button>
@@ -258,7 +258,7 @@ export default function App() {
             <span className="w-px h-3 bg-white/20" />
             <button
               onClick={signOut}
-              className="text-white/60 hover:text-sunset transition-colors border-none bg-transparent cursor-pointer font-medium underline underline-offset-2"
+              className="text-white/60 hover:text-sunset transition-colors border-none bg-transparent cursor-pointer font-medium underline underline-offset-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               title={user.email}
             >
               Log out

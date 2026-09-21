@@ -90,7 +90,7 @@
 
   /* Primary High-Impact Brand Action Button */
   .btn-terracotta {
-    @apply inline-flex items-center justify-center border-none rounded-full bg-chile-rojo px-8 py-4 text-sm font-semibold tracking-wide text-white shadow-terracotta-glow hover:brightness-90 active:scale-[0.98] transition-all duration-300;
+    @apply inline-flex items-center justify-center border-none rounded-full bg-chile-rojo px-8 py-4 text-sm font-semibold tracking-wide text-white shadow-terracotta-glow hover:brightness-90 active:scale-[0.98] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand;
   }
 
   /* Palette Strip: ACUA brand accent bar (Chile Rojo / Terracota / Olive / Sunset) */

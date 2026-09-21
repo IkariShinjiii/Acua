@@ -122,7 +122,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
       <div className="flex flex-wrap gap-2.5">
         <button
           onClick={() => setStatusFilter('all')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
+          className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
             statusFilter === 'all' ? 'bg-ink text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
           }`}
         >
@@ -132,7 +132,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
           <button
             key={s.id}
             onClick={() => setStatusFilter(s.id)}
-            className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
               statusFilter === s.id ? 'bg-ink text-white' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
             }`}
           >
@@ -206,7 +206,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                       <button
                         onClick={() => sendQuote(brief)}
                         disabled={isSaving}
-                        className="flex-shrink-0 w-9 h-9 rounded-full bg-chile-rojo text-white flex items-center justify-center border-none cursor-pointer hover:brightness-90 disabled:opacity-50"
+                        className="flex-shrink-0 w-9 h-9 rounded-full bg-chile-rojo text-white flex items-center justify-center border-none cursor-pointer hover:brightness-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         aria-label="Send quote"
                       >
                         <Send className="w-4 h-4" />
@@ -217,7 +217,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                     <button
                       onClick={() => advance(brief.id, 'in_production', { deposit_paid: true }, 'Moved to production.')}
                       disabled={isSaving}
-                      className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50"
+                      className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                     >
                       Deposit Received → Production
                     </button>
@@ -226,7 +226,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                     <button
                       onClick={() => advance(brief.id, 'delivered', {}, 'Marked as delivered.')}
                       disabled={isSaving}
-                      className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50"
+                      className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                     >
                       Mark as Delivered
                     </button>
@@ -302,7 +302,7 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
             {next ? (
               <button
                 onClick={() => advance(order)}
-                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all"
+                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
               >
                 {next.id === 'shipped' ? <Truck className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                 Mark as {next.label}
@@ -395,7 +395,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
       <div className="flex justify-end">
         <button
           onClick={() => setShowAddForm((v) => !v)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           <Plus className="w-4 h-4" /> Add New Piece
         </button>
@@ -459,7 +459,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
             <button
               type="submit"
               disabled={saving}
-              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
             >
               {saving ? 'Saving…' : 'Save Piece'}
             </button>
@@ -491,7 +491,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => toggleSoldOut(piece)}
-                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
+                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
                     piece.soldOut
                       ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
                       : 'bg-ink text-white hover:opacity-90'
@@ -502,7 +502,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
                 <button
                   onClick={() => toggleOneOfOne(piece)}
                   title="Toggle whether only one unit of this piece will ever be sold"
-                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors ${
+                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
                     piece.isOneOfOne
                       ? 'bg-chile-rojo text-white hover:brightness-90'
                       : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
@@ -585,7 +585,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
       <div className="flex justify-end">
         <button
           onClick={() => setShowAddForm((v) => !v)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           <Plus className="w-4 h-4" /> Add Archive Piece
         </button>
@@ -645,7 +645,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <button
               type="submit"
               disabled={saving}
-              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
             >
               {saving ? 'Saving…' : 'Save Piece'}
             </button>
@@ -670,7 +670,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
               <button
                 onClick={() => removeItem(item)}
                 disabled={deletingId === item.id}
-                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors bg-surface-container text-accent hover:bg-chile-rojo hover:text-white disabled:opacity-50"
+                className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors bg-surface-container text-accent hover:bg-chile-rojo hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 {deletingId === item.id ? 'Removing…' : 'Remove'}
@@ -772,7 +772,7 @@ export default function AdminView() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                   isActive ? 'bg-chile-rojo text-white' : 'bg-surface-elevated text-on-surface hover:bg-surface-container shadow-cloud-sm'
                 }`}
               >

@@ -116,7 +116,16 @@ export default function ReviewReel({ onSelectProduct }) {
             onClick={() => {
               if (!dragMovedRef.current) onSelectProduct?.(item.id);
             }}
-            className="w-[280px] sm:w-[320px] shrink-0 select-none group cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label={`View ${item.title}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectProduct?.(item.id);
+              }
+            }}
+            className="w-[280px] sm:w-[320px] shrink-0 select-none group cursor-pointer rounded-2xl sm:rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
           >
             {/* Strict Portrait Aspect Ratio Card */}
             <div className="relative aspect-[4/5] w-full rounded-2xl sm:rounded-3xl overflow-hidden mb-4 shadow-[0_10px_30px_-8px_rgba(174,67,30,0.08)] group-hover:shadow-[0_20px_45px_-10px_rgba(174,67,30,0.18)] transition-all duration-500 bg-sand-200">

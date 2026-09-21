@@ -1499,3 +1499,63 @@ app (navbar buttons/icons, CTAs). Added the same ring treatment to
 `linkClass` itself. Verified live: tabbing to the "Shop" button and to
 the mailto link both now compute a visible two-layer box-shadow ring
 (`chile-rojo` inner ring, `sunset`-tinted offset) instead of no ring.
+
+## 19. Site-wide keyboard accessibility audit
+
+Chasing the footer's missing focus ring one level further turned up the
+same gap almost everywhere: it wasn't a footer-specific oversight, it was
+never applied consistently anywhere except a handful of icon buttons in
+the navbar. Two categories of problem, of different severity:
+
+**Cosmetic — dozens of interactive elements had no visible focus
+indicator at all.** Buttons/links across `Navbar` (the actual primary
+"Shop / Collections / Custom Request" nav links, both desktop and the
+mobile drawer — the site's main navigation), `SearchOverlay`,
+`CartDrawer`, `Toast`, `ProductDetailView` (including the Add to Cart and
+quantity-stepper buttons — the core purchase actions), `PatronDashboardView`,
+`AuthForm`, `CommissionView`, `AdminView`, and the shared `.btn-terracotta`
+class itself (the site's primary CTA button, used in 6 different files —
+checkout email link, form submits, the error boundary's reload button)
+had zero `focus-visible` styling. Fixed the shared class once in
+`index.css`; fixed every other spot individually, choosing a
+`ring-offset` color that matches whatever surface each element actually
+sits on (`sand` for page-level, `surface-elevated` for cards) so the ring
+reads correctly in both themes.
+
+**Functional — two real "can't operate this at all" gaps, not just
+missing polish:**
+
+- **The Available Pieces product cards** (the primary way to reach any
+  product's detail page from the home grid) were a `motion.div` with only
+  an `onClick` — no `tabIndex`, no keyboard handler, no ARIA role. A
+  keyboard-only or screen-reader user could not open a single product's
+  detail page from the grid at all. Same defect, same fix needed, in the
+  "New Release" reel (`ReviewReel.jsx`) — its cards had the identical
+  click-only pattern (a leftover from the reel rewrite in §11 that fixed
+  *mouse* clicks but not keyboard ones). Fixed both by adding
+  `role="button"`, `tabIndex={0}`, an `aria-label`, and an `onKeyDown`
+  that activates on Enter/Space. The home grid card also nests two real
+  `<button>`s (Add to Cart, Request Similar) that call `stopPropagation`
+  on click — but `keydown` bubbles regardless of that, so without a
+  guard, pressing Enter on either nested button would *also* fire the
+  outer card's navigation. Guarded the outer handler with
+  `if (e.target !== e.currentTarget) return;` and verified live that
+  Enter on the Add to Cart button now correctly stays on the page instead
+  of navigating away.
+- **The commission form's Material Selection control** was a plain
+  `<div onClick>` per option — the only way to set a required field on
+  the form, and completely unreachable by keyboard. Converted each card
+  to a real `<button type="button" role="radio" aria-checked>` inside a
+  `role="radiogroup"` container, preserving the existing visual design
+  and selection logic.
+
+Verified live end-to-end with a temporary Playwright script (installed
+and removed afterward, no trace left behind): a product card is
+focusable and Enter opens its detail page; pressing Enter on the nested
+Add to Cart button does not navigate away; the material radio group is
+focusable and Enter selects it (`aria-checked` flips to `true`). Also
+fixed one more related bug found in the same pass: the Archive section's
+"Request Similar Piece" button only became visible on `:hover` (`opacity-0
+group-hover:opacity-100`), so a keyboard user tabbing onto it got no
+visual feedback at all — added `group-focus-within:opacity-100` so
+focusing the button reveals the overlay the same way hovering does.

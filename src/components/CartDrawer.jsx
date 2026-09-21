@@ -41,7 +41,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
               <h2 className="font-serif text-xl text-on-surface">Your Cart</h2>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface"
+                className="p-2 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
                 aria-label="Close cart"
               >
                 <X className="w-5 h-5" />
@@ -64,7 +64,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                         onViewProduct(product.id);
                         onClose();
                       }}
-                      className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0"
+                      className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                     >
                       <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
                     </button>
@@ -74,7 +74,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                           onViewProduct(product.id);
                           onClose();
                         }}
-                        className="text-sm font-medium text-on-surface hover:text-accent transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full"
+                        className="text-sm font-medium text-on-surface hover:text-accent transition-colors bg-transparent border-none p-0 cursor-pointer text-left truncate block w-full rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                       >
                         {product.title}
                       </button>
@@ -82,7 +82,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                       <div className="flex items-center gap-2 mt-2">
                         <button
                           onClick={() => setQuantity(product.id, quantity - 1)}
-                          className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
+                          className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                           aria-label="Decrease quantity"
                         >
                           <Minus className="w-3 h-3" />
@@ -91,7 +91,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                         {!product.isOneOfOne && (
                           <button
                             onClick={() => setQuantity(product.id, quantity + 1)}
-                            className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high"
+                            className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                             aria-label="Increase quantity"
                           >
                             <Plus className="w-3 h-3" />
@@ -101,7 +101,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                     </div>
                     <button
                       onClick={() => removeItem(product.id)}
-                      className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-1 h-fit"
+                      className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-1 h-fit rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                       aria-label={`Remove ${product.title}`}
                     >
                       <Trash2 className="w-4 h-4" />

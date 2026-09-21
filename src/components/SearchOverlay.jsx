@@ -71,7 +71,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
               />
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0"
+                className="p-1.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
                 aria-label="Close search"
               >
                 <X className="w-4 h-4" />
@@ -96,7 +96,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                     onSelectProduct(piece.id);
                     onClose();
                   }}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-left"
+                  className="w-full flex items-center gap-4 p-4 hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-chile-rojo"
                 >
                   <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low">
                     <img

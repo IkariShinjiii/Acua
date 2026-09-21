@@ -49,7 +49,7 @@ export default function Toast({ toast, onDismiss }) {
             <button
               onClick={onDismiss}
               aria-label="Dismiss notification"
-              className="text-on-surface-variant hover:text-on-surface transition-colors border-none bg-transparent cursor-pointer p-0.5 -m-0.5"
+              className="text-on-surface-variant hover:text-on-surface transition-colors border-none bg-transparent cursor-pointer p-0.5 -m-0.5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
             >
               <X className="w-4 h-4" />
             </button>

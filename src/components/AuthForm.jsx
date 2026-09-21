@@ -64,7 +64,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             setSignupSuccess(false);
             setMode('login');
           }}
-          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
+          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           Back to log in
         </button>
@@ -88,7 +88,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             setResetSent(false);
             setMode('login');
           }}
-          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
+          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           Back to log in
         </button>
@@ -128,7 +128,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
                 setMode(m);
                 setError('');
               }}
-              className={`flex-1 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer ${
+              className={`flex-1 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container ${
                 mode === m ? 'bg-surface-elevated text-on-surface shadow-cloud-sm' : 'text-on-surface-variant bg-transparent'
               }`}
             >
@@ -176,7 +176,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
               setMode('forgot');
               setError('');
             }}
-            className="block text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0"
+            className="block text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
           >
             Forgot password?
           </button>
@@ -206,7 +206,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
               setMode('login');
               setError('');
             }}
-            className="block mx-auto text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer"
+            className="block mx-auto text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
           >
             Back to log in
           </button>

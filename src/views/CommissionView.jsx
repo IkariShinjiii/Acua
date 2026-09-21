@@ -255,7 +255,7 @@ export default function CommissionView({ prefill }) {
                       setFileError('');
                       setFailedUploadCount(0);
                     }}
-                    className="px-6 py-2.5 rounded-full bg-surface-container-high/60 hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors border-none"
+                    className="px-6 py-2.5 rounded-full bg-surface-container-high/60 hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
                   >
                     Submit Another Commission
                   </button>
@@ -387,7 +387,7 @@ export default function CommissionView({ prefill }) {
                             key={cat}
                             type="button"
                             onClick={() => setFormData((prev) => ({ ...prev, category: cat }))}
-                            className={`px-4 py-2.5 rounded-full text-xs font-medium tracking-wide transition-all border-none ${
+                            className={`px-4 py-2.5 rounded-full text-xs font-medium tracking-wide transition-all border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                               isSelected
                                 ? 'bg-chile-rojo text-white shadow-terracotta-glow font-semibold'
                                 : 'bg-surface-container-low/90 text-on-surface hover:bg-surface-elevated shadow-input-inset'
@@ -405,14 +405,17 @@ export default function CommissionView({ prefill }) {
                     <label className="text-xs font-medium text-on-surface block">
                       Material Selection
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Material Selection">
                       {MATERIAL_OPTIONS.map((option) => {
                         const isSelected = formData.material === option.id;
                         return (
-                          <div
+                          <button
                             key={option.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
                             onClick={() => setFormData((prev) => ({ ...prev, material: option.id }))}
-                            className={`cursor-pointer p-4 rounded-2xl transition-all border-none ${
+                            className={`cursor-pointer p-4 rounded-2xl transition-all border-none text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                               isSelected
                                 ? 'bg-surface-elevated shadow-cloud text-on-surface ring-2 ring-chile-rojo'
                                 : 'bg-surface-container-low/70 hover:bg-surface-elevated/80 shadow-input-inset text-on-surface'
@@ -429,7 +432,7 @@ export default function CommissionView({ prefill }) {
                               </div>
                             </div>
                             <span className="text-[11px] text-on-surface-variant block">{option.note}</span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -455,7 +458,7 @@ export default function CommissionView({ prefill }) {
                           key={tier.id}
                           type="button"
                           onClick={() => setFormData((prev) => ({ ...prev, budget: tier.range }))}
-                          className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all border-none ${
+                          className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                             isSelected
                               ? 'bg-chile-rojo text-white shadow-terracotta-glow font-semibold'
                               : 'bg-surface-container-low/80 hover:bg-surface-elevated text-on-surface shadow-input-inset'
@@ -561,7 +564,7 @@ export default function CommissionView({ prefill }) {
                               type="button"
                               onClick={() => removeFile(idx)}
                               aria-label={`Remove ${img.name}`}
-                              className="p-2.5 -m-1 rounded-full text-on-surface-variant hover:text-accent border-none bg-transparent"
+                              className="p-2.5 -m-1 rounded-full text-on-surface-variant hover:text-accent border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>

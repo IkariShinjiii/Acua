@@ -86,7 +86,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                 setCurrentView('home');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium bg-transparent border-none cursor-pointer ${
+              className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} ${
                 currentView === 'home' ? `${accent} font-semibold` : `${textBase} ${accentHover}`
               }`}
             >
@@ -102,14 +102,14 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
 
             <button
               onClick={goToCollections}
-              className={`text-xs uppercase tracking-[0.2em] transition-colors py-1 font-medium bg-transparent border-none cursor-pointer ${textBase} ${accentHover}`}
+              className={`text-xs uppercase tracking-[0.2em] transition-colors py-1 font-medium bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} ${textBase} ${accentHover}`}
             >
               Collections
             </button>
 
             <button
               onClick={() => setCurrentView('commission')}
-              className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium bg-transparent border-none cursor-pointer ${
+              className={`text-xs uppercase tracking-[0.2em] transition-colors relative py-1 font-medium bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} ${
                 currentView === 'commission' ? `${accent} font-semibold` : `${textBase} ${accentHover}`
               }`}
             >
@@ -200,7 +200,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('home');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
               >
                 Shop
               </button>
@@ -209,7 +209,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   goToCollections();
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
               >
                 Collections
               </button>
@@ -218,7 +218,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   setCurrentView('commission');
                   setMobileMenuOpen(false);
                 }}
-                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
               >
                 Custom Request
               </button>
@@ -233,7 +233,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                     onOpenSearch?.();
                     setMobileMenuOpen(false);
                   }}
-                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
                 >
                   <Search className="w-4 h-4 stroke-[1.5]" />
                   Search
@@ -243,7 +243,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                     onAccountClick?.();
                     setMobileMenuOpen(false);
                   }}
-                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none"
+                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
                 >
                   <User className="w-4 h-4 stroke-[1.5]" />
                   My Account
