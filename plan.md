@@ -2726,3 +2726,21 @@ finished at ~2.3s, comfortably under the cap; pushed further to a
 the splash correctly released at ~4.7s (matching the 4000ms cap plus
 click/polling overhead) with the page fully scrollable immediately
 after, rather than hanging indefinitely.
+
+## 55. Brought the logo icon back into the splash
+
+User asked directly for the logo mark back after §54 dropped the `<img>`
+in favor of text-only, trading the visible brand icon for guaranteed
+paint speed on a slow connection. Restored it, but paired rather than
+swapped: the icon now sits next to the "ACUA" text wordmark, the same
+combined icon+wordmark treatment the Navbar already uses for its own
+brand mark, instead of replacing the text outright. This keeps §54's
+guarantee intact — the text needs no network request, so the splash
+still can't ever read as bare even if the icon happens to lag — while
+bringing the actual logo artwork back for everyone on a normal
+connection, which is effectively everyone.
+
+Verified visually at 393px mobile (light mode) and 1440px desktop
+(dark mode) against the production build: icon and wordmark render
+together correctly in both, with the icon correctly swapping to its
+cream variant against the dark splash background.

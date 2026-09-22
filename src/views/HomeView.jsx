@@ -7,6 +7,9 @@ import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
+import logoMarkCream from '../assets/logo-mark-cream.png';
+import logoMarkInk from '../assets/logo-mark-ink.png';
 
 // Below this, the preloader would just be a flash — not long enough to
 // register as an intentional splash, just a flicker. Above it, someone
@@ -23,6 +26,7 @@ const MIN_SPLASH_MS = 500;
 const MAX_SPLASH_MS = 4000;
 
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
+  const { theme } = useTheme();
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
@@ -170,15 +174,22 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="fixed inset-0 z-[60] bg-sand flex flex-col items-center justify-center gap-5"
           >
-            {/* Text, not the PNG logo mark: this has to be guaranteed to
-                paint immediately regardless of connection speed, and an
-                <img> is a separate network request that can visibly lag
-                behind the spinner (which needs none) on a slow one — this
-                is exactly what a real screenshot on a weak connection
-                caught, a spinner alone with no wordmark next to it. */}
-            <span className="font-serif text-3xl tracking-[0.24em] uppercase font-normal text-on-surface">
-              ACUA
-            </span>
+            {/* Icon + text, same combined treatment as the Navbar's own
+                brand mark. The text is what guarantees this never reads as
+                bare — it needs no network request, so it paints in the same
+                frame as the spinner regardless of connection speed, even on
+                the (now-preloaded, see index.html) rare case the icon image
+                itself is still a moment behind. */}
+            <div className="flex items-center gap-2.5">
+              <img
+                src={theme === 'dark' ? logoMarkCream : logoMarkInk}
+                alt=""
+                className="h-9 w-auto"
+              />
+              <span className="font-serif text-3xl tracking-[0.24em] uppercase font-normal text-on-surface">
+                ACUA
+              </span>
+            </div>
             <div className="w-8 h-8 rounded-full border-[3px] border-chile-rojo/15 border-t-chile-rojo animate-spin" />
           </motion.div>
         )}
