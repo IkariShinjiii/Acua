@@ -140,6 +140,11 @@ export default {
         "headline-lg": ['"Libre Caslon Text"', "serif"],
         serif: ['Fraunces', '"Libre Caslon Text"', '"Playfair Display"', 'Cormorant Garamond', 'Georgia', 'serif'],
         sans: ['Inter', 'Manrope', 'system-ui', '-apple-system', 'sans-serif'],
+        // Matches the actual logo artwork's "ACUA" lettering (bold, wide-
+        // tracked geometric sans) — scoped to just the standalone wordmark
+        // next to the icon (Navbar, splash screen), not the site's general
+        // serif heading font used everywhere else.
+        wordmark: ['Montserrat', 'sans-serif'],
       },
       fontSize: {
         "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],

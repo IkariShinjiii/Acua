@@ -186,7 +186,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                 alt=""
                 className="h-9 w-auto"
               />
-              <span className="font-serif text-3xl tracking-[0.24em] uppercase font-normal text-on-surface">
+              <span className="font-wordmark text-3xl tracking-[0.24em] uppercase font-bold text-on-surface">
                 ACUA
               </span>
             </div>

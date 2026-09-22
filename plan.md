@@ -3129,3 +3129,37 @@ the QR code clarification) gives accurate, real answers to direct
 questions about shipping cost, return policy, and payment methods —
 correctly mentioning the QR code rather than implying raw account
 details get sent.
+
+## 65. Matched the "ACUA" wordmark's font to the real logo artwork
+
+User request: find the font used for "ACUA" in the actual logo
+artwork (shared as a reference image) and use it for the standalone
+"ACUA" wordmark on the site — not every occurrence of the word, just
+the two spots that visually represent the brand name next to the icon
+mark (`Navbar`'s header, `HomeView`'s splash screen).
+
+Comparing the two: the real logo renders "ACUA" in a bold, wide-tracked
+geometric sans-serif — flat, uniform stroke weight, pointed apex on the
+A. The site had been rendering that same text in the *serif* display
+font (`font-serif` → Fraunces/Libre Caslon Text/Playfair Display) used
+for headings everywhere else — a real, visible mismatch between the
+actual logo and how the site spelled the name out in text. Exact font
+identification from a raster image can't be 100% certain, but the
+closest well-established, freely-licensed match is **Montserrat** at a
+bold weight — a very common substitute for exactly this kind of
+geometric-sans branding, and (like every other font this site uses)
+available via Google Fonts rather than needing a paid license.
+
+Added `Montserrat:wght@600;700;800` to the Google Fonts link in
+`index.html`, a new `font-wordmark` Tailwind token (`tailwind.config.js`)
+scoped specifically to this use rather than touching the shared `serif`
+token every other heading on the site still relies on, and swapped
+`font-serif ... font-normal` → `font-wordmark ... font-bold` on just
+the two real wordmark instances (confirmed via grep there are only
+two — everywhere else "ACUA" appears is a compound heading like "ACUA
+Admin"/"ACUA Concierge", the copyright line, or an aria-label, none of
+which are the brand wordmark itself).
+
+Verified live at 393px mobile and 1440px desktop: computed
+`font-family` on the Navbar wordmark reads `Montserrat, sans-serif` at
+`font-weight: 700` on both, confirmed visually via screenshot.

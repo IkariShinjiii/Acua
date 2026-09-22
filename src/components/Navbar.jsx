@@ -114,7 +114,7 @@ export default function Navbar({
             aria-label="ACUA Home"
           >
             <img src={logoMark} alt="" className="h-8 sm:h-9 w-auto" />
-            <span className={`font-serif text-2xl sm:text-3xl tracking-[0.24em] uppercase font-normal transition-colors duration-300 ${textStrong} ${groupAccentHover}`}>
+            <span className={`font-wordmark text-2xl sm:text-3xl tracking-[0.24em] uppercase font-bold transition-colors duration-300 ${textStrong} ${groupAccentHover}`}>
               ACUA
             </span>
           </button>
