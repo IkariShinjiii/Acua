@@ -2682,3 +2682,47 @@ scrolling works normally immediately after, and both overflow styles
 are confirmed restored to their original values. Also spot-checked
 dark mode, where the logo mark correctly swaps to the cream variant
 against the dark splash background.
+
+## 54. §53's splash could show a bare spinner with no logo, and had no upper bound
+
+User report + screenshot: on a real device, after the Shop splash's
+ACUA logo disappeared, a second screen showed up — solid near-black,
+just the spinner, no wordmark. Two separate things were going on.
+
+**The black background was correct, not a bug.** The splash uses
+`bg-sand`, and `--color-sand` in dark mode is defined in `index.css` as
+`26 24 21` — "deep warm near-black" by design, not a lighter dark-mode
+surface. The user was in dark mode; the splash was doing exactly what
+its light-mode/dark-mode theming says to do. Confirmed by reading the
+actual variable rather than assuming.
+
+**The missing logo was real.** The splash's wordmark was a `<img>`
+pointing at a PNG (`logo-mark-cream.png`/`logo-mark-ink.png`) — a
+separate network request, competing with the main JS bundle, CSS, the
+Supabase fetches, and the hero's own (much larger) background photo.
+The spinner needs no network fetch at all (pure CSS), so on a slow
+connection it can render well before the logo image has even started,
+let alone finished — exactly the "spinner with no visible branding"
+moment the screenshot caught. Fixed by dropping the image entirely and
+using the same styled text wordmark the Navbar already uses next to
+its own logo (`font-serif tracking-[0.24em] uppercase`, theme-aware via
+`text-on-surface`) — text needs no separate request, so it's
+guaranteed to paint in the same frame as the spinner regardless of
+connection speed.
+
+**No upper bound, separately reported as "too slow."** The splash had
+a 500ms *minimum* but no *maximum* — on a slow enough connection, it
+would wait exactly as long as the three fetches took, unbounded. Added
+`MAX_SPLASH_MS = 4000`: past 4 seconds the splash lifts regardless of
+whether the fetches have resolved, falling back to the same per-section
+"Loading…" states that already existed for whatever's still in flight,
+rather than blocking indefinitely.
+
+Verified live against the production build: the text wordmark renders
+immediately in both light and dark mode (screenshotted), even under an
+artificially brutal 50kbps/600ms-latency profile the real fetches still
+finished at ~2.3s, comfortably under the cap; pushed further to a
+20kbps/2500ms-latency profile specifically to force the ceiling, and
+the splash correctly released at ~4.7s (matching the 4000ms cap plus
+click/polling overhead) with the page fully scrollable immediately
+after, rather than hanging indefinitely.

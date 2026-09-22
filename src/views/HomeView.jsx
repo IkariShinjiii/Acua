@@ -7,9 +7,6 @@ import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { useCart } from '../context/CartContext';
-import { useTheme } from '../context/ThemeContext';
-import logoMarkCream from '../assets/logo-mark-cream.png';
-import logoMarkInk from '../assets/logo-mark-ink.png';
 
 // Below this, the preloader would just be a flash — not long enough to
 // register as an intentional splash, just a flicker. Above it, someone
@@ -17,9 +14,15 @@ import logoMarkInk from '../assets/logo-mark-ink.png';
 // fixed length: the gate still lifts the instant every fetch below has
 // actually resolved, whichever of the two takes longer.
 const MIN_SPLASH_MS = 500;
+// A hard ceiling, not just a floor: on a genuinely slow or unreliable
+// connection, the three fetches this gates on could take much longer
+// than anyone should be made to stare at a splash for. Past this, the
+// splash lifts regardless of whether they've resolved — whatever hasn't
+// loaded yet falls back to the same per-section "Loading…" states that
+// existed before this splash did, rather than blocking indefinitely.
+const MAX_SPLASH_MS = 4000;
 
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
-  const { theme } = useTheme();
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
@@ -47,12 +50,17 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   // nothing left to pop in once it lifts.
   const [reelReady, setReelReady] = useState(false);
   const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  const [maxSplashElapsed, setMaxSplashElapsed] = useState(false);
   const contentReady = pieces !== null && archiveItems !== null && reelReady;
-  const showSplash = !(contentReady && minSplashElapsed);
+  const showSplash = !minSplashElapsed || (!contentReady && !maxSplashElapsed);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMinSplashElapsed(true), MIN_SPLASH_MS);
-    return () => clearTimeout(timer);
+    const minTimer = setTimeout(() => setMinSplashElapsed(true), MIN_SPLASH_MS);
+    const maxTimer = setTimeout(() => setMaxSplashElapsed(true), MAX_SPLASH_MS);
+    return () => {
+      clearTimeout(minTimer);
+      clearTimeout(maxTimer);
+    };
   }, []);
 
   // Scrolling behind the splash would let a visitor land mid-page before
@@ -162,11 +170,15 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="fixed inset-0 z-[60] bg-sand flex flex-col items-center justify-center gap-5"
           >
-            <img
-              src={theme === 'dark' ? logoMarkCream : logoMarkInk}
-              alt="ACUA"
-              className="h-12 w-auto"
-            />
+            {/* Text, not the PNG logo mark: this has to be guaranteed to
+                paint immediately regardless of connection speed, and an
+                <img> is a separate network request that can visibly lag
+                behind the spinner (which needs none) on a slow one — this
+                is exactly what a real screenshot on a weak connection
+                caught, a spinner alone with no wordmark next to it. */}
+            <span className="font-serif text-3xl tracking-[0.24em] uppercase font-normal text-on-surface">
+              ACUA
+            </span>
             <div className="w-8 h-8 rounded-full border-[3px] border-chile-rojo/15 border-t-chile-rojo animate-spin" />
           </motion.div>
         )}
