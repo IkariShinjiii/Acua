@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Hammer,
@@ -291,6 +291,39 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
 /* Order Fulfillment                                                     */
 /* ------------------------------------------------------------------ */
 function OrderFulfillment({ orders, onUpdated, showToast }) {
+  // Missing before: with no busy guard, double-clicking "Mark as Shipped"
+  // before the first request round-tripped fired two independent advance()
+  // calls, each generating its own random tracking number from the same
+  // stale order.status/tracking_number — whichever response landed last
+  // silently overwrote the other's tracking number with no sign that two
+  // requests had even happened. Matches CommissionPipeline's existing
+  // saving/disabled pattern below rather than inventing a new one.
+  const [saving, setSaving] = useState(null);
+  // Deliberately NOT cleared unconditionally in advance()'s own finally —
+  // see the effect below for why. Tracked here so it survives across the
+  // parent's refetch.
+  const previousOrdersRef = useRef(orders);
+
+  // onUpdated() (called on success, below) triggers AdminView's own
+  // top-level refetch of all four datasets, which is what actually updates
+  // this order's status and therefore its *next* stage/button label — but
+  // that refetch is a separate async round trip, not something advance()
+  // can await here. Clearing `saving` unconditionally the moment advance()
+  // itself resolves (the original version of this fix) re-enabled the
+  // button — still showing the *old* label — for the entire gap between
+  // "the mutation succeeded" and "the refreshed order.status actually
+  // arrived," and a click landing in that exact gap replayed the same
+  // transition with a new random tracking number, the identical bug this
+  // whole fix exists to prevent. Waiting for a genuinely new `orders`
+  // reference (i.e. the refetch has actually landed) closes that gap: the
+  // button only re-enables once its label already reflects the new stage.
+  useEffect(() => {
+    if (orders !== previousOrdersRef.current) {
+      previousOrdersRef.current = orders;
+      setSaving(null);
+    }
+  }, [orders]);
+
   const advance = async (order) => {
     const idx = stageIndex(ORDER_STAGES, order.status);
     const next = ORDER_STAGES[idx + 1];
@@ -300,6 +333,7 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
         ? `PHLPOST-${Math.floor(10000000 + Math.random() * 89999999)}`
         : order.tracking_number;
 
+    setSaving(order.id);
     try {
       const { error } = await supabase
         .from('orders')
@@ -307,12 +341,14 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
         .eq('id', order.id);
       if (error) {
         showToast(`Couldn't update that order: ${error.message}`, 'error');
+        setSaving(null); // failure: no refetch is coming to clear this otherwise
         return;
       }
       showToast(`Order marked as ${next.label.toLowerCase()}.`, 'success');
-      onUpdated();
+      onUpdated(); // saving clears once the refetch it triggers actually lands (see effect above)
     } catch (err) {
       showToast(`Couldn't update that order: ${err?.message || 'check your connection and try again.'}`, 'error');
+      setSaving(null);
     }
   };
 
@@ -321,6 +357,7 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
       {orders.map((order) => {
         const idx = stageIndex(ORDER_STAGES, order.status);
         const next = ORDER_STAGES[idx + 1];
+        const isSaving = saving === order.id;
         return (
           <div
             key={order.id}
@@ -344,7 +381,8 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
             {next ? (
               <button
                 onClick={() => advance(order)}
-                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                disabled={isSaving}
+                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
               >
                 {next.id === 'shipped' ? <Truck className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                 Mark as {next.label}

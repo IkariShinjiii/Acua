@@ -3387,3 +3387,48 @@ behaves the same way; Escape and selecting an item via keyboard (Enter)
 both close the menu and correctly return focus to the trigger button
 afterward. Tested with a temporary real account for the multi-item
 signed-in case, deleted immediately after.
+
+## 72. Audit round, issue #3: Order Fulfillment race condition — and the first fix attempt was itself incomplete
+
+**First pass**: `OrderFulfillment`'s "Mark as X" button had no busy-state
+guard at all, unlike its sibling `CommissionPipeline` a few hundred
+lines up in the same file. Added the same `saving`/`disabled` pattern —
+seemed like a direct, complete fix.
+
+**Verifying it live proved otherwise.** A rapid-click test showed the
+"obvious" fix still let two updates through, each with a different
+random tracking number. Root cause, found by checking the DOM's
+`disabled` state directly rather than trusting Playwright's
+click-retry timing: `advance()`'s own `finally` block cleared `saving`
+the instant the mutation itself resolved — but that's a different,
+earlier moment than "the button's label actually reflects the new
+stage." `onUpdated()` (called on success) triggers `AdminView`'s
+top-level refetch of all four datasets, a separate async round trip
+that's what actually updates this order's `status` and therefore its
+*next*-stage label. Clearing `saving` before that refetch lands
+re-enabled the button — still showing the *old* label — for the exact
+gap between "the mutation succeeded" and "the refreshed prop arrived,"
+and a click landing in that gap replayed the identical transition with
+a new random tracking number: the exact bug the fix was suppposed to
+close, just relocated by a few hundred milliseconds.
+
+**Second pass**: stopped clearing `saving` unconditionally on success.
+Added a `useEffect` that clears it only once `orders` (the prop) is a
+genuinely new reference — i.e. only once the refetch has actually
+landed and the button's label already reflects the new stage. Failure
+paths still clear `saving` immediately (no refetch is coming otherwise,
+so nothing else would ever re-enable the button).
+
+Verified live end-to-end with a temporary real admin account and a
+real test order: a genuine rapid re-click is now actually blocked
+(confirmed by reading `button.disabled` directly, not just Playwright's
+retry behavior) and exactly one PATCH request fires per click; the
+button correctly re-enables once the refetch lands (not stuck disabled
+forever); clicking through the full pipeline (processing → shipped →
+delivered) still reaches "Complete" normally. Test order and account
+deleted immediately after, confirmed via a follow-up count query.
+
+This is a good example of why every fix this session gets verified
+live rather than accepted on read-through: the first version read as
+correct and matched an established pattern exactly, and still had a
+real gap that only a live rapid-click test surfaced.
