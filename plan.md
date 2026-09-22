@@ -3277,3 +3277,41 @@ Verified live across the same four real combinations as §67 (light/dark
 theme × transparent-over-hero/scrolled): computed `color` reads the
 same olive `rgb(138, 139, 53)` in all four, confirmed visually legible
 in every screenshot.
+
+## 69. Matched the icon mark's color to the wordmark, using the real olive artwork
+
+User pointed out (with screenshots) that after §68, the icon and the
+"ACUA" text next to it no longer matched — the icon was still the
+theme-swapped ink/cream PNG while the text was fixed olive. The
+reference 4-variant sheet from §68 shows both the icon and the
+lettering in one consistent color per variant, so the icon needed to
+become olive too, not just the text.
+
+Rather than approximate a recolor via CSS filters on the existing PNG,
+extracted the *real* olive icon directly from the reference sheet the
+user already provided: found its exact bounds programmatically (a
+horizontal-band scan to separate the icon from the "ACUA" text below
+it in that same sheet, then a column scan within the icon's row range
+for tight left/right bounds), cropped it out, then converted its white
+background to a proper alpha channel (per-pixel, blending near-white
+edge pixels for clean anti-aliasing rather than a hard cutout) so it
+composites correctly against any background the way the original
+ink/cream assets already do. Saved as `src/assets/logo-mark-olive.png`
+and verified the transparency actually worked by rendering it against
+a dark background before wiring it in.
+
+Replaced the theme-swapped `logoMarkCream`/`logoMarkInk` selection with
+this single fixed asset in both `Navbar` and `HomeView`'s splash —
+the only two spots pairing the icon with the olive wordmark text.
+Left `Footer.jsx` and `ConciergeChat.jsx`'s own separate icon usage
+untouched, since neither is paired with wordmark text and neither was
+part of the mismatch being reported. Cleaned up what became dead code
+as a result: `HomeView` no longer touches `theme` at all (removed the
+now-unused `useTheme` import and destructure), and both files' old
+theme-conditional icon-selection logic is gone.
+
+Verified live across the same five states as §67/§68 (light/dark
+theme × transparent-over-hero/scrolled, plus the splash in both
+themes): icon and wordmark now render in the identical olive tone in
+every one, matching the real logo artwork's own pairing rather than a
+mismatched theme-swapped icon next to a fixed-color word.

@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Menu, X, Sun, Moon, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import logoMarkCream from '../assets/logo-mark-cream.png';
-import logoMarkInk from '../assets/logo-mark-ink.png';
+import logoMarkOlive from '../assets/logo-mark-olive.png';
 
 export default function Navbar({
   currentView,
@@ -84,12 +83,11 @@ export default function Navbar({
   // fix as HomeView's scrim) — not the theme-aware surface, which would
   // put a near-white ring offset over the photo in dark mode.
   const ringOffset = isTransparent ? 'focus-visible:ring-offset-ink' : 'focus-visible:ring-offset-sand';
-  // The logo mark is a single flat color, so it can't invert itself the
-  // way a `text-*` token does — pick the asset that reads against
-  // whatever's actually behind it: the fixed-dark hero photo (transparent
-  // state) or a dark-mode-solid navbar both need the light/cream mark;
-  // only the light-mode-solid navbar (a light sand bar) needs the dark one.
-  const logoMark = isTransparent || theme === 'dark' ? logoMarkCream : logoMarkInk;
+  // Fixed olive, matching the wordmark text next to it (see its own
+  // comment) — the real logo artwork pairs the icon and the lettering in
+  // one consistent color, not a theme-swapped icon next to a fixed-color
+  // wordmark the way this looked before.
+  const logoMark = logoMarkOlive;
 
   return (
     <header

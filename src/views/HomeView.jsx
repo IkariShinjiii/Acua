@@ -7,9 +7,7 @@ import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { useCart } from '../context/CartContext';
-import { useTheme } from '../context/ThemeContext';
-import logoMarkCream from '../assets/logo-mark-cream.png';
-import logoMarkInk from '../assets/logo-mark-ink.png';
+import logoMarkOlive from '../assets/logo-mark-olive.png';
 
 // Below this, the preloader would just be a flash — not long enough to
 // register as an intentional splash, just a flicker. Above it, someone
@@ -26,7 +24,6 @@ const MIN_SPLASH_MS = 500;
 const MAX_SPLASH_MS = 4000;
 
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
-  const { theme } = useTheme();
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
@@ -181,11 +178,10 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                 the (now-preloaded, see index.html) rare case the icon image
                 itself is still a moment behind. */}
             <div className="flex items-center gap-2.5">
-              <img
-                src={theme === 'dark' ? logoMarkCream : logoMarkInk}
-                alt=""
-                className="h-9 w-auto"
-              />
+              {/* Fixed olive — matches the wordmark text next to it (see
+                  its own comment) instead of a theme-swapped icon beside a
+                  fixed-color word, which is what looked mismatched here. */}
+              <img src={logoMarkOlive} alt="" className="h-9 w-auto" />
               {/* Fixed text-olive — see Navbar's matching comment. Olive
                   clears WCAG contrast against both this splash's light and
                   dark backgrounds, so (unlike the tan tried in an earlier
