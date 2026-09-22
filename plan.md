@@ -3742,3 +3742,15 @@ new restriction.
 All three fixes committed and pushed; test accounts, briefs, and
 uploaded files deleted afterward and confirmed via follow-up count
 queries.
+
+Also checked Vercel and Supabase's own advisors as a final sanity pass:
+all 5 of tonight's deployments show READY in production, and the only
+remaining advisor findings are the two already-known/accepted ones
+(the rate-limit table's intentional no-policy RLS, and leaked-password-
+protection being off, unrelated to tonight). One new, low-risk finding
+did turn up: `commission_briefs`' insert policy was the one policy 0005
+missed when it wrapped every other `auth.uid()` call in `(select ...)`
+for the same reason — evaluated once per query instead of once per row.
+Applied the identical fix (`0012_commission_briefs_insert_policy_perf.sql`),
+confirmed the advisor clears, and verified live that an anonymous
+commission submission (the exact path this policy gates) still succeeds.
