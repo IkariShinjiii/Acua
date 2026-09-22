@@ -2828,3 +2828,40 @@ show the new error state while the untouched Inventory tab shows its
 real data normally, proving the four failures are tracked
 independently rather than one flag wrongly gating all four; Try Again
 correctly recovers every number and tab to normal afterward.
+
+## 58. Stale domain in the cart's order email, and no safe-area clearance for the concierge button
+
+Two smaller, unrelated finds from a general sweep.
+
+**Stale domain.** `CartDrawer`'s "Email to Order" mailto link (there's
+no online checkout — this drafts an email to `acuavibe@gmail.com` with
+the cart contents, confirmed by reading the component) had its subject
+line hardcoded to `"Order inquiry from acuaproject.vercel.app"` — a
+domain that isn't this site. Every other reference to the live domain
+(index.html's `og:url`/Twitter meta tags, this whole session's
+screenshots) says `acua-three.vercel.app`. Grepped the rest of the
+codebase for `acuaproject` and found no other instances — an isolated
+leftover, probably from an earlier Vercel project name before a rename.
+Fixed to match the real domain.
+
+**No safe-area clearance on a standalone-installable app.** `public/
+manifest.json` sets `"display": "standalone"`, meaning this site is
+meant to be installable to a phone's home screen and launched without
+browser chrome. In that mode, `ConciergeChat`'s fixed toggle button and
+its expanded panel (`bottom-6` / `bottom-24`, plain fixed values) have
+no browser UI left to keep them clear of a notched iPhone's home
+indicator gesture area the way a normal Safari tab does. Fixed both to
+`bottom-[calc(6rem_+_env(safe-area-inset-bottom))]` (and the button's
+`1.5rem` equivalent) — Tailwind's arbitrary-value syntax needs the
+underscore-encoded space around `+` for `calc()` to parse as valid CSS,
+confirmed by inspecting the compiled output
+(`calc(1.5rem + env(safe-area-inset-bottom))` — verified with a
+space, not a syntax error that would've silently dropped the
+declaration).
+
+Verified live at a standard 393px viewport (no safe-area applicable):
+button sits exactly 24px from the bottom and the panel exactly 96px —
+identical to the pre-fix values, confirming `env()` correctly resolves
+to 0 and there's no regression for the overwhelming majority of
+visitors browsing normally rather than from an installed home-screen
+icon.

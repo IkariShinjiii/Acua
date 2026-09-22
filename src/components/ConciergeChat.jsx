@@ -188,7 +188,12 @@ export default function ConciergeChat() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             role="dialog"
             aria-label="ACUA Concierge chat"
-            className="fixed bottom-24 right-4 sm:right-6 z-[150] w-[calc(100%-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-sand rounded-3xl shadow-2xl ring-1 ring-black/5 flex flex-col overflow-hidden"
+            // calc(...+env(safe-area-inset-bottom)) rather than plain bottom-24:
+            // the manifest sets display: standalone, so on a notched iPhone
+            // added to the home screen there's no browser chrome left to keep
+            // this clear of the home indicator gesture area the way a normal
+            // Safari tab does.
+            className="fixed bottom-[calc(6rem_+_env(safe-area-inset-bottom))] right-4 sm:right-6 z-[150] w-[calc(100%-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-sand rounded-3xl shadow-2xl ring-1 ring-black/5 flex flex-col overflow-hidden"
           >
             <div className="bg-chile-rojo text-white px-5 py-4 flex items-center gap-3 flex-shrink-0">
               <img src={logoMarkCream} alt="" className="w-8 h-8 flex-shrink-0" />
@@ -270,7 +275,7 @@ export default function ConciergeChat() {
         aria-label={isOpen ? 'Close concierge chat' : 'Chat with the ACUA concierge'}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="fixed bottom-6 right-4 sm:right-6 z-[150] w-14 h-14 rounded-full bg-chile-rojo text-white shadow-terracotta-glow flex items-center justify-center border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+        className="fixed bottom-[calc(1.5rem_+_env(safe-area-inset-bottom))] right-4 sm:right-6 z-[150] w-14 h-14 rounded-full bg-chile-rojo text-white shadow-terracotta-glow flex items-center justify-center border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>

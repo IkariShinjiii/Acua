@@ -187,7 +187,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                 </div>
                 <a
                   href={`mailto:acuavibe@gmail.com?subject=${encodeURIComponent(
-                    'Order inquiry from acuaproject.vercel.app'
+                    'Order inquiry from acua-three.vercel.app'
                   )}&body=${encodeURIComponent(
                     `Hi ACUA! I'd like to order:\n\n${availableItems
                       .map((i) => `- ${i.product.title} x${i.quantity} (${i.product.price})`)
