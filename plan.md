@@ -3103,3 +3103,29 @@ Verified live at 393px mobile and 1440px desktop: the FAQ page loads
 from the footer link, all four categories render, answers expand and
 collapse correctly on click, and multiple answers can be open
 simultaneously.
+
+## 64. Filled in the FAQ placeholders with the owner's real answers
+
+The owner provided real answers to all four `NEEDS_REAL_ANSWER` entries
+from §63: shipping cost varies by region and weight; delivery takes 2-3
+days once an order ships; returns are accepted within 1 week of
+receipt with the customer covering return shipping; payment is via
+GCash and bank transfer (a follow-up from the owner clarified this
+specifically means a QR code sent to scan and pay, not raw account
+details). Updated both `src/data/faqs.js` (removing the `NEEDS_REAL_
+ANSWER` tags and "not published yet" language now that it's genuinely
+published) and the Concierge's system prompt (`supabase/functions/
+concierge-chat/index.ts`) with the same facts, so the chatbot gives
+real answers to these questions instead of deferring to email — the
+same discipline this session has followed throughout: keep both
+surfaces in sync rather than letting the FAQ know something the
+concierge still doesn't.
+
+Verified live: the FAQ page shows all four updated answers with no
+stale "not published yet" language left anywhere on the page (confirmed
+by scanning the full rendered text), and the deployed Concierge (now
+version 7, redeployed once for the initial four facts and again after
+the QR code clarification) gives accurate, real answers to direct
+questions about shipping cost, return policy, and payment methods —
+correctly mentioning the QR code rather than implying raw account
+details get sent.

@@ -2,9 +2,7 @@
 // same discipline as the Concierge system prompt (supabase/functions/
 // concierge-chat/index.ts) and the footer: never invent shipping windows,
 // return policy, or payment details that don't exist anywhere else on the
-// site yet. Entries tagged NEEDS_REAL_ANSWER give an honest current answer
-// (point to email) rather than a fabricated one — replace their `answer`
-// with the real policy once the owner provides it, and drop the tag.
+// site yet.
 export const FAQ_CATEGORIES = [
   {
     category: 'Our Pieces',
@@ -55,11 +53,9 @@ export const FAQ_CATEGORIES = [
           "Add pieces to your cart and use Email to Order — this drafts an email with your selections so we can confirm payment and shipping directly. Online checkout isn't live yet, but every order is confirmed by a real person, not an automated system.",
       },
       {
-        // NEEDS_REAL_ANSWER — replace once the owner confirms which payment
-        // methods are actually accepted (bank transfer, GCash, COD, etc.).
         question: 'What payment methods do you accept?',
         answer:
-          "This isn't published on the site yet — email us at acuavibe@gmail.com when you're ready to order and we'll walk you through it directly.",
+          "GCash and bank transfer, both via QR code — once your order is confirmed, we'll send you a QR code to scan and pay directly.",
       },
     ],
   },
@@ -67,26 +63,19 @@ export const FAQ_CATEGORIES = [
     category: 'Shipping & Returns',
     items: [
       {
-        // Partly real (ships from Iloilo City) and partly NEEDS_REAL_ANSWER
-        // (delivery timeline) — replace the second sentence once the owner
-        // confirms actual delivery windows.
         question: 'Where do you ship from, and how long does delivery take?',
         answer:
-          "We ship nationwide from Iloilo City, Philippines. Specific delivery timelines aren't published yet — email us at acuavibe@gmail.com after ordering and we'll confirm exactly when to expect your piece.",
+          'We ship nationwide from Iloilo City, Philippines. Once your order ships, expect delivery within 2-3 days.',
       },
       {
-        // NEEDS_REAL_ANSWER — replace once the owner confirms actual
-        // shipping rates/policy (flat rate, free over a threshold, etc.).
         question: 'How much does shipping cost?',
         answer:
-          "Shipping costs aren't published on the site yet — we'll confirm the exact cost with you directly once you place an order.",
+          "Shipping cost varies by your region and the weight of your order — we'll confirm the exact cost with you directly when you place your order.",
       },
       {
-        // NEEDS_REAL_ANSWER — replace once the owner confirms an actual
-        // return/exchange policy.
         question: "What's your return or exchange policy?",
         answer:
-          "We don't have a published return policy yet. If something isn't right with your order, email us at acuavibe@gmail.com and we'll work it out with you directly.",
+          "If something isn't right with your order, you can return it within 1 week of receiving it. Return shipping is covered by the customer. Email us at acuavibe@gmail.com to start a return.",
       },
     ],
   },
