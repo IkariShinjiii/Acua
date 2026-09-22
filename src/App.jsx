@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { LogOut, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import HomeView from './views/HomeView';
 import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
@@ -26,29 +26,28 @@ const ViewLoadingFallback = () => (
   <div className="pt-40 text-center text-sm text-on-surface-variant">Loading…</div>
 );
 
-const VIEW_LABELS = {
-  home: 'Home',
-  commission: 'Commission',
-  admin: 'Admin',
-  dashboard: 'Dashboard',
-  product: 'Product',
-};
-
 const DEFAULT_TITLE = 'ACUA | Handcrafted by the Coast';
 // Every other view gets its own tab title so multiple tabs/history entries
 // are distinguishable — 'product' is deliberately left out here since
-// ProductDetailView overrides it with the actual piece's name once loaded.
+// ProductDetailView overrides it with the actual piece's name once loaded;
+// 'dashboard' is handled separately below since which title is right
+// depends on whether that account turns out to be an admin.
 const DOCUMENT_TITLES = {
   commission: 'Custom Request | ACUA',
-  admin: 'Admin | ACUA',
   dashboard: 'My Account | ACUA',
 };
 
-// Real gate: only a signed-in account with profiles.is_admin = true sees
-// AdminView. Accounts are provisioned by hand (Supabase dashboard + a SQL
-// UPDATE), never self-signup — so this form is login-only.
-function AdminGate() {
-  const { user, isAdmin, loading, profileLoading, signOut } = useAuth();
+// The one login gate for every account — "My Account" and "Admin Login"
+// used to be two separate screens (reachable only via a dev-only nav
+// widget, since there's no real router to give admin its own URL), which
+// meant signing in as staff and signing in as a patron were confusingly
+// different flows for what's otherwise the exact same form. Now anyone
+// signs in here, and what they see next depends on their own account:
+// profiles.is_admin = true (set by hand in Supabase, never self-service)
+// gets the admin dashboard, everyone else gets their own orders/
+// commissions.
+function AccountGate({ setCurrentView, initialTab }) {
+  const { user, isAdmin, loading, profileLoading } = useAuth();
 
   if (loading || (user && profileLoading)) {
     return <div className="pt-40 text-center text-sm text-on-surface-variant">Checking access…</div>;
@@ -57,48 +56,16 @@ function AdminGate() {
   if (!user) {
     return (
       <div className="max-w-6xl mx-auto px-4 pt-32 pb-24">
-        <AuthForm allowSignup={false} title="Admin Login" subtitle="Restricted to ACUA staff." />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 pt-32 pb-24 text-center space-y-4">
-        <p className="text-sm text-on-surface-variant">
-          Signed in as <strong className="text-on-surface">{user.email}</strong>, but this account
-          isn't an admin.
-        </p>
-        <button
-          onClick={signOut}
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Log out
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <Suspense fallback={<ViewLoadingFallback />}>
-      <AdminView />
-    </Suspense>
-  );
-}
-
-// Real gate: any signed-in account (signup allowed, unlike the admin gate).
-function PatronGate({ setCurrentView, initialTab }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="pt-40 text-center text-sm text-on-surface-variant">Checking access…</div>;
-  }
-
-  if (!user) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 pt-32 pb-24">
         <AuthForm title="My Account" subtitle="Log in or create an account to track your orders and commissions." />
       </div>
+    );
+  }
+
+  if (isAdmin) {
+    return (
+      <Suspense fallback={<ViewLoadingFallback />}>
+        <AdminView />
+      </Suspense>
     );
   }
 
@@ -225,13 +192,24 @@ export default function App() {
   // navigation — same "don't carry over a stale deep-link" rule as
   // commissionPrefill, just for which patron-dashboard tab opens first.
   const [dashboardInitialTab, setDashboardInitialTab] = useState(undefined);
-  const { user, signOut, passwordRecovery } = useAuth();
+  const { isAdmin, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
+
+  // Whether 'dashboard' is currently showing the admin tools rather than
+  // a patron's own orders/commissions — there's no separate 'admin' view
+  // to check anymore now that AccountGate decides based on the signed-in
+  // account, so anything that used to key off currentView === 'admin'
+  // (the tab title, hiding the footer/concierge) checks this instead.
+  const showingAdmin = currentView === 'dashboard' && isAdmin;
 
   useEffect(() => {
     if (currentView === 'product') return; // ProductDetailView sets its own once loaded
+    if (showingAdmin) {
+      document.title = 'Admin | ACUA';
+      return;
+    }
     document.title = DOCUMENT_TITLES[currentView] ?? DEFAULT_TITLE;
-  }, [currentView]);
+  }, [currentView, showingAdmin]);
 
   if (passwordRecovery) {
     return <ResetPasswordGate />;
@@ -261,32 +239,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-sand text-on-surface font-sans">
-      {/* Dev Navigation Quick-Switcher Bar — not a real route, just a way to
-          reach the (now real-auth-gated) AdminView until real routing exists. */}
-      <aside className="fixed bottom-4 right-4 z-50 bg-ink/90 backdrop-blur-md text-white text-[11px] px-3.5 py-2 rounded-full shadow-cloud flex items-center gap-2">
-        <span className="text-white/60 font-medium">Active View:</span>
-        <span className="font-semibold text-sunset">{VIEW_LABELS[currentView]}</span>
-        <span className="w-px h-3 bg-white/20" />
-        <button
-          onClick={() => navigateTo(currentView === 'admin' ? 'home' : 'admin')}
-          className="text-white/60 hover:text-sunset transition-colors border-none bg-transparent cursor-pointer font-medium underline underline-offset-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
-        >
-          {currentView === 'admin' ? 'Exit Admin' : 'Admin'}
-        </button>
-        {user && (
-          <>
-            <span className="w-px h-3 bg-white/20" />
-            <button
-              onClick={signOut}
-              className="text-white/60 hover:text-sunset transition-colors border-none bg-transparent cursor-pointer font-medium underline underline-offset-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
-              title={user.email}
-            >
-              Log out
-            </button>
-          </>
-        )}
-      </aside>
-
       <Navbar
         currentView={currentView}
         setCurrentView={navigateTo}
@@ -319,9 +271,8 @@ export default function App() {
           <CommissionView prefill={commissionPrefill} />
         </Suspense>
       )}
-      {currentView === 'admin' && <AdminGate />}
       {currentView === 'dashboard' && (
-        <PatronGate setCurrentView={navigateTo} initialTab={dashboardInitialTab} />
+        <AccountGate setCurrentView={navigateTo} initialTab={dashboardInitialTab} />
       )}
       {currentView === 'product' && (
         <Suspense fallback={<ViewLoadingFallback />}>
@@ -336,13 +287,13 @@ export default function App() {
       {/* Shared across every storefront-facing view — not the admin
           dashboard, which (like most internal business tools) doesn't
           carry the public marketing footer. */}
-      {currentView !== 'admin' && (
+      {!showingAdmin && (
         <Footer setCurrentView={navigateTo} onTrackCommission={() => goToDashboardTab('commissions')} />
       )}
 
       {/* Same reasoning as the footer — a customer-facing concierge has
           no place in the internal admin tool. */}
-      {currentView !== 'admin' && (
+      {!showingAdmin && (
         <Suspense fallback={null}>
           <ConciergeChat />
         </Suspense>

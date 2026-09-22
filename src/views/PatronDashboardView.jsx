@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Package, Hammer, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Package, Hammer, ShoppingBag, ArrowRight, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
@@ -66,7 +66,7 @@ function StageTracker({ stages, currentId }) {
 }
 
 export default function PatronDashboardView({ setCurrentView, initialTab }) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab ?? 'orders');
   const [orders, setOrders] = useState(null);
   const [briefs, setBriefs] = useState(null);
@@ -106,9 +106,17 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   return (
     <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
-        <div className="mb-8">
-          <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">My Dashboard</h1>
-          <p className="text-xs text-on-surface-variant mt-1">Signed in as {user?.email}</p>
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">My Dashboard</h1>
+            <p className="text-xs text-on-surface-variant mt-1">Signed in as {user?.email}</p>
+          </div>
+          <button
+            onClick={signOut}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Log out
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8 border-b border-outline-variant/30 pb-4">

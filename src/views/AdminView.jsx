@@ -12,10 +12,12 @@ import {
   Send,
   Trash2,
   LayoutDashboard,
+  LogOut,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { parsePesoToNumber, formatPeso } from '../lib/currency';
+import { useAuth } from '../context/AuthContext';
 import Toast, { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
@@ -759,6 +761,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
 /* Root                                                                  */
 /* ------------------------------------------------------------------ */
 export default function AdminView() {
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('commissions');
   const [briefs, setBriefs] = useState(null);
   const [orders, setOrders] = useState(null);
@@ -815,14 +818,24 @@ export default function AdminView() {
   return (
     <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center">
-            <LayoutDashboard className="w-5 h-5" />
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center">
+              <LayoutDashboard className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">ACUA Admin</h1>
+              <p className="text-xs text-on-surface-variant">
+                Owner operations dashboard • {user?.email}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">ACUA Admin</h1>
-            <p className="text-xs text-on-surface-variant">Owner operations dashboard</p>
-          </div>
+          <button
+            onClick={signOut}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Log out
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">

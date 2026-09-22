@@ -2260,3 +2260,48 @@ Verified live: the four chips render after the welcome message, clicking
 one sends it right away and the chips disappear, and the real reply that
 comes back is accurate (asked "Do you ship nationwide?" and got the real
 Iloilo City / email-to-order answer, not an invented one).
+
+## 42. Merged admin and patron login into one gate; removed the dev quick-switcher
+
+The site had two separate login screens — "My Account" (signup allowed,
+reached via the header icon) and "Admin Login" (`allowSignup={false}`,
+reached only via the bottom-right dev quick-switcher's "Admin" link,
+since there's no real router to give it its own URL). That dev widget
+— a fixed "Active View: Home" badge with Admin/Log out links, explicitly
+labeled in its own comment as scaffolding "until real routing exists" —
+was still visible on the live production site, exposing internal
+implementation details to real visitors and looking unmistakably
+unfinished.
+
+Removing it wasn't safe on its own, though: its "Admin" link was the
+*only* way to reach the admin login at all. Deleting it without another
+path in would have locked the account owner out of their own admin
+panel with no way back in short of editing the database directly.
+
+**Fix**: merged the two gates into one. `AccountGate` (replacing the
+separate `AdminGate`/`PatronGate`) is now the single login screen behind
+"My Account" for every visitor. Once signed in, it checks the same
+`profiles.is_admin` flag AdminGate always checked (still set by hand in
+Supabase, never self-service) and shows the admin dashboard for that
+account, or the patron's own orders/commissions for everyone else — the
+same underlying `AuthForm` component either way, just one entry point
+instead of two.
+
+Removing the quick-switcher also removed the *only* visible sign-out
+button in the entire app — nothing else had one. Added a real "Log out"
+button to both `PatronDashboardView`'s and `AdminView`'s own headers
+(the standard place for one, next to "Signed in as {email}"), so signing
+out doesn't regress along with the widget that used to incidentally
+provide it.
+
+Verified live with two temporary real accounts (created and deleted via
+direct SQL, not just reasoned about) — one plain patron, one with
+`is_admin = true`: confirmed the dev badge is gone from the page
+entirely; logging in as the patron account through "My Account" shows
+their own dashboard (not admin tools) with a working Log out button that
+returns to the login form; logging in as the admin account through the
+exact same "My Account" entry point shows the admin dashboard instead,
+with the account's email in its header, the tab title reading
+"Admin | ACUA", and its own working Log out button. Both temporary
+accounts were deleted immediately after, confirmed via a follow-up
+count query.
