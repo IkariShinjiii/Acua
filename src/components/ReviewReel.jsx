@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useAnimationFrame } from 'framer-motion';
+import { motion, useMotionValue, useAnimationFrame, useReducedMotion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
@@ -64,9 +64,18 @@ export default function ReviewReel({ onSelectProduct }) {
     // the loop math is meaningless until then.
   }, [pieces]);
 
+  // MotionConfig's reducedMotion="user" (main.jsx) only covers Framer's own
+  // declarative animate/transition props — it has no effect on this manual
+  // useAnimationFrame loop, which would otherwise keep auto-scrolling
+  // regardless of the OS preference. Reads the same setting directly so
+  // continuous, non-essential motion actually stops for anyone who's asked
+  // for it; dragging to browse manually is unaffected either way.
+  const prefersReducedMotion = useReducedMotion();
+
   // Real-time (Framer Motion) auto-drift loop — the same clock the drag
   // gesture itself runs on, so there's no fighting between the two.
   useAnimationFrame((_, delta) => {
+    if (prefersReducedMotion) return;
     if (isDraggingRef.current) return;
     if (performance.now() < resumeAtRef.current) return;
     const lap = lapWidthRef.current;

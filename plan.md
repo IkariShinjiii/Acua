@@ -1810,3 +1810,26 @@ left the dialog; Shift+Tab from the first focusable element correctly
 wrapped to the last; closing via Escape returned focus to the cart
 button that opened it. Same three checks passed for `SearchOverlay`,
 which also still auto-focuses its search input as before.
+
+## 28. "New Release" reel ignored prefers-reduced-motion
+
+`main.jsx` sets `<MotionConfig reducedMotion="user">`, which makes every
+declarative Framer Motion animation in the app (entrances, `whileHover`,
+`AnimatePresence` exits) automatically respect the OS-level
+prefers-reduced-motion setting. The "New Release" reel's continuous
+auto-scroll drift is not one of those — it's a manual `useAnimationFrame`
+loop that imperatively nudges a motion value every frame, entirely
+outside `MotionConfig`'s reach. That meant the one truly continuous,
+non-essential animation on the whole site — exactly the kind most likely
+to bother someone with a vestibular disorder, which is the actual reason
+this OS setting exists — was the one animation immune to it.
+
+**Fix**: read the same preference directly with Framer's
+`useReducedMotion()` hook and skip the auto-scroll advance each frame
+when it's set, leaving drag-to-browse (user-initiated, not automatic)
+completely unaffected.
+
+Verified live: measured the reel's actual computed `translateX` before
+and after a 1.5s window under Playwright's `reducedMotion: 'no-preference'`
+vs `'reduce'` emulation — normal preference drifted ~50px as expected,
+reduced motion drifted exactly 0px.
