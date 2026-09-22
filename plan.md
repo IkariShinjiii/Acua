@@ -3679,3 +3679,62 @@ the mobile drawer) was a judgment call reasoning from "Settings should
 own appearance control" rather than an explicit instruction — easy to
 revert (re-add the icon button next to Search/Cart) if a quick one-click
 toggle outside Settings turns out to be missed.
+
+## 78. Task #6 (experimental): custom wave preloader, on its own branch
+
+The user's last item was explicitly for testing/research, not production:
+a custom preloader with waves moving from the top of the screen to the
+bottom, built on a separate branch so it could be looked at before going
+anywhere near main. This entry, and the branch it's on
+(`preloader-wave-experiment`), are deliberately not pushed — the user's
+own instruction for this one item specifically.
+
+Built `Preloader.jsx`, wired into `main.jsx` alongside (not inside) `App`
+so the whole thing stays a single, easy-to-revert diff if it isn't
+adopted. Shows the ACUA logo mark centered over a solid `bg-sand` cover,
+with a wave band (an SVG path, tinted a subtle olive) looping
+continuously downward behind it — "ready" is gated on a minimum display
+time (900ms → later raised to 1400ms once seen live) AND the window
+`load` event, whichever finishes later, so a slow first load never gets
+cut short but nothing lingers once everything's actually visible. Once
+ready, the whole screen fades out and unmounts.
+
+**First version was completely broken, only caught by actually looking at
+it.** Two real mistakes, in sequence:
+1. First attempt was a "wipe" design — a solid panel with a wavy bottom
+   edge sliding down to reveal the page. Reading the transform math out
+   loud sounds right, but worked through concretely: with the panel
+   exactly viewport-height and translating by its own height, the wavy
+   part (a small fixed band at one edge) only ever crosses the visible
+   viewport for a sliver of the total travel — for nearly the whole
+   animation, only the flat solid color would ever be on screen, no wave
+   visible at all in practice.
+2. Fixing the geometry (panel anchored to the viewport's bottom edge,
+   shrinking from the top) revealed a second, dumber problem: the wave's
+   fill and the background behind it were both `text-sand`/`bg-sand` —
+   literally the same color. Correct position, completely invisible
+   regardless, since there was no contrast between the shape and what's
+   behind it to make it read as a shape at all.
+
+Replaced the whole approach with something simpler and more robust: a
+continuously-looping wave band (two identical copies of one path stacked
+in a single SVG, translated by exactly one copy's own height on an
+infinite linear loop — the standard trick for a seamlessly-repeating
+scroll with no visible "snap" where it wraps) rather than a one-shot
+wipe, tinted a distinct accent color (`text-olive/[0.14]`) instead of
+matching the background. This is easier to reason about, easier to get
+right, and reads more clearly as "waves" than a single edge sliding by
+once ever would.
+
+Verified live (multiple screenshots across the loop, plus a dark-mode
+check): the wave is now genuinely visible and visibly animates between
+frames rather than sitting static; the whole screen fades out cleanly
+and fully unmounts (confirmed via a DOM check, not just visually) once
+ready, leaving the real page beneath fully interactive; dark mode
+automatically matches since every color involved rides the existing
+theme-aware CSS variables or the same fixed brand olive already used
+elsewhere. One thing worth a look before this goes further: in dark
+mode, the fixed-olive logo mark sits against an also-olive-tinted wave
+region, and contrast between the two is lower than in light mode —
+still legible in testing, but worth a fresh look rather than assuming
+it's fine forever.
