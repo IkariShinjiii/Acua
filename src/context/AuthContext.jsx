@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, REMEMBER_ME_KEY } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
@@ -66,13 +66,31 @@ export function AuthProvider({ children }) {
     isAdmin: Boolean(profile?.is_admin),
     loading,
     profileLoading,
+    // emailRedirectTo matters here for the same reason it's already set
+    // on the password-reset request below: without it, the confirmation
+    // link falls back to whatever "Site URL" happens to be configured in
+    // the Supabase dashboard — often still the default placeholder from
+    // project creation — rather than wherever this site is actually
+    // running. That mismatch is exactly what makes a real confirmation
+    // email link fail with "Safari can't open the page" on a real device.
     signUp: (email, password, fullName) =>
       supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin },
       }),
-    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+    // The flag has to be written before signInWithPassword runs, since
+    // that call is what triggers the storage adapter's setItem for the
+    // resulting session — writing it after would be one call too late.
+    signIn: (email, password, rememberMe = true) => {
+      try {
+        localStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
+      } catch {
+        // No localStorage access — the adapter's own default (remembered)
+        // applies either way.
+      }
+      return supabase.auth.signInWithPassword({ email, password });
+    },
     signOut: () => supabase.auth.signOut(),
     passwordRecovery,
     clearPasswordRecovery: () => setPasswordRecovery(false),

@@ -11,6 +11,12 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  // Defaults to checked — matches how the site already behaved for every
+  // existing user before this existed (an indefinitely persisted session).
+  // Unchecking is the opt-in toward more privacy on a shared device, not
+  // the other way around.
+  const [rememberMe, setRememberMe] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [signupSuccess, setSignupSuccess] = useState(false);
@@ -35,8 +41,13 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
         return;
       }
 
+      if (mode === 'signup' && password !== confirmPassword) {
+        setError("Passwords don't match.");
+        return;
+      }
+
       const { error: authError } =
-        mode === 'signup' ? await signUp(email, password, fullName) : await signIn(email, password);
+        mode === 'signup' ? await signUp(email, password, fullName) : await signIn(email, password, rememberMe);
 
       if (authError) {
         setError(authError.message);
@@ -177,18 +188,41 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             className="cloud-input"
           />
         )}
+        {mode === 'signup' && (
+          <input
+            type="password"
+            required
+            minLength={6}
+            placeholder="Confirm Password"
+            aria-label="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="cloud-input"
+          />
+        )}
 
         {mode === 'login' && (
-          <button
-            type="button"
-            onClick={() => {
-              setMode('forgot');
-              setError('');
-            }}
-            className="block text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
-          >
-            Forgot password?
-          </button>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-xs font-medium text-on-surface-variant cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 accent-chile-rojo cursor-pointer"
+              />
+              Remember me
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('forgot');
+                setError('');
+              }}
+              className="text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+            >
+              Forgot password?
+            </button>
+          </div>
         )}
 
         {error && (

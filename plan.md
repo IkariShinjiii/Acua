@@ -2442,3 +2442,50 @@ Everything else — the Commission form's field grid, material/budget
 pill layout, the cart drawer, search overlay, login form, and the
 concierge panel itself — held up cleanly with no cramping, wrapping, or
 overflow at any of the 6 sizes/orientations tested.
+
+## 48. Fixed a broken signup confirmation email, added Confirm Password + Remember Me
+
+**Real bug found and fixed**: `signUp` never passed `emailRedirectTo`,
+unlike `resetPasswordForEmail` right below it, which already did.
+Without it, the confirmation link falls back to whatever "Site URL" is
+configured in the Supabase dashboard — commonly still the default
+placeholder from when the project was created — rather than wherever
+the site is actually deployed. That mismatch is exactly what produces
+"Safari can't open the page because it couldn't connect to the server"
+when a real visitor taps the link from their email on their phone. Fixed
+by passing `emailRedirectTo: window.location.origin`, the same pattern
+already used for password reset. **This needs a matching check on the
+Supabase side too** — Auth will only honor a redirect URL that's on its
+own allow-list (Authentication → URL Configuration → Redirect URLs in
+the dashboard), silently falling back to the misconfigured Site URL
+otherwise; I have no dashboard/API access to verify or fix that setting
+myself, so it's worth confirming the production URL is actually listed
+there.
+
+**Confirm Password**: added a second password field on signup, checked
+against the first before ever calling `signUp` — a plain mismatch shows
+"Passwords don't match" immediately, matching the same check
+`ResetPasswordGate` already does for its own two password fields.
+
+**Remember Me**: the harder one, since supabase-js only accepts a
+storage adapter at client-creation time, not per sign-in call — there's
+no simple "remember me" parameter on `signInWithPassword` itself. Solved
+with a custom hybrid storage adapter (`src/lib/supabaseClient.js`) that
+checks an `acua-remember-me` flag *at the moment it writes* the session:
+checked (the default, matching how every existing user's session already
+behaved before this existed) persists it in `localStorage`, so it
+survives closing the browser; unchecked writes to `sessionStorage`
+only, so it's gone the instant the tab closes — a real, meaningfully
+more private option for anyone on a shared or public device.
+`AuthContext.signIn` sets that flag immediately before calling
+`signInWithPassword`, since the write has to see the correct flag value
+already in place.
+
+Verified live end-to-end with a temporary real account (created and
+deleted via direct SQL): a genuine password mismatch on signup shows the
+error and never proceeds to "Check your email"; logging in with Remember
+Me checked (its default state) leaves the resulting session token in
+`localStorage` and nowhere in `sessionStorage`; logging in with it
+unchecked does the exact opposite — session in `sessionStorage` only,
+absent from `localStorage`. All 9 checks passed; the temporary account
+was deleted immediately after, confirmed via a follow-up count query.
