@@ -2244,3 +2244,19 @@ appeared, clicked it, and confirmed the exact same question then
 returned a real, correct reply (details about the Moonlit Shell Pendant,
 matching its real price) — the error bubble and retry button both
 correctly disappear once a reply succeeds.
+
+## 41. Suggested starter prompts in the concierge
+
+Added four tappable suggestion chips, shown only before the visitor has
+said anything themselves (they'd just be clutter mid-conversation) —
+one for each thing the concierge was actually built to help with (§39):
+"What pieces do you have right now?", "What materials do you use?",
+"How do custom commissions work?", "Do you ship nationwide?". Clicking
+one sends it immediately, same as typing it and hitting send — extracted
+the send logic into a shared `submitMessage()` so both paths stay in
+sync.
+
+Verified live: the four chips render after the welcome message, clicking
+one sends it right away and the chips disappear, and the real reply that
+comes back is accurate (asked "Do you ship nationwide?" and got the real
+Iloilo City / email-to-order answer, not an invented one).

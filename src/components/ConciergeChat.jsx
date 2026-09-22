@@ -12,6 +12,17 @@ const WELCOME_MESSAGE = {
     "Hi! I'm the ACUA concierge — ask me about a piece, materials, or how custom commissions work.",
 };
 
+// Real, answerable starting points — one from each thing the concierge
+// was actually built to help with (§39): the live catalog, materials,
+// custom commissions, and the one shipping fact that's real (nationwide
+// from Iloilo City), rather than generic chatbot filler.
+const SUGGESTED_PROMPTS = [
+  'What pieces do you have right now?',
+  'What materials do you use?',
+  'How do custom commissions work?',
+  'Do you ship nationwide?',
+];
+
 function AssistantAvatar({ logoMark }) {
   return (
     <div className="w-7 h-7 rounded-full bg-surface-elevated shadow-cloud-sm flex items-center justify-center flex-shrink-0 overflow-hidden p-1">
@@ -136,16 +147,23 @@ export default function ConciergeChat() {
     }
   };
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    const trimmed = input.trim();
+  const submitMessage = (text) => {
+    const trimmed = text.trim();
     if (!trimmed || isSending) return;
-
     const nextMessages = [...messages, { role: 'user', content: trimmed }];
     setMessages(nextMessages);
     setInput('');
     sendToConcierge(nextMessages);
   };
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    submitMessage(input);
+  };
+
+  // Only shown before the visitor has said anything themselves — once
+  // they're mid-conversation, a row of starter prompts is just clutter.
+  const showSuggestions = messages.length === 1 && !isSending;
 
   const handleRetry = () => {
     if (isSending) return;
@@ -196,6 +214,19 @@ export default function ConciergeChat() {
               {messages.map((m, i) => (
                 <MessageBubble key={i} role={m.role} content={m.content} isError={m.isError} logoMark={avatarLogoMark} />
               ))}
+              {showSuggestions && (
+                <div className="flex flex-wrap gap-2 pl-9">
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => submitMessage(prompt)}
+                      className="text-xs text-left px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-elevated shadow-input-inset text-on-surface border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
               {isSending && <TypingIndicator logoMark={avatarLogoMark} />}
               {lastMessageFailed && !isSending && (
                 <div className="flex justify-start pl-9">
