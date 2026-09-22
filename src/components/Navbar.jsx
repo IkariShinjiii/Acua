@@ -153,6 +153,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               onClick={onOpenSearch}
               className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label="Search Catalog"
+              aria-haspopup="dialog"
             >
               <Search className="w-[18px] h-[18px] stroke-[1.5]" />
             </button>
@@ -161,6 +162,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               onClick={onOpenCart}
               className={`relative p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full group border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label={`Cart with ${cartCount} items`}
+              aria-haspopup="dialog"
             >
               <ShoppingBag className="w-[18px] h-[18px] stroke-[1.5]" />
               {cartCount > 0 && (
@@ -196,6 +198,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`md:hidden p-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent ${textStrong} ${accentHover}`}
               aria-label="Toggle Navigation Menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
                 <X className="w-5 h-5 stroke-[1.5]" />
@@ -256,6 +259,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                     onOpenSearch?.();
                     setMobileMenuOpen(false);
                   }}
+                  aria-haspopup="dialog"
                   className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
                 >
                   <Search className="w-4 h-4 stroke-[1.5]" />

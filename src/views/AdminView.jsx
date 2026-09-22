@@ -397,6 +397,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
       <div className="flex justify-end">
         <button
           onClick={() => setShowAddForm((v) => !v)}
+          aria-expanded={showAddForm}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           <Plus className="w-4 h-4" /> Add New Piece
@@ -592,6 +593,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
       <div className="flex justify-end">
         <button
           onClick={() => setShowAddForm((v) => !v)}
+          aria-expanded={showAddForm}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           <Plus className="w-4 h-4" /> Add Archive Piece

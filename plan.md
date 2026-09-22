@@ -1990,3 +1990,26 @@ confirmed the ordinary successful-submission path still works exactly
 as before. The one real row this second check created in
 `commission_briefs` was deleted immediately after, confirmed via a
 follow-up query.
+
+## 34. Disclosure and dialog-opening buttons didn't expose their state
+
+None of the app's toggle buttons that show/hide something told assistive
+tech what state they were in. The mobile hamburger menu and both of
+AdminView's "Add New Piece"/"Add Archive Piece" inline-form toggles are
+real disclosure widgets (they show/hide content in place) but had no
+`aria-expanded`, so a screen reader user had no way to know whether
+activating them would open or close something, or which state they were
+currently in. Separately, the header's Search and Cart buttons (and the
+mobile drawer's Search entry) open real modal dialogs but had no
+`aria-haspopup`, the standard way to signal that upfront rather than
+leaving it a surprise once activated.
+
+**Fix**: added `aria-expanded={state}` to the three disclosure toggles
+(mobile menu, both admin add-forms) and `aria-haspopup="dialog"` to the
+three dialog-opening buttons (desktop Search, Cart, and the mobile
+drawer's Search entry — My Account isn't a dialog, it navigates to a
+view, so it didn't need one).
+
+Verified live: toggling the mobile menu three times (closed → open →
+closed) showed `aria-expanded` correctly reading `false` → `true` →
+`false` at each step.
