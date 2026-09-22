@@ -4,11 +4,14 @@ import { X, Search } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export default function SearchOverlay({ open, onClose, onSelectProduct }) {
   const [query, setQuery] = useState('');
   const [pieces, setPieces] = useState([]);
   const inputRef = useRef(null);
+  const dialogRef = useRef(null);
+  useFocusTrap(dialogRef, open);
 
   useEffect(() => {
     if (!open) return;
@@ -56,6 +59,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
           onClick={onClose}
         >
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}

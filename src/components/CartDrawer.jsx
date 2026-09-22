@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, Trash2, ShoppingBag, AlertCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatPeso, parsePesoToNumber } from '../lib/currency';
 import { supabase } from '../lib/supabaseClient';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export default function CartDrawer({ open, onClose, onViewProduct }) {
   const { items, removeItem, setQuantity } = useCart();
+  const dialogRef = useRef(null);
+  useFocusTrap(dialogRef, open);
   // The cart is built from whatever product snapshot was saved to
   // localStorage when each item was added — potentially days or weeks
   // ago. If ACUA marks a piece sold out (most items are 1-of-1) after
@@ -66,6 +69,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
             className="fixed inset-0 bg-on-surface/50 z-[90]"
           />
           <motion.div
+            ref={dialogRef}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

@@ -1781,3 +1781,32 @@ end-to-end — clicking the card body, and pressing Enter while it's
 focused, both still navigate to the product page, while clicking or
 Enter-ing the Add to Cart button still adds to cart without navigating
 away, with no console errors.
+
+## 27. Modals declared aria-modal but never actually trapped focus
+
+`CartDrawer` and `SearchOverlay` both mark their dialog panel
+`role="dialog" aria-modal="true"` — a promise to assistive tech that
+focus stays inside the dialog while it's open — but neither actually
+enforced it. Tabbing past the last focusable element (or Shift+Tabbing
+past the first) let focus escape into the page behind the dialog, which
+is still visually present (if dimmed) and, without a trap, still
+reachable by keyboard even though the modal is meant to have full
+attention.
+
+**Fix**: added a small reusable `useFocusTrap(containerRef, active)`
+hook (`src/hooks/useFocusTrap.js`) — on open, moves focus to the first
+focusable element inside the dialog (unless the dialog already focused
+something itself, like `SearchOverlay`'s own input-focus effect);
+intercepts Tab/Shift+Tab at the dialog's boundary so it wraps around
+inside the dialog instead of escaping; and on close, restores focus to
+whatever triggered the dialog (the cart or search icon), instead of
+leaving focus wherever it happened to land or resetting to `<body>`.
+Wired into both `CartDrawer` and `SearchOverlay` via a ref on their
+dialog panel.
+
+Verified live: tabbing 15 times inside an open cart (seeded with a real
+item so there's more than just the close button to cycle through) never
+left the dialog; Shift+Tab from the first focusable element correctly
+wrapped to the last; closing via Escape returned focus to the cart
+button that opened it. Same three checks passed for `SearchOverlay`,
+which also still auto-focuses its search input as before.
