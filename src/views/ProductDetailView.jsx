@@ -122,7 +122,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
           <ArrowLeft className="w-4 h-4" /> Back to Available Pieces
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}

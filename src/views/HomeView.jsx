@@ -174,7 +174,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                 New Release
               </h2>
               <p className="font-sans text-xs sm:text-sm text-on-surface-variant mt-1.5 hidden sm:block">
-                Seasonal artifacts hand-sculpted in limited batches — hover to inspect
+                Seasonal artifacts hand-sculpted in limited batches
               </p>
             </div>
 

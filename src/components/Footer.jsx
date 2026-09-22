@@ -32,7 +32,17 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
 
   return (
     <footer className="w-full mt-auto bg-chile-rojo text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* pb-28 (not the plain py-16 the rest of this padding uses) is
+          deliberate: on any viewport narrower than max-w-7xl — every
+          tablet, most laptops — this container spans the full viewport
+          width, putting the bottom bar's right-aligned tagline in the
+          exact same bottom-right corner as ConciergeChat's fixed toggle
+          button. Desktop viewports never showed this because the
+          centered, narrower content column left that corner empty. This
+          reserves enough clearance that once scrolled to the true
+          bottom of the page, the tagline has already cleared the
+          button's fixed vertical position instead of sitting under it. */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-10">
           <div className="col-span-2 sm:col-span-1 flex flex-col items-start gap-3">
             <img src={logoMarkCream} alt="ACUA" className="h-12 w-auto" loading="lazy" />

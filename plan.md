@@ -2387,3 +2387,58 @@ change, dialog opening, the right content becoming visible), not just
 that a click handler fired. The mobile Shop fix was confirmed directly:
 scrolled to 800px, opened the menu, tapped Shop, landed back at 0.
 Everything else already worked correctly.
+
+## 47. Tablet/iPad audit — no device available, screenshotted every page across 6 real iPad sizes
+
+No physical tablet to test on, so audited visually instead: screenshotted
+Home (hero, reel, Available Pieces, Archive, footer), Commission,
+Product Detail, Cart, Search, My Account, and the Concierge panel across
+iPad Mini (768×1024 / 1024×768), iPad Air (820×1180 / 1180×820), and
+iPad Pro 12.9" (1024×1366 / 1366×1024) — both orientations, since 768px
+and 1024px are exactly Tailwind's `md`/`lg` breakpoints, and tablets are
+the one device class that actually sits on top of both. Confirmed no
+horizontal overflow at any size first (a common tablet-width failure
+mode), then reviewed every screenshot for real layout/aesthetic issues.
+
+Found and fixed three real things:
+
+- **A floating-button/footer collision, invisible on desktop.** The
+  footer's bottom tagline ("Naturally rooted. Intentionally designed.")
+  sits in a `justify-between` row inside a `max-w-7xl` container. On any
+  viewport *narrower* than 1280px — every tablet, and most laptops —
+  that container spans the full viewport width, putting the right-
+  aligned tagline in the same bottom-right corner as `ConciergeChat`'s
+  fixed toggle button. On wider desktop screens the centered, narrower
+  content column left that corner empty, which is exactly why this had
+  never shown up before despite the concierge existing for several
+  commits already. Fixed by reserving extra bottom clearance
+  (`pb-28` instead of the surrounding `py-16`) so the tagline has
+  already scrolled clear of the button's fixed position by the time the
+  page reaches its true bottom. Verified fixed at both sizes it was
+  originally caught on.
+- **"— hover to inspect"** in the New Release reel's subtitle — a real,
+  visible instruction that's impossible to act on for anyone on a
+  touchscreen, which is every tablet and phone visitor. Removed the
+  qualifier, kept the substantive copy.
+- **The product detail page's image+info layout stayed single-column
+  until 1024px** (`lg:grid-cols-2`), meaning every tablet — 768–1023px
+  of real width, plenty for two columns — got an oversized full-width
+  image and had to scroll well past the fold to reach the price or Add
+  to Cart. Switched the breakpoint to `md:grid-cols-2` (768px) after
+  confirming visually it isn't cramped even at the tightest tested width
+  (768px): Add to Cart is now visible without scrolling on every tablet
+  size checked, and a 1440px desktop screenshot confirmed no regression
+  there.
+
+**Checked, not a bug**: The Archive grid (`grid-cols-2 md:grid-cols-4`)
+looks sparse on tablet — 2 real items in a 4-column grid, with a big
+empty gap. That's accurate to the current catalog (only 2 real archive
+rows exist), not a layout defect; forcing it to look "fuller" would mean
+inventing archive pieces that don't exist, which this project has
+consistently avoided elsewhere (§18, §39). It'll fill in naturally as
+real past pieces are added.
+
+Everything else — the Commission form's field grid, material/budget
+pill layout, the cart drawer, search overlay, login form, and the
+concierge panel itself — held up cleanly with no cramping, wrapping, or
+overflow at any of the 6 sizes/orientations tested.
