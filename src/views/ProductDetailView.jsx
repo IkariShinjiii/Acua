@@ -1,33 +1,57 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
 import { useCart } from '../context/CartContext';
+
+// PostgREST's code for ".single() matched zero rows" — the one case that
+// actually means "this product doesn't exist," as opposed to any other
+// error (a real fetch/network failure), which shouldn't be presented to a
+// visitor as if the piece they clicked on was never real.
+const NOT_FOUND_CODE = 'PGRST116';
 
 export default function ProductDetailView({ productId, setCurrentView, onRequestSimilar }) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [product, setProduct] = useState(undefined); // undefined = loading, null = not found
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Bumped on every load attempt (a productId change or a manual "Try
+  // Again" click) so a still-in-flight request from a superseded attempt
+  // can tell it's stale and discard its own result instead of overwriting
+  // whatever the newer request already resolved.
+  const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadProduct = useCallback(() => {
+    const thisRequestId = ++requestIdRef.current;
     setProduct(undefined);
+    setLoadFailed(false);
     supabase
       .from('products')
       .select('*')
       .eq('id', productId)
       .single()
       .then(({ data, error }) => {
-        if (cancelled) return;
+        if (requestIdRef.current !== thisRequestId) return;
+        if (error && error.code !== NOT_FOUND_CODE) {
+          setLoadFailed(true);
+          setProduct(null);
+          return;
+        }
         setProduct(error || !data ? null : mapProductRow(data));
+      })
+      .catch(() => {
+        if (requestIdRef.current !== thisRequestId) return;
+        setLoadFailed(true);
+        setProduct(null);
       });
-    return () => {
-      cancelled = true;
-    };
   }, [productId]);
+
+  useEffect(() => {
+    loadProduct();
+  }, [loadProduct]);
 
   useEffect(() => {
     document.title = product ? `${product.title} | ACUA` : 'ACUA | Handcrafted by the Coast';
@@ -40,14 +64,40 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
   if (!product) {
     return (
       <div className="min-h-screen bg-sand flex items-center justify-center pt-20">
-        <div className="text-center space-y-3">
-          <p className="text-sm text-on-surface-variant">That piece couldn't be found.</p>
-          <button
-            onClick={() => setCurrentView('home')}
-            className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
-          >
-            Back to Shop
-          </button>
+        <div className="text-center space-y-3 max-w-sm px-4">
+          {loadFailed ? (
+            <>
+              <AlertCircle className="w-5 h-5 text-accent mx-auto" />
+              <p className="text-sm text-on-surface-variant">
+                Couldn't load this piece right now — this is a connection issue on our end, not a
+                missing product.
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={loadProduct}
+                  className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                >
+                  Back to Shop
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-on-surface-variant">That piece couldn't be found.</p>
+              <button
+                onClick={() => setCurrentView('home')}
+                className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+              >
+                Back to Shop
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

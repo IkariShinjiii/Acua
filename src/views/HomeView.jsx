@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Check } from 'lucide-react';
+import { Plus, Check, AlertCircle } from 'lucide-react';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
 import { FILTER_TABS } from '../data/products';
@@ -14,32 +14,82 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   const [addedItem, setAddedItem] = useState(null);
   const [pieces, setPieces] = useState(null);
   const [archiveItems, setArchiveItems] = useState(null);
+  // A failed fetch and a genuinely empty catalog used to look identical —
+  // both just left `pieces`/`archiveItems` as []. That meant an actual
+  // Supabase outage or an expired API key would show visitors "no pieces
+  // in this category yet," making a real technical failure look like an
+  // empty, abandoned store instead of a "something's wrong, try again."
+  const [piecesFailed, setPiecesFailed] = useState(false);
+  const [archiveFailed, setArchiveFailed] = useState(false);
+  // Shared by the mount effect and the "Try Again" button's manual retry —
+  // a ref (not a closure-local flag) since it needs to still say "don't
+  // touch state" after unmount regardless of which call started the fetch.
+  const unmountedRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    supabase
+  const loadPieces = useCallback(() => {
+    setPieces(null);
+    setPiecesFailed(false);
+    return supabase
       .from('products')
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (cancelled) return;
-        setPieces(error || !data ? [] : data.map(mapProductRow));
+        if (unmountedRef.current) return;
+        if (error || !data) {
+          setPiecesFailed(true);
+          setPieces([]);
+          return;
+        }
+        setPieces(data.map(mapProductRow));
+      })
+      .catch(() => {
+        // A genuine network failure (not a resolved { error }) rejects
+        // instead of resolving — without this, it would otherwise leave
+        // pieces stuck on "Loading pieces…" forever rather than showing
+        // the same error state as a resolved { error } does.
+        if (unmountedRef.current) return;
+        setPiecesFailed(true);
+        setPieces([]);
       });
+  }, []);
 
-    supabase
+  const loadArchive = useCallback(() => {
+    setArchiveItems(null);
+    setArchiveFailed(false);
+    return supabase
       .from('archive_items')
       .select('*')
       .order('created_at', { ascending: true })
       .then(({ data, error }) => {
-        if (cancelled) return;
-        setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
+        if (unmountedRef.current) return;
+        if (error || !data) {
+          setArchiveFailed(true);
+          setArchiveItems([]);
+          return;
+        }
+        setArchiveItems(data.map(mapArchiveRow));
+      })
+      .catch(() => {
+        if (unmountedRef.current) return;
+        setArchiveFailed(true);
+        setArchiveItems([]);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    // React 18 StrictMode deliberately mounts, cleans up, and re-mounts
+    // every effect once in development to catch exactly this class of
+    // bug: without resetting the flag here, the first (fake) cleanup
+    // would permanently poison unmountedRef for the second, real mount,
+    // silently discarding every fetch's result for the rest of the
+    // component's life.
+    unmountedRef.current = false;
+    loadPieces();
+    loadArchive();
+    return () => {
+      unmountedRef.current = true;
+    };
+  }, [loadPieces, loadArchive]);
 
   const handleAdd = (piece) => {
     addItem(piece);
@@ -178,7 +228,22 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
           {pieces === null && (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading pieces…</p>
           )}
-          {pieces !== null && filteredPieces.length === 0 && (
+          {piecesFailed && (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <AlertCircle className="w-5 h-5 text-accent" />
+              <p className="text-sm text-on-surface-variant max-w-sm">
+                Couldn't load Available Pieces right now — this is a connection issue on our end,
+                not an empty catalog.
+              </p>
+              <button
+                onClick={loadPieces}
+                className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+          {pieces !== null && !piecesFailed && filteredPieces.length === 0 && (
             <p className="text-center text-sm text-on-surface-variant py-16">
               No pieces in this category yet.
             </p>
@@ -311,9 +376,24 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
               </p>
             </div>
 
+            {archiveFailed && (
+              <div className="flex flex-col items-center gap-3 pb-16 text-center">
+                <AlertCircle className="w-5 h-5 text-accent" />
+                <p className="text-sm text-on-surface-variant max-w-sm">
+                  Couldn't load The Archive right now — try again in a moment.
+                </p>
+                <button
+                  onClick={loadArchive}
+                  className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
             {/* 4-Column Asymmetric Staggered Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-16">
-              {archiveItems?.map((item) => (
+              {!archiveFailed && archiveItems?.map((item) => (
                 <div
                   key={item.id}
                   className={`group relative rounded-2xl md:rounded-3xl overflow-hidden ${item.aspect} ${item.mt} shadow-[0_10px_30px_-8px_rgba(38,28,20,0.06)] bg-sand-200`}

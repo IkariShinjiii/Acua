@@ -1,5 +1,5 @@
 import React from 'react';
-import { InstagramIcon, FacebookIcon } from './SocialIcons';
+import { InstagramIcon, FacebookIcon, TiktokIcon } from './SocialIcons';
 import logoMarkCream from '../assets/logo-mark-cream.png';
 
 // Shared across every storefront-facing view (rendered once from App.jsx)
@@ -57,6 +57,15 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
                 className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
               >
                 <FacebookIcon className="w-[18px] h-[18px]" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@acua_ph"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="ACUA on TikTok"
+                className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+              >
+                <TiktokIcon className="w-[18px] h-[18px]" />
               </a>
             </div>
           </div>

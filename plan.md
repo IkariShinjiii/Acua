@@ -2060,3 +2060,62 @@ already verified live for `CartDrawer`/`SearchOverlay` earlier this
 session (§27); exercising this specific call site live would need the
 real admin login I don't have credentials for, same constraint as
 §29/§35.
+
+## 37. Added ACUA's TikTok link
+
+Added a `TiktokIcon` (hand-authored outline glyph, matching the existing
+Instagram/Facebook icons' style exactly — lucide-react ships no
+brand/social icons, so these are all custom-drawn) and wired
+`https://www.tiktok.com/@acua_ph` into the footer's social row
+(stripped of the webapp-session query params — `?is_from_webapp=1&sender_device=pc`
+— from the URL as given, since those are navigation artifacts, not part
+of the canonical profile link). Verified live that the link renders
+with the correct `href`.
+
+## 38. Fetch failures were indistinguishable from a genuinely empty catalog
+
+`HomeView` and `ProductDetailView` both collapsed a technical fetch
+failure into exactly the same state as "the query succeeded and there's
+nothing there" — `error || !data ? [] : ...` either way. That meant a
+real Supabase outage or an expired API key would show visitors "No
+pieces in this category yet" on the home page, and "That piece couldn't
+be found" on every single product — making a temporary technical
+problem look like an empty, abandoned store, or like every product a
+customer tries to view has vanished.
+
+**Fix**: added a distinct `piecesFailed`/`archiveFailed` (`HomeView`) and
+a `loadFailed` (`ProductDetailView`) state, checked separately from "zero
+rows, no error." `ProductDetailView` additionally checks for PostgREST's
+specific `PGRST116` code (".single() matched no rows") to tell a genuine
+404 apart from any other error — only that code means "this product
+doesn't exist." Both now show an honest "couldn't load — this is a
+connection issue on our end" message with a "Try Again" button that
+re-runs the same fetch, instead of the misleading empty/not-found copy.
+
+**A real bug found and fixed while verifying this**: my first version of
+`HomeView`'s fix used a `useRef`-based "is this fetch stale" flag shared
+between the mount effect and the retry button. Under React 18
+StrictMode (development only — deliberately double-invokes every effect
+once to catch exactly this class of bug), the *first* fake mount's
+cleanup permanently set that flag, and the *second*, real mount's fetch
+would then see the "discard this result" flag already set and silently
+throw away its own legitimate data — leaving the page stuck on "Loading
+pieces…" forever in dev mode, no matter what. `ProductDetailView`'s
+existing request-generation-counter pattern was already immune to this
+(each attempt gets a fresh, unique id rather than flipping a shared
+boolean), so it was only `HomeView`'s new code affected. Fixed by
+resetting the flag at the start of the effect, and confirmed the
+distinction: this bug could only ever have shown up during local
+development, never on the actual deployed site, since production React
+builds don't have StrictMode's double-invoke behavior at all.
+
+Verified live in three stages: (1) a genuine 500 response (the realistic
+shape of "the backend is down," not just an aborted connection, which
+turned out to trigger unrelated low-level retry behavior that muddied
+the first verification attempt) correctly shows the connection-error
+copy with a working Try Again button, and the misleading empty/not-found
+messages are confirmed absent; (2) clicking Try Again, once the
+simulated outage is lifted, successfully loads the real catalog; (3) the
+exact same checks pass against an actual production build
+(`vite preview`), not just the dev server, confirming the fix holds
+where it actually matters.
