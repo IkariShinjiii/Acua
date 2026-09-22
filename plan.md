@@ -3432,3 +3432,40 @@ This is a good example of why every fix this session gets verified
 live rather than accepted on read-through: the first version read as
 correct and matched an established pattern exactly, and still had a
 real gap that only a live rapid-click test surfaced.
+
+## 73. Audit round, issue #4: Commission form uploads had no real limits
+
+The reference-image uploader on the Custom Request form (`CommissionView.jsx`)
+accepted any number of files, silently added exact duplicates twice, and
+accepted 0-byte files as valid uploads. `handleFiles` now rejects 0-byte
+files, dedupes by `name:size` against both what's already added and the
+rest of the current batch (matched files, whether picked twice via the
+same input or once via drag-and-drop and once via the file picker), and
+caps the total at 8 (`MAX_FILES`), since each file is its own uploaded
+Storage request in `handleSubmit`'s loop with no batching — an uncapped
+count would turn one form submission into a correspondingly uncapped
+upload burst. Rejected files show a combined `"Not added — ..."` message
+naming each one and why.
+
+**A test-methodology trap surfaced while verifying the duplicate case.**
+The first attempt called Playwright's `setInputFiles` twice with the
+identical file path on the same `<input type="file">`, and the preview
+count correctly stayed at 1 — read at first as a passing result. Adding a
+temporary debug log inside the real `handleFiles` showed it was only
+actually invoked once: reselecting the exact same file via the same input
+a second time didn't re-fire a `change` event at all (the input's value
+doesn't register as "changed"), so the dedup logic was never exercised —
+the count staying at 1 just meant the second selection never reached the
+handler, not that it was correctly rejected. Redesigned the test to add
+the file via the picker, then drop the identical file (name+size) via a
+genuine `drop` event — a separate pathway that reliably fires — and
+confirmed `handleFiles` really was called a second time, saw the file
+already present, and rejected it with the "already added" message.
+
+Verified live end-to-end after removing the debug log and rebuilding: a
+0-byte file is rejected without adding a preview, a genuine duplicate
+(via file-input + drop) is rejected, selecting 9 files at once caps the
+previews at exactly 8 with the limit message shown, and a full submission
+with 8 valid files still succeeds. Test submissions and their uploaded
+Storage files were deleted from Supabase afterward, confirmed via a
+follow-up count query.

@@ -17,6 +17,11 @@ import { useAuth } from '../context/AuthContext';
 // upload box itself — the accept="" attribute only filters the native file
 // picker, not drag-and-drop, so this is the only real gate.
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
+// Reference images guide the concept sketch — they're not meant to become
+// an unbounded batch upload, and each one is a separate Storage upload
+// request in handleSubmit's loop (no batching), so an uncapped count would
+// turn one form submission into a correspondingly uncapped upload burst.
+const MAX_FILES = 8;
 const ACCEPTED_EXTENSIONS = /\.(jpe?g|png|heic|heif|pdf)$/i;
 
 function isAcceptedFileType(file) {
@@ -164,13 +169,28 @@ export default function CommissionView({ prefill }) {
   const handleFiles = (files) => {
     const accepted = [];
     const rejected = [];
+    // Same file (by name + size — good enough without hashing content
+    // client-side) picked twice, whether via two separate drops or once
+    // via drag-and-drop and once via the file picker, used to just add two
+    // identical entries with nothing catching it.
+    const existingKeys = new Set(uploadedImages.map((img) => `${img.name}:${img.file.size}`));
+    const seenInThisBatch = new Set();
+
     for (const file of Array.from(files)) {
+      const key = `${file.name}:${file.size}`;
       if (!isAcceptedFileType(file)) {
         rejected.push(`${file.name} (unsupported file type)`);
+      } else if (file.size === 0) {
+        rejected.push(`${file.name} (empty file)`);
       } else if (file.size > MAX_FILE_BYTES) {
         rejected.push(`${file.name} (over 15MB)`);
+      } else if (existingKeys.has(key) || seenInThisBatch.has(key)) {
+        rejected.push(`${file.name} (already added)`);
+      } else if (uploadedImages.length + accepted.length >= MAX_FILES) {
+        rejected.push(`${file.name} (limit of ${MAX_FILES} files reached)`);
       } else {
         accepted.push(file);
+        seenInThisBatch.add(key);
       }
     }
 
@@ -624,7 +644,7 @@ export default function CommissionView({ prefill }) {
                           <span className="text-accent font-semibold underline underline-offset-2">Click to select files</span> or drag and drop
                         </div>
                         <p className="text-[10px] text-on-surface-variant">
-                          JPEG, PNG, HEIC or sketches up to 15MB each
+                          JPEG, PNG, HEIC or sketches up to 15MB each — up to {MAX_FILES} files
                         </p>
                       </div>
                     </div>
