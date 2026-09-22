@@ -1857,3 +1857,32 @@ A small, mechanical change (relocating three JSX attributes, no logic
 touched) — verified via a clean build and a general console-error check,
 since exercising it live would need a real admin login I don't have
 credentials for and it wasn't worth creating one just for this.
+
+## 30. Commission form's uploaded-image previews never released their memory
+
+Each reference-image preview is a `blob:` URL from
+`URL.createObjectURL(file)`, which keeps that file's data alive in
+memory until something explicitly calls `URL.revokeObjectURL` on it —
+the browser never reclaims it on its own. `removeFile` already revoked
+one at a time, but that was the only path that did: a successful
+submission left every preview's blob alive indefinitely (the images
+were already durably uploaded to Supabase Storage by that point, so
+there was nothing left needing the local copies); clicking "Submit
+Another Commission" cleared the state array holding the URLs without
+revoking them first, at which point they became unreachable and
+therefore truly unrecoverable for the rest of the tab's lifetime; and
+simply navigating away mid-form with images still attached (e.g.
+clicking "Shop" in the navbar) unmounted the view with no cleanup at
+all.
+
+**Fix**: revoke every outstanding preview immediately after a successful
+submit (right before showing the confirmation screen, since they're no
+longer needed at that point); and added an unmount-only cleanup effect,
+backed by a ref kept in sync with the latest `uploadedImages` on every
+render, that revokes whatever's left if the patron navigates away
+without submitting.
+
+Verified live: uploaded a real file, confirmed its blob URL was
+fetchable (i.e. genuinely alive) beforehand, navigated away without
+submitting, and confirmed that exact same URL was no longer fetchable
+afterward — the unmount cleanup fired and released it.

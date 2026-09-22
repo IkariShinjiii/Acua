@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
@@ -66,6 +66,21 @@ export default function CommissionView({ prefill }) {
   const [fileError, setFileError] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [failedUploadCount, setFailedUploadCount] = useState(0);
+
+  // Each preview is a blob: URL from URL.createObjectURL, which holds its
+  // referenced file data in memory until explicitly revoked — the browser
+  // never does this on its own. removeFile already revokes one at a time;
+  // this ref (kept current every render, cheaper than an effect) lets a
+  // single unmount-only cleanup revoke whatever's left if the patron
+  // navigates away mid-form with images still attached.
+  const uploadedImagesRef = useRef(uploadedImages);
+  uploadedImagesRef.current = uploadedImages;
+
+  useEffect(() => {
+    return () => {
+      uploadedImagesRef.current.forEach((img) => URL.revokeObjectURL(img.preview));
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -177,6 +192,10 @@ export default function CommissionView({ prefill }) {
       return;
     }
 
+    // Successfully uploaded to storage now, so the local blob previews
+    // are no longer needed — reclaim their memory instead of waiting for
+    // an unmount that might not happen for a while in an SPA session.
+    uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
     setIsSubmitting(false);
     setIsSubmitted(true);
   };
