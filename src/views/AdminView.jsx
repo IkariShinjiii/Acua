@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { parsePesoToNumber, formatPeso } from '../lib/currency';
 import Toast, { useToast } from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { FILTER_TABS } from '../data/products';
@@ -568,6 +569,11 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
   });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  // The item currently awaiting a confirm/cancel decision in the dialog
+  // below, or null — replaces window.confirm(), which is exactly the kind
+  // of native browser dialog Toast.jsx already moved every other bit of
+  // feedback in this app away from.
+  const [pendingRemoval, setPendingRemoval] = useState(null);
 
   const addItem = async (e) => {
     e.preventDefault();
@@ -596,8 +602,10 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
     }
   };
 
-  const removeItem = async (item) => {
-    if (!confirm(`Remove "${item.title}" from The Archive? This can't be undone.`)) return;
+  const confirmRemove = async () => {
+    const item = pendingRemoval;
+    if (!item) return;
+    setPendingRemoval(null);
     setDeletingId(item.id);
     try {
       const { error } = await supabase.from('archive_items').delete().eq('id', item.id);
@@ -714,7 +722,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
                 {item.category} • {MATERIAL_OPTIONS.find((m) => m.id === item.material)?.label ?? item.material}
               </p>
               <button
-                onClick={() => removeItem(item)}
+                onClick={() => setPendingRemoval(item)}
                 disabled={deletingId === item.id}
                 className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors bg-surface-container text-accent hover:bg-chile-rojo hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
               >
@@ -730,6 +738,19 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
           </p>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingRemoval)}
+        title="Remove from The Archive?"
+        message={
+          pendingRemoval
+            ? `Remove "${pendingRemoval.title}" from The Archive? This can't be undone.`
+            : ''
+        }
+        confirmLabel="Remove"
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemoval(null)}
+      />
     </div>
   );
 }

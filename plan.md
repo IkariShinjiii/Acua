@@ -2033,3 +2033,30 @@ same as §29's Toast fix. The change itself is the same mechanical,
 low-risk pattern already verified twice this session (§33's forced-throw
 test on `CommissionView`/`AuthForm`), just applied consistently rather
 than left as an isolated fix on two forms and skipped on the rest.
+
+## 36. Replaced the one remaining native confirm() with the app's own dialog style
+
+`Toast.jsx`'s own comment explicitly frames it as replacing "native
+alert()/confirm()-adjacent error popups" — but that pass missed one spot:
+`ArchiveCuration`'s "Remove" button still used a raw `window.confirm()`
+before permanently deleting a piece from The Archive. A native browser
+dialog is unstyled, blocks the whole page, and doesn't match the rest of
+this app's design language at all — exactly the inconsistency the Toast
+work was meant to eliminate everywhere.
+
+**Fix**: added a small, reusable `ConfirmDialog` component matching
+`CartDrawer`/`SearchOverlay`'s established modal shape — same backdrop,
+Escape-to-cancel, and the real focus trap from §27's `useFocusTrap` hook
+(rather than just `aria-modal` with nothing enforcing it), with
+`role="alertdialog"`, the semantically correct role for a confirm/cancel
+prompt. Wired it into `ArchiveCuration`: the Remove button now opens the
+dialog (tracked via a `pendingRemoval` state holding the item awaiting a
+decision) instead of calling `confirm()` directly, and the actual delete
+only runs once the dialog's own Confirm button is clicked.
+
+Verified via a clean build and lint pass. The component reuses the exact
+same `useFocusTrap` hook, Escape handler, and backdrop-click pattern
+already verified live for `CartDrawer`/`SearchOverlay` earlier this
+session (§27); exercising this specific call site live would need the
+real admin login I don't have credentials for, same constraint as
+§29/§35.
