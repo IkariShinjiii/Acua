@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, X, Send, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
 import { useTheme } from '../context/ThemeContext';
 import logoMarkCream from '../assets/logo-mark-cream.png';
 import logoMarkInk from '../assets/logo-mark-ink.png';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
@@ -111,14 +113,29 @@ export default function ConciergeChat() {
 // Only the real, appended conversation (role: user/assistant) gets sent
 // back to the edge function as history — an isError bubble is a client-
 // side detail Gemini never said and shouldn't see echoed back to it.
+//
+// A raw fetch rather than supabase.functions.invoke() — invoke() awaits
+// the full response body before returning, which is exactly the "wait for
+// the whole reply, then show it all at once" behavior the edge function's
+// switch to streaming is meant to get away from. Reading the body directly
+// as it arrives lets the reply grow into view as Gemini generates it,
+// instead of a typing indicator sitting still for the whole generation.
   const sendToConcierge = async (conversationForApi) => {
     setIsSending(true);
+    let streamedAnyText = false;
     try {
-      const { data, error } = await supabase.functions.invoke('concierge-chat', {
-        body: { messages: conversationForApi },
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/concierge-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ messages: conversationForApi }),
       });
 
-      if (error || !data?.reply) {
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => null);
         setMessages((prev) => [
           ...prev,
           {
@@ -132,7 +149,38 @@ export default function ConciergeChat() {
         return;
       }
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        if (!chunk) continue;
+
+        if (!streamedAnyText) {
+          streamedAnyText = true;
+          setMessages((prev) => [...prev, { role: 'assistant', content: chunk }]);
+        } else {
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            next[next.length - 1] = { ...last, content: last.content + chunk };
+            return next;
+          });
+        }
+      }
+
+      if (!streamedAnyText) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            isError: true,
+            content: "Sorry, I couldn't come up with a reply just then — could you try asking again?",
+          },
+        ]);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -164,6 +212,12 @@ export default function ConciergeChat() {
   // Only shown before the visitor has said anything themselves — once
   // they're mid-conversation, a row of starter prompts is just clutter.
   const showSuggestions = messages.length === 1 && !isSending;
+
+  // Once the reply starts streaming in, the last message is already the
+  // growing assistant bubble — the typing indicator would just sit
+  // redundantly below text that's visibly arriving. Show it only for the
+  // gap before the first token lands (last message is still the visitor's).
+  const isAwaitingFirstToken = isSending && messages[messages.length - 1]?.role !== 'assistant';
 
   const handleRetry = () => {
     if (isSending) return;
@@ -232,7 +286,7 @@ export default function ConciergeChat() {
                   ))}
                 </div>
               )}
-              {isSending && <TypingIndicator logoMark={avatarLogoMark} />}
+              {isAwaitingFirstToken && <TypingIndicator logoMark={avatarLogoMark} />}
               {lastMessageFailed && !isSending && (
                 <div className="flex justify-start pl-9">
                   <button

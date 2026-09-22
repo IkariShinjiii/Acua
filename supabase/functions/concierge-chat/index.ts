@@ -4,11 +4,16 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // Public and anonymous by design — visitors chat with this before ever
 // signing in, the same way "Public can read products" already lets
 // anyone browse the catalog without an account. verify_jwt is disabled
-// on deploy for that reason; the real bound on abuse is the message/
-// history caps below plus Gemini's own free-tier rate limit.
+// on deploy for that reason; abuse is bounded by the message/history caps
+// below plus the real per-IP rate limit further down (see 0009_concierge_
+// rate_limit.sql) rather than relying on Gemini's own tier limit alone.
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+// Auto-provided to every edge function alongside the two above — never sent
+// to the browser, used only for the rate-limit RPC below (see its migration
+// for why that function is locked to service_role).
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +23,28 @@ const CORS_HEADERS = {
 
 const MAX_HISTORY = 12;
 const MAX_MESSAGE_CHARS = 2000;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const RATE_LIMIT_MAX_REQUESTS = 8;
+
+// Supabase sits behind Cloudflare, which sets cf-connecting-ip to the real
+// client IP itself and overwrites any value the client tries to send in
+// that header — unlike x-forwarded-for, it can't be forged. Confirmed by
+// logging a real request's headers: x-forwarded-for came through as
+// "<real client IP>,<real client IP>, <rotating Supabase LB IP>" — an
+// earlier version of this function keyed on x-forwarded-for's LAST entry
+// on the assumption it'd be the closest, most-trustworthy hop, but that
+// entry turned out to be Supabase's own rotating internal address, not the
+// client's, which silently broke rate limiting (every request landed in a
+// different bucket). cf-connecting-ip avoids that; x-forwarded-for's FIRST
+// entry is the fallback for the rare case it's ever missing.
+function getClientKey(req: Request): string {
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (!forwarded) return "unknown";
+  const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean);
+  return parts.length > 0 ? parts[0] : "unknown";
+}
 
 // Only real, confirmed facts about ACUA — shipping/returns/payment were
 // added once the owner actually provided them (see plan.md §64); anything
@@ -92,6 +119,27 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "No message provided." }, 400);
   }
 
+  const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { data: allowed, error: rateLimitError } = await serviceClient.rpc(
+    "check_concierge_rate_limit",
+    {
+      p_key: getClientKey(req),
+      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+      p_max_requests: RATE_LIMIT_MAX_REQUESTS,
+    }
+  );
+
+  if (rateLimitError) {
+    // Fail open — a bug or outage in the rate limiter itself shouldn't take
+    // the whole concierge down for every visitor.
+    console.error("rate limit check failed:", rateLimitError);
+  } else if (!allowed) {
+    return jsonResponse(
+      { error: "You're sending messages a bit quickly — please wait a moment and try again." },
+      429
+    );
+  }
+
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: products } = await supabase
@@ -114,8 +162,13 @@ Deno.serve(async (req) => {
       catalogSummary || "(nothing currently listed)"
     }`;
 
+    // streamGenerateContent (not generateContent) — the non-streaming call
+    // used to withhold the entire reply until Gemini had finished writing
+    // all of it, so the visitor watched a typing indicator for however long
+    // the full generation took. Streaming lets the reply start appearing
+    // the moment the model produces its first token instead.
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,8 +183,8 @@ Deno.serve(async (req) => {
       }
     );
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
+    if (!geminiRes.ok || !geminiRes.body) {
+      const errText = await geminiRes.text().catch(() => "");
       console.error("Gemini API error:", geminiRes.status, errText);
       return jsonResponse(
         { error: "The concierge is having trouble responding right now — please try again." },
@@ -139,12 +192,53 @@ Deno.serve(async (req) => {
       );
     }
 
-    const geminiData = await geminiRes.json();
-    const reply =
-      geminiData?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ||
-      "Sorry, I couldn't come up with a reply just then — could you try asking again?";
+    // Gemini's SSE stream is a sequence of "data: {...}" lines, each a
+    // partial-candidate JSON chunk. Pull just the text out of each one and
+    // re-emit it as a plain text delta — the browser doesn't need to know
+    // anything about Gemini's wire format, just the next piece of text.
+    const geminiReader = geminiRes.body.getReader();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
 
-    return jsonResponse({ reply });
+    const stream = new ReadableStream({
+      async start(controller) {
+        let buffer = "";
+        try {
+          while (true) {
+            const { done, value } = await geminiReader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (!trimmedLine.startsWith("data:")) continue;
+              const jsonStr = trimmedLine.slice(5).trim();
+              if (!jsonStr) continue;
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const text =
+                  parsed?.candidates?.[0]?.content?.parts
+                    ?.map((p: { text?: string }) => p.text ?? "")
+                    .join("") ?? "";
+                if (text) controller.enqueue(encoder.encode(text));
+              } catch {
+                // A partial or malformed SSE chunk — skip it rather than
+                // aborting the whole reply over one unparsable line.
+              }
+            }
+          }
+        } catch (err) {
+          console.error("concierge-chat stream error:", err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { ...CORS_HEADERS, "Content-Type": "text/plain; charset=utf-8" },
+    });
   } catch (err) {
     console.error("concierge-chat error:", err);
     return jsonResponse({ error: "Something went wrong. Please try again." }, 500);

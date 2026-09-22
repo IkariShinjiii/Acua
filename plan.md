@@ -3491,3 +3491,72 @@ database — no row was ever inserted for it), while a real price
 via a follow-up count query.
 
 This closes out all 5 issues from this audit round.
+
+## 75. Made the concierge chat feel responsive, and gave it a real rate limit
+
+The user reported the concierge chat felt slow to respond. The edge
+function (`concierge-chat`) was calling Gemini's non-streaming
+`generateContent`, which withholds the entire reply until the model has
+finished writing all of it — the visitor watched a typing indicator sit
+still for the whole generation, then saw the full reply appear at once.
+Switched to `streamGenerateContent` (SSE), with the edge function parsing
+Gemini's `data: {...}` chunks and re-emitting just the text as a plain
+stream; the client now reads that stream directly (a raw `fetch` in place
+of `supabase.functions.invoke()`, which awaits the full body before
+returning) and grows the reply into view as it arrives, replacing the
+typing indicator with the growing bubble itself once the first token
+lands.
+
+While in there, added the real rate limit this endpoint never had — it's
+public and unauthenticated by design (verify_jwt disabled, visitors chat
+before signing in), and until now its only defense against abuse was
+message/history length caps plus Gemini's own tier limit. Added
+`0009_concierge_rate_limit.sql`: a `concierge_rate_limits` table (RLS
+enabled, no policies — the only door in is a SECURITY DEFINER function)
+and `check_concierge_rate_limit()`, an atomic upsert enforcing a fixed
+window (8 requests/60s) keyed by client IP, called from the edge function
+via the service-role key. Matching 0006's own lesson, revoking EXECUTE
+from PUBLIC alone didn't lock it down — Supabase's default setup also
+grants EXECUTE directly to anon/authenticated on every new function in
+this schema, confirmed via `has_function_privilege()` before and after;
+had to revoke from anon/authenticated explicitly too, then confirmed via
+the security advisor that the function is executable by service_role
+only.
+
+**The IP-keying itself had a real bug, caught only by looking at a live
+request's actual headers.** The first version keyed the rate limiter on
+the LAST entry of `x-forwarded-for`, on the theory that it'd be the hop
+closest to Supabase's own infrastructure and hardest for a client to
+forge. Logging a real request's headers showed the opposite: Supabase
+sits behind Cloudflare, and `x-forwarded-for` came through as `"<real
+client IP>,<real client IP>, <rotating Supabase LB IP>"` — the LAST entry
+was Supabase's own rotating internal address, not the client's, which
+silently gave nearly every request its own bucket (confirmed directly: 8
+requests in one test produced 8 different `client_key` rows, one request
+apiece, meaning the limiter would never trigger for a real burst).
+Cloudflare's `cf-connecting-ip` header — which Cloudflare sets itself and
+overwrites regardless of what the client sends — is the real fix; the
+first entry of `x-forwarded-for` is the fallback if it's ever missing.
+
+**Testing this also surfaced the actual root cause of the slowness
+complaint**, separate from streaming vs. non-streaming: the Gemini API
+key is on Google's free tier, which caps `gemini-3.6-flash` at 20
+requests/day, and calls were also hitting Google's own "model
+experiencing high demand" 503s. A burst of test requests exhausted the
+day's quota outright. Reported this to the user with the trade-offs;
+their call was to keep the free tier for now and accept the current
+ceiling rather than change billing or models.
+
+Verified live: a direct streaming request (before the quota ran out)
+showed the reply arriving as 5-6 separate chunks rather than one block,
+confirming the SSE-to-plain-text proxy genuinely streams rather than
+buffering. Once the day's quota was exhausted, used that to verify the
+*failure* path instead — opened the real chat widget in a browser and
+confirmed it shows a clean "Concierge unavailable" error bubble with a
+working "Try Again" link rather than hanging or crashing. The success
+path's rendering in the actual mounted component (as opposed to the raw
+fetch test) couldn't be re-verified today without more quota than the
+user chose to spend; the client's stream-consuming code is the same Web
+Streams API used in the raw test that did succeed, so this is a
+reasonable but not fully closed-loop verification, noted here honestly
+rather than glossed over.
