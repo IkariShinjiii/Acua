@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, User, Menu, X, Sun, Moon, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import logoMarkOlive from '../assets/logo-mark-olive.png';
 
 export default function Navbar({
@@ -20,6 +21,13 @@ export default function Navbar({
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const headerRef = useRef(null);
+  // Every other overlay in the app (CartDrawer, SearchOverlay, ConfirmDialog)
+  // traps Tab and restores focus to whatever opened it on close — this
+  // dropdown was the one exception, so Tab could escape it into the rest of
+  // the page while it was still visually open, and closing it (Escape,
+  // outside click, or picking an item) never returned focus anywhere.
+  const accountMenuRef = useRef(null);
+  useFocusTrap(accountMenuRef, accountMenuOpen);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -212,6 +220,7 @@ export default function Navbar({
               <AnimatePresence>
                 {accountMenuOpen && (
                   <motion.div
+                    ref={accountMenuRef}
                     initial={{ opacity: 0, y: -8, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.97 }}

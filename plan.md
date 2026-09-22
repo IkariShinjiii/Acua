@@ -3360,3 +3360,30 @@ persists correctly after a full page reload — confirming this was a
 client-side state-management fix, not a change to what actually gets
 saved. Test account deleted immediately after, confirmed via a
 follow-up count query.
+
+## 71. Audit round, issue #2: account dropdown had no focus trap
+
+Unlike every other overlay in the app (`CartDrawer`, `SearchOverlay`,
+`ConfirmDialog`, all already using the shared `useFocusTrap` hook),
+the account dropdown menu added this session never wired it in — Tab
+could move focus straight through the open menu into the rest of the
+page while it was still visually open, and closing it by any means
+(Escape, outside click, or picking an item) never returned focus to
+the button that opened it.
+
+**Fix**: attached the existing `useFocusTrap` hook to the dropdown's
+container the same way the other three overlays already do — a ref on
+the `motion.div`, `useFocusTrap(accountMenuRef, accountMenuOpen)`. No
+new logic needed; this hook already handles moving focus in on open,
+trapping and wrapping Tab/Shift+Tab, and restoring focus to whatever
+was focused before opening (the trigger button) once `active` goes
+false.
+
+Verified live: opening the menu moves focus straight to the first
+item; Tab/Shift+Tab cycle correctly through all three signed-in items
+(My Account → Account Settings → Log Out) and wrap in both directions
+without ever escaping the menu; the signed-out single-item case
+behaves the same way; Escape and selecting an item via keyboard (Enter)
+both close the menu and correctly return focus to the trigger button
+afterward. Tested with a temporary real account for the multi-item
+signed-in case, deleted immediately after.
