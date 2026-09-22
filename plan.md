@@ -3163,3 +3163,38 @@ which are the brand wordmark itself).
 Verified live at 393px mobile and 1440px desktop: computed
 `font-family` on the Navbar wordmark reads `Montserrat, sans-serif` at
 `font-weight: 700` on both, confirmed visually via screenshot.
+
+## 66. §65's Montserrat guess was wrong — a closer reference photo showed a distinctive flat-topped A
+
+User followed up with a much clearer, closer photo of the logo, and
+was right to ask for another look — it showed something Montserrat
+doesn't have: the "A" has a distinctly flat-cut apex (not a point),
+and the "C" has flat, perpendicular-cut terminals rather than rounded
+ones. That rules out Montserrat, Poppins, and effectively every
+standard pointed-apex geometric sans in one look.
+
+Rather than guess again from memory of font specimens, rendered a
+comparison sheet of twelve candidate Google Fonts likely to have this
+"flat-cut, constructed" character (Michroma, Aldrich, Orbitron,
+Electrolize, Wallpoet, Audiowide, Iceberg, Saira Stencil One, Bai
+Jamjuree, Genos, Big Shoulders, Rajdhani) and screenshotted them
+side-by-side. Two — Wallpoet and Iceberg — showed the flat-topped A;
+neither was a confident match on its own, so narrowed further with a
+second, more rigorous pass: the actual reference photo placed directly
+above six closer candidates (Wallpoet, Iceberg, Unica One, Six Caps,
+Squada One, Monoton) in one screenshot, for a genuine side-by-side
+rather than comparing across separate views. **Unica One** was the
+clear winner — its flat-topped A, cut-terminal C, and rounded-bottom U
+all line up closely with the real logo; Wallpoet turned out too
+blocky/industrial once seen directly alongside the reference, and the
+rest weren't close at all.
+
+Swapped `font-wordmark` from Montserrat to `'"Unica One"', sans-serif`
+in both the Google Fonts link (`index.html`) and the Tailwind token
+(`tailwind.config.js`), and dropped `font-bold` back to `font-normal`
+on both wordmark instances — Unica One only ships one weight, so
+requesting `bold` would have triggered the browser's synthetic/faux-
+bold rendering (thicker, slightly distorted) instead of the font's own
+real design. Verified live: computed `font-family` on the Navbar
+wordmark now reads `"Unica One", sans-serif`, confirmed visually at
+1440px desktop against the reference photo.
