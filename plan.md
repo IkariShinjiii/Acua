@@ -2865,3 +2865,50 @@ identical to the pre-fix values, confirming `env()` correctly resolves
 to 0 and there's no regression for the overwhelming majority of
 visitors browsing normally rather than from an installed home-screen
 icon.
+
+## 59. Closed out two outstanding infrastructure items from earlier in the session
+
+Two things flagged much earlier this session as unresolved (blocked at
+the time by the auto-mode classifier, or needing explicit confirmation
+before touching production) — re-checked rather than assumed still
+pending, and both were.
+
+**Leftover test account.** A temporary account from an earlier test
+(`acua-test-1789953896977@mailinator.com`) was still sitting in the
+live `auth.users` table. Confirmed it was unambiguously my own test
+artifact (not a real customer) and deleted it, confirmed via a
+follow-up count query.
+
+**Spoofable `commission_briefs` INSERT policy.** The policy allowed any
+client — authenticated or not — to set an arbitrary `user_id` on a
+submitted brief, letting someone attach a fake commission request to a
+real other user's account. Asked the user first, since this is a live
+production RLS change on a table with real data; they confirmed. Fixed
+the `WITH CHECK` to `(user_id IS NULL) OR (user_id = auth.uid())`,
+matching the two legitimate cases the form actually supports (anonymous
+submission, or a logged-in patron attaching their own account).
+
+Verification caught a real testing pitfall worth recording: an initial
+curl test of the anonymous case failed with an RLS violation, which
+first looked like the fix itself was broken. Root cause turned out to
+be the test, not the policy — it had added `Prefer:
+return=representation`, which makes PostgREST read the row back via
+`RETURNING`, and *that* is governed by the table's separate SELECT
+policy (`auth.uid() = user_id`, which is `NULL = NULL` → `NULL`, not
+true, for an anonymous row) — nothing to do with the INSERT check just
+fixed. The real app's own `.insert()` call never requests
+`return=representation`, so this never affected real traffic. Confirmed
+by direct SQL role-impersonation (the INSERT alone succeeded) and by
+dropping that header from the curl test, after which all four real
+scenarios passed: anonymous submission with `user_id: null` (201), a
+spoofed `user_id` while anonymous (401), an authenticated user
+submitting with their own `user_id` (201), and an authenticated user
+attempting someone else's `user_id` (403 — rejected even while logged
+in as a different real account). All test rows and the temporary
+account used for the authenticated cases were deleted immediately
+after, confirmed via a follow-up count query.
+
+Also checked Supabase's security/performance advisors directly: no
+performance issues, and the one security finding ("Leaked Password
+Protection Disabled") is a project-level Auth setting, not something
+fixable from code — flagging it to the user rather than attempting it.
