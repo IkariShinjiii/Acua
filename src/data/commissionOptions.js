@@ -17,3 +17,15 @@ export const BUDGET_TIERS = [
   { id: 'tier-3', range: '₱84,000 – ₱168,000', label: 'Raw Pearl / Gem' },
   { id: 'tier-4', range: '₱168,000+', label: 'Heirloom Suite' },
 ];
+
+// A dropdown, not free text — a patron typing their own timeline had no
+// steer toward what's actually realistic for a handmade piece, and no way
+// to know "Wednesday" isn't a real option. A hard deadline (a wedding date,
+// an anniversary) still has somewhere to go: the narrative field below.
+export const TIMELINE_OPTIONS = [
+  'Rush (1-2 Weeks)',
+  'Standard (2-4 Weeks)',
+  'Flexible (4-6 Weeks)',
+  'No Rush (6-8+ Weeks)',
+  'Specific Date (mention it in the notes below)',
+];

@@ -9,7 +9,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react';
-import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS, BUDGET_TIERS } from '../data/commissionOptions';
+import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS, BUDGET_TIERS, TIMELINE_OPTIONS } from '../data/commissionOptions';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -81,7 +81,15 @@ export default function CommissionView({ prefill }) {
     // unrelated visit to this form.
     if (prefill) return blank;
     const draft = readDraft();
-    return draft ? { ...blank, ...draft } : blank;
+    if (!draft) return blank;
+    // A draft saved back when this was a free-text field could hold
+    // anything (a typed date, a name) — no longer a valid <select> value
+    // now that the options are fixed, so it falls back to the default
+    // instead of silently leaving the dropdown showing nothing selected.
+    if (draft.timeline && !TIMELINE_OPTIONS.includes(draft.timeline)) {
+      draft.timeline = blank.timeline;
+    }
+    return { ...blank, ...draft };
   });
 
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -432,15 +440,19 @@ export default function CommissionView({ prefill }) {
                       <label htmlFor="commission-timeline" className="text-xs font-medium text-on-surface mb-1.5 block">
                         Desired Timeline
                       </label>
-                      <input
+                      <select
                         id="commission-timeline"
-                        type="text"
                         name="timeline"
                         value={formData.timeline}
                         onChange={handleInputChange}
-                        placeholder="e.g. Wedding Date / 4 Weeks"
                         className="cloud-input"
-                      />
+                      >
+                        {TIMELINE_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>

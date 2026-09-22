@@ -2912,3 +2912,37 @@ Also checked Supabase's security/performance advisors directly: no
 performance issues, and the one security finding ("Leaked Password
 Protection Disabled") is a project-level Auth setting, not something
 fixable from code — flagging it to the user rather than attempting it.
+
+## 60. "Desired Timeline" is now a dropdown, not free text
+
+User request: the Custom Commission form's "Desired Timeline" field was
+a plain text input (placeholder "e.g. Wedding Date / 4 Weeks") — no
+steer toward what's realistic for a handmade piece, and slower to fill
+out than every other field in that section, which are all pill buttons
+or radio-style cards.
+
+Added `TIMELINE_OPTIONS` to `data/commissionOptions.js`, matching the
+existing `JEWELRY_CATEGORIES`/`MATERIAL_OPTIONS`/`BUDGET_TIERS`
+convention already established there: Rush (1-2 Weeks), Standard (2-4
+Weeks), Flexible (4-6 Weeks) — the existing default, kept unchanged —
+No Rush (6-8+ Weeks), and a "Specific Date (mention it in the notes
+below)" option so a hard deadline (a wedding, an anniversary) still has
+somewhere to go rather than being dropped entirely now that the field
+isn't free text. Swapped the `<input>` for a `<select>`, following the
+same native-select pattern `AdminView` already uses elsewhere in this
+codebase, styled with the shared `cloud-input` class so it matches
+every sibling field in the same form section exactly.
+
+One edge case worth handling: a draft saved to `localStorage` back when
+this was free text could hold anything — a typed date, a name — no
+longer a valid option now that the values are fixed. Added a check when
+restoring a saved draft: if its `timeline` isn't one of the five preset
+strings, it falls back to the default instead of leaving the dropdown
+showing nothing selected.
+
+Verified live at both 393px mobile and 1440px desktop: all five options
+present in the correct order, default value correct, selecting an
+option updates correctly, and a full end-to-end submission with a
+non-default option ("No Rush (6-8+ Weeks)") succeeds and reaches "Brief
+Received." Test brief deleted immediately after, confirmed via a
+follow-up count query.
