@@ -2560,3 +2560,37 @@ spans the true full width with no dead space. Re-checked at 1440px
 desktop afterward — body width still matches viewport exactly and the
 card remains correctly centered at its existing max-w-4xl width, no
 regression.
+
+## 51. No visible preloader when navigating to a lazy-loaded view (Custom Commissions and others)
+
+User report: switching from Shop to Custom Commissions showed nothing
+happening — no loading indicator during the transition. Every route
+past Home (`CommissionView`, `ProductDetailView`, `AdminView`,
+`PatronDashboardView`) is code-split with `React.lazy` and shares one
+`Suspense` fallback in `App.jsx`, but that fallback was just plain,
+small gray text reading "Loading…" with zero motion — easy to miss
+entirely on a fast connection, and still not much of an acknowledgment
+even on a slow one.
+
+Verified live with the network throttled to a slow-3G profile
+(400kbps down, 400ms latency, via a CDP session) to make the fallback's
+actual on-screen time measurable rather than guessing from local
+loads: tapping "Custom Request" left the plain "Loading…" text sitting
+there for close to 3 seconds before the real page appeared — a real,
+noticeable gap with only a small line of static gray text to show for
+it.
+
+**Fix**: replaced the plain text with a small branded spinner (a
+`chile-rojo`-colored ring, matching the accent already used for the
+brand's other spinners like the signup/login submit button) plus the
+same label, wrapped in a Framer Motion fade-in. The fade-in matters
+independent of connection speed: it makes the fallback read as an
+intentional transition rather than a flash of unstyled text, whether
+it's on screen for 50ms or 3 seconds.
+
+Re-verified under the same throttled profile: the spinner now renders
+clearly centered on screen for the full ~2.6s gap before the
+Commission page appears (screenshotted mid-transition to confirm).
+Since the fallback is shared across all four lazy views, this also
+fixes the same "nothing visibly happens" gap for the product detail
+page, the admin dashboard, and the patron dashboard.

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { motion } from 'framer-motion';
 import { KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import HomeView from './views/HomeView';
 import Navbar from './components/Navbar';
@@ -22,8 +23,22 @@ const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 // loading state worth showing (it just pops in once ready).
 const ConciergeChat = lazy(() => import('./components/ConciergeChat'));
 
+// The plain "Loading…" text this replaced was easy to miss entirely — no
+// motion, no visual acknowledgment that the tap registered — and on a slow
+// connection (a lazy view's JS chunk still has to download) it could sit on
+// screen for seconds with nothing to signal progress. The fade-in means it
+// reads as an intentional transition whether it's up for 50ms or 3s, rather
+// than a flash of unstyled text.
 const ViewLoadingFallback = () => (
-  <div className="pt-40 text-center text-sm text-on-surface-variant">Loading…</div>
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.25, ease: 'easeOut' }}
+    className="min-h-[50vh] flex flex-col items-center justify-center gap-4 pt-24"
+  >
+    <div className="w-9 h-9 rounded-full border-[3px] border-chile-rojo/15 border-t-chile-rojo animate-spin" />
+    <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Loading…</span>
+  </motion.div>
 );
 
 const DEFAULT_TITLE = 'ACUA | Handcrafted by the Coast';
