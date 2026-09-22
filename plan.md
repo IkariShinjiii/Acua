@@ -2525,3 +2525,38 @@ the misleading empty state; lifting the simulated outage and clicking
 Try Again on each tab correctly recovers to the real (empty) state.
 Account deleted immediately after, confirmed via a follow-up count
 query.
+
+## 50. Custom Commissions page was silently zoomed out on every phone
+
+Reported directly by the user with a screenshot: on mobile, the whole
+Custom Commissions page rendered shrunk into roughly the left 70% of
+the screen, with dead space on the right (and the floating concierge
+button sitting oddly over the form). Measured live at a 393px mobile
+viewport and found the real cause: `document.body.scrollWidth` was
+547px — 154px wider than the 393px viewport — genuine horizontal
+overflow, not a visual bug in any single element. Mobile Safari (and
+Chromium, matching it in this test) responds to a page wider than its
+own viewport by expanding the layout viewport to fit the overflow and
+initially showing the whole thing zoomed out, which is exactly the
+"shrunk with dead space" look in the screenshot.
+
+Root cause: the page's decorative background glow —
+`<div className="absolute ... w-[700px] h-[500px] ... blur-3xl
+pointer-events-none -z-10" />` — is centered with `left-1/2
+-translate-x-1/2` against the outer `relative` wrapper, which is only
+as wide as the viewport on a phone. A 700px-wide element centered in a
+393px-wide parent overflows by exactly (700-393)/2 ≈ 153.5px on each
+side — matching the measured overflow almost to the pixel. Every other
+view with a similar decorative element already clips it with
+`overflow-hidden` on the containing section (e.g. `HomeView`'s hero);
+`CommissionView`'s outer wrapper was the one place missing it.
+
+**Fix**: added `overflow-x-hidden` to `CommissionView`'s outer wrapper
+div (kept to the horizontal axis only, so nothing about vertical
+scroll/sticky behavior changes). Verified live: at a 393px mobile
+viewport, `document.body.scrollWidth` now equals `window.innerWidth`
+exactly (393 = 393, previously 547 vs. 393), and the cloud-card now
+spans the true full width with no dead space. Re-checked at 1440px
+desktop afterward — body width still matches viewport exactly and the
+card remains correctly centered at its existing max-w-4xl width, no
+regression.

@@ -258,7 +258,7 @@ export default function CommissionView({ prefill }) {
   };
 
   return (
-    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased relative selection:bg-chile-rojo selection:text-white">
+    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased relative overflow-x-hidden selection:bg-chile-rojo selection:text-white">
 
       {/* ------------------------------------------------------------- */}
       {/* MAIN COMMISSION STAGE                                         */}
