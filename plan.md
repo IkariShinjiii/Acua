@@ -1833,3 +1833,27 @@ Verified live: measured the reel's actual computed `translateX` before
 and after a 1.5s window under Playwright's `reducedMotion: 'no-preference'`
 vs `'reduce'` emulation — normal preference drifted ~50px as expected,
 reduced motion drifted exactly 0px.
+
+## 29. Toast's aria-live region was inserted, not updated
+
+`Toast` (AdminView's feedback for actions like "quote sent" or "couldn't
+save that piece") put `role="status" aria-live="polite"` directly on the
+`motion.div` that `AnimatePresence` mounts and unmounts per toast — so
+the live region itself only ever existed in the DOM for the same instant
+its message appeared. Assistive tech is meant to announce changes to an
+*already-present* live region; a live region that's freshly inserted at
+the same moment as its content is a well-known pattern several
+browser/screen-reader combinations don't reliably announce, per the ARIA
+Authoring Practices' own guidance to keep live regions present in the
+DOM from the start.
+
+**Fix**: moved `role="status"`, `aria-live="polite"`, and added
+`aria-atomic="true"` onto the outer wrapper `<div>`, which was already
+unconditionally rendered regardless of whether a toast is active — only
+its child (the actual message) mounts and unmounts now, which is the
+recommended shape for a reliable live region.
+
+A small, mechanical change (relocating three JSX attributes, no logic
+touched) — verified via a clean build and a general console-error check,
+since exercising it live would need a real admin login I don't have
+credentials for and it wasn't worth creating one just for this.
