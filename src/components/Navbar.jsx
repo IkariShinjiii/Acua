@@ -113,20 +113,16 @@ export default function Navbar({
             aria-label="ACUA Home"
           >
             <img src={logoMark} alt="" className="h-8 sm:h-9 w-auto" />
-            {/* logo-tan (sampled from the real logo photo) only has real
-                contrast against a dark backdrop — 11:1 against dark-theme's
-                near-black bar or the hero photo, but a barely-there 1.5:1
-                against the light-theme solid bar's cream background, well
-                under WCAG's 3:1 floor even for text this large. Falls back
-                to chile-rojo (5.4:1, and already the site's own brand red)
-                specifically for that one case, rather than shipping a
-                wordmark that's nearly unreadable in the site's default
-                light theme once scrolled. */}
-            <span
-              className={`font-wordmark text-2xl sm:text-3xl tracking-[0.24em] uppercase font-bold ${
-                isTransparent || theme === 'dark' ? 'text-logo-tan' : 'text-chile-rojo'
-              }`}
-            >
+            {/* Fixed text-olive, not the theme-aware textStrong every other
+                header element uses — the owner picked olive from four real
+                logo color variants (the other three were ruled out: two
+                are orange-family colors being retired for a new palette,
+                one duplicates the tan already tried in an earlier pass).
+                Olive clears WCAG's 3:1 floor against both the light theme's
+                cream bar (3.34:1) and the dark theme's near-black one
+                (4.91:1), so unlike that tan attempt, one fixed color works
+                everywhere without a light/dark fallback. */}
+            <span className="font-wordmark text-2xl sm:text-3xl tracking-[0.24em] uppercase font-bold text-olive">
               ACUA
             </span>
           </button>

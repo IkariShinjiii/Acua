@@ -3243,3 +3243,37 @@ transparent (logo-tan), dark-theme scrolled/solid (logo-tan) — plus the
 splash screen in both themes. Confirmed via both computed
 `getComputedStyle(...).color` values and visual screenshots that each
 state resolves to the intended color and reads clearly.
+
+## 68. Switched the wordmark color to olive, from a real 4-variant logo sheet
+
+User shared four real logo color variants (bright orange, rust,
+olive, tan) and asked to pick from them, excluding both orange
+variants since the owner is preparing a whole new color palette to
+replace those specifically. That left olive or tan.
+
+Scanned the actual image for its dominant colors rather than guessing
+pixel coordinates by eye: a full-image histogram turned up exactly
+four solid fills, each covering almost identical pixel counts (one per
+variant) — `#d06020` (bright orange), `#b04020` (rust), `#908838`
+(olive), `#e8c890` (tan). Notably, three of these four are already
+near-identical to existing tokens in this codebase: the rust matches
+`chile-rojo` (#ae431e) closely, the tan matches `sunset` (#eac891)
+almost exactly, and the olive matches the existing `olive` token
+(#8a8b35) closely too — these four logo variants are evidently built
+from the same established brand palette already in `tailwind.config.js`.
+
+Picked olive over tan: tan would have just reinforced §67's already-
+tan-colored wordmark with a near-identical value, while olive is a
+genuinely distinct choice — and checking its WCAG contrast first
+(3.34:1 against light theme's cream background, 4.91:1 against dark
+theme's near-black one) confirmed it clears the 3:1 floor on **both**
+ends, unlike the tan from §67 which needed a light/dark conditional
+fallback to avoid disappearing in light mode. Switched both wordmark
+instances (`Navbar`, `HomeView` splash) to a single fixed `text-olive`
+— no fallback needed this time — and removed the now-unused `logo-tan`
+token entirely rather than leaving dead color-system cruft behind.
+
+Verified live across the same four real combinations as §67 (light/dark
+theme × transparent-over-hero/scrolled): computed `color` reads the
+same olive `rgb(138, 139, 53)` in all four, confirmed visually legible
+in every screenshot.
