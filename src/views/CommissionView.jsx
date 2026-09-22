@@ -74,7 +74,9 @@ export default function CommissionView({ prefill }) {
   // single unmount-only cleanup revoke whatever's left if the patron
   // navigates away mid-form with images still attached.
   const uploadedImagesRef = useRef(uploadedImages);
-  uploadedImagesRef.current = uploadedImages;
+  useEffect(() => {
+    uploadedImagesRef.current = uploadedImages;
+  }, [uploadedImages]);
 
   useEffect(() => {
     return () => {

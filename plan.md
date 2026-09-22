@@ -1886,3 +1886,38 @@ Verified live: uploaded a real file, confirmed its blob URL was
 fetchable (i.e. genuinely alive) beforehand, navigated away without
 submitting, and confirmed that exact same URL was no longer fetchable
 afterward — the unmount cleanup fired and released it.
+
+## 31. Dependency maintenance + a lint-flagged ref pattern
+
+`npm audit` came back clean (0 vulnerabilities, dependencies and
+dev-dependencies alike). `npm outdated` showed two packages with safe,
+in-range updates available under their existing `^` version
+constraints — `oxlint` 1.83.0 → 1.85.0 and `tailwindcss` 3.4.17 → 3.4.19
+— applied via `npm update`. Left Tailwind's actual "latest" (v4.3.3)
+alone: that's a major version with real breaking changes across config
+and utility behavior, not something to pull in as a drive-by dependency
+bump without dedicated migration testing.
+
+The updated `oxlint` surfaced a real finding in §30's fix: assigning
+`uploadedImagesRef.current = uploadedImages` directly in the render body
+is a working pattern (React's own docs describe it as valid for
+"always current" refs like this), but not the form static analysis
+tools expect, and it's just as easy to write as the idiomatic version.
+Moved the assignment into its own `useEffect(() => {...}, [uploadedImages])`
+instead of mutating the ref during render. Re-verified live afterward
+that the blob-URL cleanup from §30 still works exactly the same
+(fetchable before navigating away, unfetchable immediately after).
+
+The remaining lint output is pre-existing, inherent to deliberate
+patterns used consistently across the codebase, not bugs: `only-export-
+components` on every context file (`AuthContext`/`CartContext`/
+`ThemeContext`/`Toast`) is a Fast Refresh (dev-only hot-reload) nitpick
+about colocating a provider and its hook in one file — a standard,
+common React pattern, not worth splitting across 4 files to silence;
+`set-state-in-effect` on the three async-data-fetching effects
+(`AuthContext`, `ProductDetailView`, `SearchOverlay`) flags exactly the
+pattern effects exist for — there's no way to derive an async network
+result during render instead; and the `Math.random()` "impure function"
+warning in `AdminView`'s tracking-number generator is a false positive,
+since that code only ever runs inside an `onClick` handler, never during
+render.
