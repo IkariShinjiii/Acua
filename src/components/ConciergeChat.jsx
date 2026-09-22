@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useTheme } from '../context/ThemeContext';
+import logoMarkCream from '../assets/logo-mark-cream.png';
+import logoMarkInk from '../assets/logo-mark-ink.png';
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
@@ -9,26 +12,43 @@ const WELCOME_MESSAGE = {
     "Hi! I'm the ACUA concierge — ask me about a piece, materials, or how custom commissions work.",
 };
 
-function MessageBubble({ role, content }) {
+function AssistantAvatar({ logoMark }) {
+  return (
+    <div className="w-7 h-7 rounded-full bg-surface-elevated shadow-cloud-sm flex items-center justify-center flex-shrink-0 overflow-hidden p-1">
+      <img src={logoMark} alt="" className="w-full h-full object-contain" />
+    </div>
+  );
+}
+
+function MessageBubble({ role, content, isError, logoMark }) {
   const isUser = role === 'user';
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
+      {!isUser && <AssistantAvatar logoMark={logoMark} />}
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+        className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
             ? 'bg-chile-rojo text-white rounded-br-sm'
+            : isError
+            ? 'bg-chile-rojo/10 text-on-surface shadow-cloud-sm rounded-bl-sm border border-accent/20'
             : 'bg-surface-elevated text-on-surface shadow-cloud-sm rounded-bl-sm'
         }`}
       >
+        {isError && (
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent mb-1">
+            <AlertCircle className="w-3 h-3 flex-shrink-0" /> Concierge unavailable
+          </span>
+        )}
         {content}
       </div>
     </div>
   );
 }
 
-function TypingIndicator() {
+function TypingIndicator({ logoMark }) {
   return (
-    <div className="flex justify-start">
+    <div className="flex items-end gap-2 justify-start">
+      <AssistantAvatar logoMark={logoMark} />
       <div className="bg-surface-elevated shadow-cloud-sm rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
         {[0, 1, 2].map((i) => (
           <span
@@ -47,6 +67,8 @@ function TypingIndicator() {
 // how real storefront chat widgets (Intercom, Crisp, etc.) behave: you can
 // keep browsing while it's open.
 export default function ConciergeChat() {
+  const { theme } = useTheme();
+  const avatarLogoMark = theme === 'dark' ? logoMarkCream : logoMarkInk;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
@@ -75,19 +97,14 @@ export default function ConciergeChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSending]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed || isSending) return;
-
-    const nextMessages = [...messages, { role: 'user', content: trimmed }];
-    setMessages(nextMessages);
-    setInput('');
+// Only the real, appended conversation (role: user/assistant) gets sent
+// back to the edge function as history — an isError bubble is a client-
+// side detail Gemini never said and shouldn't see echoed back to it.
+  const sendToConcierge = async (conversationForApi) => {
     setIsSending(true);
-
     try {
       const { data, error } = await supabase.functions.invoke('concierge-chat', {
-        body: { messages: nextMessages },
+        body: { messages: conversationForApi },
       });
 
       if (error || !data?.reply) {
@@ -95,6 +112,7 @@ export default function ConciergeChat() {
           ...prev,
           {
             role: 'assistant',
+            isError: true,
             content:
               data?.error ||
               "Sorry, I'm having trouble responding right now — please try again in a moment.",
@@ -109,6 +127,7 @@ export default function ConciergeChat() {
         ...prev,
         {
           role: 'assistant',
+          isError: true,
           content: 'Something went wrong reaching the concierge. Please check your connection and try again.',
         },
       ]);
@@ -116,6 +135,29 @@ export default function ConciergeChat() {
       setIsSending(false);
     }
   };
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isSending) return;
+
+    const nextMessages = [...messages, { role: 'user', content: trimmed }];
+    setMessages(nextMessages);
+    setInput('');
+    sendToConcierge(nextMessages);
+  };
+
+  const handleRetry = () => {
+    if (isSending) return;
+    // Drop the trailing error bubble and re-send the same conversation
+    // (still ending in the last real user message) rather than making
+    // the visitor retype it.
+    const withoutError = messages.filter((m) => !m.isError);
+    setMessages(withoutError);
+    sendToConcierge(withoutError);
+  };
+
+  const lastMessageFailed = messages.length > 0 && messages[messages.length - 1]?.isError;
 
   return (
     <>
@@ -128,17 +170,18 @@ export default function ConciergeChat() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             role="dialog"
             aria-label="ACUA Concierge chat"
-            className="fixed bottom-24 right-4 sm:right-6 z-[150] w-[calc(100%-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-sand rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-4 sm:right-6 z-[150] w-[calc(100%-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-sand rounded-3xl shadow-2xl ring-1 ring-black/5 flex flex-col overflow-hidden"
           >
-            <div className="bg-chile-rojo text-white px-5 py-4 flex items-center justify-between flex-shrink-0">
-              <div>
+            <div className="bg-chile-rojo text-white px-5 py-4 flex items-center gap-3 flex-shrink-0">
+              <img src={logoMarkCream} alt="" className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
                 <h2 className="font-serif text-lg leading-tight">ACUA Concierge</h2>
                 <p className="text-[11px] text-white/80 uppercase tracking-wider">Usually replies in seconds</p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
                 aria-label="Close concierge chat"
-                className="p-1.5 rounded-full hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
+                className="p-1.5 rounded-full hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer text-white flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -151,9 +194,19 @@ export default function ConciergeChat() {
               aria-label="Conversation"
             >
               {messages.map((m, i) => (
-                <MessageBubble key={i} role={m.role} content={m.content} />
+                <MessageBubble key={i} role={m.role} content={m.content} isError={m.isError} logoMark={avatarLogoMark} />
               ))}
-              {isSending && <TypingIndicator />}
+              {isSending && <TypingIndicator logoMark={avatarLogoMark} />}
+              {lastMessageFailed && !isSending && (
+                <div className="flex justify-start pl-9">
+                  <button
+                    onClick={handleRetry}
+                    className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 

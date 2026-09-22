@@ -2195,3 +2195,52 @@ Edge Function's honest "not configured" response correctly surfaces as
 a graceful assistant-styled error bubble rather than a hang or a crash,
 confirming the whole pipeline (frontend → Edge Function → Gemini call →
 error handling) is wired correctly end to end.
+
+## 40. Concierge troubleshooting: model deprecated + truncated replies, plus a visual pass
+
+The concierge went live with the `GEMINI_API_KEY` secret set, but every
+message came back as "Sorry, I'm having trouble responding right now."
+Checked the real server-side error via Supabase's `function_logs` (not
+guesswork): the API key itself was working, but `gemini-2.0-flash` — the
+model name used at launch — had been deprecated; Google's own error
+pointed directly at its replacement, `gemini-3.6-flash`.
+
+Swapping the model name got a real reply, but the first test came back
+cut off mid-sentence ("We currently have several handmade coastal
+necklaces available right now:\n\n" and nothing after) — hit the
+`maxOutputTokens: 400` ceiling, almost certainly while starting to
+enumerate the whole catalog. Raised it to 800 and tightened the system
+prompt to recommend at most 2-3 specific pieces rather than listing
+everything, even when asked what's available overall.
+
+Verified directly against the deployed function (`curl`, not just the
+UI) across three real scenarios: a product question returned real
+pieces, at their real prices, confirmed against a fresh
+`select ... from products` query (Moonlit Shell Pendant ₱11,500, Coral
+Drift Choker ₱9,800, Tidepool Layered Necklace ₱14,200 — all real,
+none invented); a materials question got an accurate, complete answer;
+and a shipping/returns question correctly said it doesn't have that
+specific policy detail and pointed to email/Instagram/TikTok instead of
+guessing — exactly the "don't invent it" behavior §39's system prompt
+was designed for.
+
+**Visual pass**, requested alongside the fix: added the real ACUA logo
+mark to the chat header (matching Navbar/Footer's brand lockup, using
+the fixed cream mark since the header sits on the same non-theme-aware
+chile-rojo red as the footer); added a small circular avatar next to
+every assistant message using the theme-aware logo mark (cream in dark
+mode, ink in light — same logic Navbar already uses); gave the panel a
+subtle `ring-1 ring-black/5` so it reads as a distinct surface against
+whatever's behind it; and visually distinguished an error reply from a
+normal one (a tinted background, an "Concierge unavailable" label, an
+alert icon) with a "Try Again" action underneath that resends the exact
+same conversation instead of asking the visitor to retype their
+question.
+
+Verified live in both themes (screenshots reviewed directly) and the
+full retry path: forced the edge function call to fail once via network
+interception, confirmed the distinct error bubble and Try Again button
+appeared, clicked it, and confirmed the exact same question then
+returned a real, correct reply (details about the Moonlit Shell Pendant,
+matching its real price) — the error bubble and retry button both
+correctly disappear once a reply succeeds.

@@ -38,7 +38,7 @@ Real facts you can rely on:
 
 You'll be given the current live catalog below — only recommend pieces that are actually listed, by their real name and price, and never suggest a piece marked SOLD OUT as available to buy (you can still mention it exists and suggest a similar commission instead).
 
-If asked something you don't have real information for — shipping timelines, return policy, order status, pricing not shown here — say so plainly and point them to email or Instagram/TikTok rather than guessing. Keep replies short (2-4 sentences), warm, and specific. You are not able to add anything to their cart yourself — point them to the piece so they can do that themselves.`;
+If asked something you don't have real information for — shipping timelines, return policy, order status, pricing not shown here — say so plainly and point them to email or Instagram/TikTok rather than guessing. Keep replies short (2-4 sentences) and warm. When recommending pieces, name at most 2-3 specific ones rather than listing the whole catalog, even if asked what's available overall — pick the most relevant or newest and mention there are more to browse. You are not able to add anything to their cart yourself — point them to the piece so they can do that themselves.`;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     }`;
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
             role: m.role === "assistant" ? "model" : "user",
             parts: [{ text: m.content }],
           })),
-          generationConfig: { maxOutputTokens: 400, temperature: 0.6 },
+          generationConfig: { maxOutputTokens: 800, temperature: 0.6 },
         }),
       }
     );
