@@ -142,6 +142,12 @@ export function AuthProvider({ children }) {
       return supabase.auth.signInWithPassword({ email, password });
     },
     signOut: () => supabase.auth.signOut(),
+    // Same redirectTo pattern as signUp/requestPasswordReset above, for the
+    // same reason: without it, Google sends the visitor back to whatever
+    // "Site URL" happens to be configured in the Supabase dashboard rather
+    // than wherever this site is actually running.
+    signInWithGoogle: () =>
+      supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }),
     passwordRecovery,
     clearPasswordRecovery: () => setPasswordRecovery(false),
     // redirectTo points back at the site root since there's no router to

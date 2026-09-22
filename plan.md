@@ -3560,3 +3560,52 @@ user chose to spend; the client's stream-consuming code is the same Web
 Streams API used in the raw test that did succeed, so this is a
 reasonable but not fully closed-loop verification, noted here honestly
 rather than glossed over.
+
+## 76. Added Google sign-in (code side) — first of six new requested tasks
+
+The user listed six new tasks and asked to check each one out before
+starting anything. Findings for all six, and the plan to tackle them one
+at a time starting here, are in the conversation rather than repeated in
+full here. This entry covers #1: sign in / sign up with Google.
+
+`AuthContext` gained `signInWithGoogle`, calling
+`supabase.auth.signInWithOAuth({ provider: 'google', ... })` with the same
+`redirectTo: window.location.origin` pattern already used by `signUp` and
+`requestPasswordReset` — without it, Google would send the visitor back to
+whatever "Site URL" happens to be configured in the Supabase dashboard
+rather than wherever this site is actually running. `AuthForm` gained a
+"Continue with Google" button (Google's real four-color mark, inlined as
+an SVG — lucide has no brand logos) above an "or" divider, shown on both
+the login and signup tabs but hidden on the forgot-password screen and on
+the admin gate (`allowSignup={false}`) — that screen exists specifically
+because admin accounts are provisioned by hand, never self-served, and
+Google sign-in is exactly the kind of self-service account creation it's
+deliberately without.
+
+`handle_new_user()` (the trigger that creates a `profiles` row on
+signup) read `raw_user_meta_data ->> 'full_name'` exclusively, which is
+the key the email/password signup flow sets itself — not guaranteed to be
+what Google's OAuth metadata uses. Added a `coalesce(..., ->> 'name')`
+fallback (`0010_google_oauth_profile_name.sql`) so a Google sign-up still
+gets a real display name instead of silently landing null.
+
+This is genuinely two-sided: the Google Cloud Console (OAuth client +
+consent screen) and Supabase dashboard (enabling the Google provider,
+pasting the client ID/secret) both need the user's own account access,
+which isn't something achievable from here. Gave the user the exact
+callback URL (`https://ldwbjhdzouteqfyibkrl.supabase.co/auth/v1/callback`)
+and confirmed the deployed domain (`acua-three.vercel.app`, via the
+Vercel MCP) to register alongside `localhost:5173` for local dev.
+
+Verified live (Google not yet enabled on the Supabase side, so this
+tested the code, not a real Google round trip): the button renders
+correctly on both login and signup tabs, is correctly hidden on
+forgot-password, and clicking it does trigger the real OAuth redirect
+attempt. Worth noting for later: unlike `signInWithPassword`,
+`signInWithOAuth` performs a hard browser redirect straight to Supabase's
+own `/authorize` endpoint rather than resolving in-page — so until the
+provider is actually enabled, clicking the button lands on a raw
+Supabase JSON error page outside the app rather than the in-app error
+banner. That's expected only in this "not configured yet" interim state;
+once enabled, a real click properly redirects to Google's consent screen
+and back into the app.

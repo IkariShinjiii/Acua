@@ -2,11 +2,37 @@ import React, { useState } from 'react';
 import { LogIn, UserPlus, AlertCircle, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+// Google's own four-color "G" mark, per their brand guidelines for
+// third-party sign-in buttons — not a lucide icon, since lucide has no
+// brand logos.
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 48 48" className="w-4 h-4" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
+}
+
 // Reusable email/password auth form. `mode` sets the initial tab; pass
 // `allowSignup={false}` to hide the signup tab entirely (e.g. the admin
 // gate, where accounts are provisioned by hand, never self-served).
 export default function AuthForm({ mode: initialMode = 'login', allowSignup = true, onSuccess, title, subtitle }) {
-  const { signIn, signUp, requestPasswordReset } = useAuth();
+  const { signIn, signUp, requestPasswordReset, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState(initialMode);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,6 +47,26 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
   const [error, setError] = useState('');
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setGoogleSubmitting(true);
+    try {
+      const { error: oauthError } = await signInWithGoogle();
+      // On success this never resolves in a way that matters here — the
+      // browser navigates away to Google before this promise would settle.
+      // Only a synchronous failure (e.g. the provider isn't enabled yet)
+      // actually reaches this branch.
+      if (oauthError) {
+        setError(oauthError.message);
+        setGoogleSubmitting(false);
+      }
+    } catch (err) {
+      setError(err?.message || 'Something went wrong. Check your connection and try again.');
+      setGoogleSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -153,6 +199,30 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             </button>
           ))}
         </div>
+      )}
+
+      {/* Hidden on the admin gate (allowSignup=false) — that screen exists
+          specifically because admin accounts are provisioned by hand, never
+          self-served, and Google sign-in is exactly the kind of self-service
+          account creation that page is deliberately without. Also hidden on
+          the forgot-password screen, where it doesn't apply. */}
+      {allowSignup && mode !== 'forgot' && (
+        <>
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={googleSubmitting}
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-full bg-surface-elevated text-on-surface text-sm font-medium shadow-cloud-sm hover:bg-surface-container transition-colors border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          >
+            <GoogleIcon />
+            {googleSubmitting ? 'Redirecting…' : 'Continue with Google'}
+          </button>
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-outline-variant/30" />
+            <span className="text-[11px] uppercase tracking-wider text-on-surface-variant">or</span>
+            <div className="flex-1 h-px bg-outline-variant/30" />
+          </div>
+        </>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3">
