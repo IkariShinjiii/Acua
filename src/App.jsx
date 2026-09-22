@@ -68,10 +68,35 @@ const DOCUMENT_TITLES = {
 // gets the admin dashboard, everyone else gets their own orders/
 // commissions.
 function AccountGate({ setCurrentView, initialTab }) {
-  const { user, isAdmin, loading, profileLoading } = useAuth();
+  const { user, isAdmin, loading, profileLoading, profileFailed, retryProfile } = useAuth();
 
   if (loading || (user && profileLoading)) {
     return <div className="pt-40 text-center text-sm text-on-surface-variant">Checking access…</div>;
+  }
+
+  // isAdmin derives entirely from the profile row this failed to fetch —
+  // falling through to the isAdmin check below would show a genuine admin
+  // hitting a transient connection issue their own regular patron
+  // dashboard, with nothing telling them anything went wrong. Blocking
+  // here and asking to retry is the same "don't guess" call this session
+  // made for every other spot a fetch failure used to look like something
+  // else (see plan.md), just applied to access control instead of content.
+  if (user && profileFailed) {
+    return (
+      <div className="flex flex-col items-center gap-3 pt-40 pb-24 text-center px-4">
+        <AlertCircle className="w-5 h-5 text-accent" />
+        <p className="text-sm text-on-surface-variant max-w-sm">
+          Couldn't verify your account right now — this is a connection issue on our end, not a
+          sign anything's wrong with it.
+        </p>
+        <button
+          onClick={retryProfile}
+          className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   if (!user) {

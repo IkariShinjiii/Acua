@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase, REMEMBER_ME_KEY } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
@@ -10,6 +10,19 @@ export function AuthProvider({ children }) {
   // True while a logged-in user's profile row is being fetched — lets
   // callers avoid flashing a "not authorized" state before isAdmin is known.
   const [profileLoading, setProfileLoading] = useState(false);
+  // True when the profiles fetch itself failed (resolved with an `error`,
+  // or rejected outright) rather than genuinely finding no row. This has to
+  // stay distinct from "profile is null" — isAdmin derives from profile, so
+  // treating a fetch failure the same as "no profile" would silently show
+  // a genuine admin the regular patron dashboard on a transient hiccup,
+  // with nothing telling them their own account looked like it wasn't
+  // theirs anymore.
+  const [profileFailed, setProfileFailed] = useState(false);
+  // StrictMode-safe the same way every other retriable fetch in this app
+  // is: bumped on every attempt, compared at resolution time, so a stale
+  // in-flight request from a superseded attempt can't overwrite whatever
+  // the newer one already resolved.
+  const profileRequestId = useRef(0);
   // True once Supabase parses a password-recovery link from the URL (the
   // app has no router, so this is the only signal that the visitor just
   // followed a "reset your password" email — the whole app should show the
@@ -31,33 +44,52 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!session?.user) {
-      setProfile(null);
-      setProfileLoading(false);
-      return;
-    }
-    let cancelled = false;
+  // PostgREST's code for ".single() matched zero rows" — the one case that
+  // genuinely means "no profile row," as opposed to any other error (a real
+  // fetch/RLS/network failure), which shouldn't be treated the same way
+  // when it's what an admin's own access check is riding on.
+  const PROFILE_NOT_FOUND_CODE = 'PGRST116';
+
+  const loadProfile = useCallback((userId) => {
+    const thisRequestId = ++profileRequestId.current;
     setProfileLoading(true);
+    setProfileFailed(false);
     supabase
       .from('profiles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single()
-      .then(({ data }) => {
-        if (cancelled) return;
+      .then(({ data, error }) => {
+        if (profileRequestId.current !== thisRequestId) return;
+        if (error && error.code !== PROFILE_NOT_FOUND_CODE) {
+          setProfileFailed(true);
+          setProfile(null);
+          setProfileLoading(false);
+          return;
+        }
         setProfile(data ?? null);
         setProfileLoading(false);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (profileRequestId.current !== thisRequestId) return;
+        setProfileFailed(true);
         setProfile(null);
         setProfileLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [session]);
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user) {
+      // Bump the id so a still-in-flight fetch from a just-ended session
+      // can't land afterward and repopulate profile for a signed-out user.
+      profileRequestId.current += 1;
+      setProfile(null);
+      setProfileLoading(false);
+      setProfileFailed(false);
+      return;
+    }
+    loadProfile(session.user.id);
+  }, [session, loadProfile]);
 
   const value = {
     session,
@@ -66,6 +98,10 @@ export function AuthProvider({ children }) {
     isAdmin: Boolean(profile?.is_admin),
     loading,
     profileLoading,
+    profileFailed,
+    retryProfile: () => {
+      if (session?.user) loadProfile(session.user.id);
+    },
     // emailRedirectTo matters here for the same reason it's already set
     // on the password-reset request below: without it, the confirmation
     // link falls back to whatever "Site URL" happens to be configured in

@@ -2744,3 +2744,41 @@ Verified visually at 393px mobile (light mode) and 1440px desktop
 (dark mode) against the production build: icon and wordmark render
 together correctly in both, with the icon correctly swapping to its
 cream variant against the dark splash background.
+
+## 56. Closed out the AuthContext profile-fetch bug flagged earlier this session
+
+Found (but not yet fixed) earlier in this session while grepping for
+the "fetch failure looks like genuine emptiness" bug class after fixing
+it in `HomeView`/`ProductDetailView`/`PatronDashboardView`:
+`AuthContext`'s profile fetch only destructured `data`, never checking
+`error`. Since `isAdmin: Boolean(profile?.is_admin)` derives directly
+from that `profile` state, a profiles query that resolved with `data:
+null, error: {...}` (a transient RLS/network hiccup, not a real "no
+profile" case) would silently set `profile` to `null` — meaning a
+genuine admin hitting a brief connection issue would be shown the
+regular patron dashboard instead of `AdminView`, with nothing telling
+them their own account looked wrong. This is the same bug class fixed
+three other times this session, just powering access control instead
+of content, which needed the fix reasoned through rather than
+copy-pasted: silently falling back to "not admin" is a real information
+leak/access problem here in a way an empty product grid isn't.
+
+**Fix**: `AuthContext` now checks `error` (excluding `PGRST116`, the
+"genuinely zero rows" code) and exposes a `profileFailed` flag plus a
+`retryProfile()` function, using the same StrictMode-safe request-id-
+ref pattern as every other retriable fetch added this session.
+`AccountGate` (`App.jsx`) checks `profileFailed` before its `isAdmin`
+branch and shows an honest "Couldn't verify your account — this is a
+connection issue on our end, not a sign anything's wrong with it" state
+with a Try Again button, instead of falling through to a decision it
+can't actually make yet.
+
+Verified live end-to-end with a temporary real admin account (created
+via direct SQL, `is_admin` set true, deleted immediately after with a
+follow-up count-query confirmation): baseline login correctly shows the
+full `AdminView` dashboard; with the `profiles` REST endpoint
+intercepted to return a simulated 500, reloading and returning to "My
+Account" correctly shows the new error state — critically, *neither*
+the patron dashboard *nor* the admin view leaked through while the
+failure was active; lifting the interception and clicking Try Again
+correctly recovers to the full admin dashboard.
