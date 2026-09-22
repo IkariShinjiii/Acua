@@ -16,6 +16,13 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
   // that, the cart would otherwise still happily offer to "order" it.
   // Revalidate against the live table every time the drawer opens.
   const [soldOutIds, setSoldOutIds] = useState(() => new Set());
+  // Distinct from "nothing's sold out" — a failed revalidation used to
+  // just leave soldOutIds at its initial empty Set, which looked exactly
+  // like a real "everything's still available" result. On a dropped
+  // connection this silently let a genuinely sold-out piece (most are
+  // 1-of-1) stay fully orderable, including in the "Email to Order" body,
+  // with no sign the check had failed rather than actually confirmed it.
+  const [revalidationFailed, setRevalidationFailed] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -34,16 +41,37 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
   useEffect(() => {
     if (!open || items.length === 0) return;
     let cancelled = false;
-    supabase
-      .from('products')
-      .select('id, sold_out')
-      .in(
-        'id',
-        items.map((i) => i.product.id)
-      )
+    setRevalidationFailed(false);
+    // A genuine network-level drop (not a normal query error response)
+    // was found, live, to leave supabase-js's own promise permanently
+    // pending — neither resolving with an error nor rejecting. Without
+    // this race, that specific failure mode would silently reproduce the
+    // exact bug this effect exists to fix: soldOutIds stuck at its initial
+    // empty Set forever, indistinguishable from a real "nothing's sold
+    // out" result.
+    const timeout = new Promise((resolve) =>
+      setTimeout(() => resolve({ data: null, error: { message: 'Timed out' } }), 8000)
+    );
+    Promise.race([
+      supabase
+        .from('products')
+        .select('id, sold_out')
+        .in(
+          'id',
+          items.map((i) => i.product.id)
+        ),
+      timeout,
+    ])
       .then(({ data, error }) => {
-        if (cancelled || error || !data) return;
+        if (cancelled) return;
+        if (error || !data) {
+          setRevalidationFailed(true);
+          return;
+        }
         setSoldOutIds(new Set(data.filter((r) => r.sold_out).map((r) => r.id)));
+      })
+      .catch(() => {
+        if (!cancelled) setRevalidationFailed(true);
       });
     return () => {
       cancelled = true;
@@ -171,6 +199,15 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
 
             {items.length > 0 && (
               <div className="p-5 border-t border-outline-variant/30 space-y-3">
+                {revalidationFailed && (
+                  <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      Couldn't confirm these pieces are still available — this is a connection
+                      issue on our end. Double-check before sending your order.
+                    </span>
+                  </div>
+                )}
                 {soldOutIds.size > 0 && (
                   <div className="flex items-start gap-2 text-xs text-accent bg-chile-rojo/10 rounded-xl p-3">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />

@@ -3679,3 +3679,66 @@ the mobile drawer) was a judgment call reasoning from "Settings should
 own appearance control" rather than an explicit instruction — easy to
 revert (re-add the icon button next to Search/Cart) if a quick one-click
 toggle outside Settings turns out to be missed.
+
+## 78. A fresh audit round while the user slept — 3 real findings, fixed
+
+With the six requested tasks done for the night, ran another find-only
+audit pass (an Explore agent, same discipline as the earlier audit
+round) over areas this session hadn't touched recently: CartDrawer/
+CartContext, SearchOverlay, ProductDetailView, HomeView, FAQView,
+Footer, ReviewReel, ConfirmDialog, currency/mapProduct/dashboardTabs,
+AdminView's other tabs, PatronDashboardView, and the migrations. It
+surfaced 3 real, concrete issues (plus one already-known low-severity
+item — `toggleSoldOut`/`toggleOneOfOne`'s missing busy-guard — explicitly
+left alone again, since the user had already deprioritized it earlier
+this same session). Fixed all 3, verified each live.
+
+**CommissionPipeline had the exact same busy-guard race §72 fixed in
+OrderFulfillment — the fix was never applied to its sibling.** Same
+file, same pattern, same root cause: `advance()` cleared `saving`
+unconditionally in `finally`, before `onUpdated()`'s refetch had actually
+landed and updated the brief's displayed stage, so a click landing in
+that gap could replay the transition. For `sendQuote` specifically, that
+means two different `quote_price_cents` values (if the admin edited the
+price field between clicks) racing to be the one that sticks. Applied
+the identical fix: a `useEffect` gated on `briefs` becoming a genuinely
+new reference before clearing `saving`, failure paths still clearing it
+immediately. Verified live with a temporary admin account and a real
+test brief: typed ₱50,000, clicked Send Quote, immediately changed the
+field to ₱99,999 and clicked again before the button could possibly
+re-enable — exactly one PATCH request fired, carrying the first price
+(₱50,000), confirming the second click never got through.
+
+**CartDrawer's sold-out revalidation failed open on any fetch problem —
+and turned out to have two distinct failure modes, not one.** The
+existing code only handled a resolved `{error}` value; a genuine
+network-level drop just left `soldOutIds` at its initial empty Set,
+identical to "confirmed still available." Added a `revalidationFailed`
+state and a warning banner. Verifying it live surfaced something not in
+the original finding: a real network abort (as opposed to a normal error
+*response*) left supabase-js's own promise permanently pending — neither
+resolving with an error nor rejecting — confirmed by adding a temporary
+debug log that simply never fired for that specific failure mode, while
+a raw `fetch()` to the same blocked URL rejected exactly as expected.
+Hardened the fix with a `Promise.race` against an 8-second timeout so a
+hung request degrades to the same "couldn't confirm" warning instead of
+silently hanging forever. Verified live across all three paths: a normal
+sold-out check (still works, no false warning), a simulated 500 response
+(warning shows immediately), and a hard network abort (warning shows
+once the 8s timeout fires).
+
+**The `commission-references` storage bucket had no server-side size or
+type limit — only the app's own client-side checks (§73) constrained
+it.** Since uploads here are intentionally unauthenticated (mirrors
+`commission_briefs`' own public-insert policy), nothing stopped a script
+hitting Storage's REST API directly with the anon key from uploading
+unlimited files of any size or type, forever. Set `file_size_limit`
+(15 MiB, matching `MAX_FILE_BYTES`) and `allowed_mime_types` (jpeg, png,
+heic, heif, pdf — matching `ACCEPTED_EXTENSIONS`) directly on the bucket
+(`0011_commission_reference_upload_limits.sql`). Verified live that a
+real commission submission with a valid file still succeeds under the
+new restriction.
+
+All three fixes committed and pushed; test accounts, briefs, and
+uploaded files deleted afterward and confirmed via follow-up count
+queries.

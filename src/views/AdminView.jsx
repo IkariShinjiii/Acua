@@ -98,6 +98,23 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
   const [quoteDrafts, setQuoteDrafts] = useState({});
   const [saving, setSaving] = useState(null);
   const [signedImages, setSignedImages] = useState({});
+  // Same race OrderFulfillment had (see plan.md §72, and its comment
+  // below): onUpdated() triggers a refetch that's what actually updates
+  // this brief's status/quote — a separate async round trip from advance()
+  // itself resolving. Clearing `saving` the instant the mutation succeeds
+  // (rather than once that refetch has landed) re-enables the button while
+  // it's still showing the OLD stage, and a click landing in that gap
+  // replays the same transition — for sendQuote specifically, with
+  // whatever price is currently typed, which can genuinely differ between
+  // the two clicks and silently overwrite with the wrong one.
+  const previousBriefsRef = useRef(briefs);
+
+  useEffect(() => {
+    if (briefs !== previousBriefsRef.current) {
+      previousBriefsRef.current = briefs;
+      setSaving(null);
+    }
+  }, [briefs]);
 
   // Reference images live in a private bucket (only admins can read them),
   // so each brief's paths need a fresh signed URL rather than a public one.
@@ -130,13 +147,13 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
         .eq('id', id);
       if (error) {
         showToast(`Couldn't update that brief: ${error.message}`, 'error');
+        setSaving(null); // failure: no refetch is coming to clear this otherwise
         return;
       }
       if (successMessage) showToast(successMessage, 'success');
-      onUpdated();
+      onUpdated(); // saving clears once the refetch it triggers actually lands (see effect above)
     } catch (err) {
       showToast(`Couldn't update that brief: ${err?.message || 'check your connection and try again.'}`, 'error');
-    } finally {
       setSaving(null);
     }
   };
