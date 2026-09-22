@@ -80,7 +80,6 @@ export default function Navbar({
   const accent = isTransparent ? 'text-sunset' : 'text-accent';
   const accentHover = isTransparent ? 'hover:text-sunset' : 'hover:text-accent';
   const accentBar = isTransparent ? 'bg-sunset' : 'bg-chile-rojo';
-  const groupAccentHover = isTransparent ? 'group-hover:text-sunset' : 'group-hover:text-accent';
   // Transparent state sits over the fixed-dark hero photo (bg-ink, same
   // fix as HomeView's scrim) — not the theme-aware surface, which would
   // put a near-white ring offset over the photo in dark mode.
@@ -114,7 +113,20 @@ export default function Navbar({
             aria-label="ACUA Home"
           >
             <img src={logoMark} alt="" className="h-8 sm:h-9 w-auto" />
-            <span className={`font-wordmark text-2xl sm:text-3xl tracking-[0.24em] uppercase font-normal transition-colors duration-300 ${textStrong} ${groupAccentHover}`}>
+            {/* logo-tan (sampled from the real logo photo) only has real
+                contrast against a dark backdrop — 11:1 against dark-theme's
+                near-black bar or the hero photo, but a barely-there 1.5:1
+                against the light-theme solid bar's cream background, well
+                under WCAG's 3:1 floor even for text this large. Falls back
+                to chile-rojo (5.4:1, and already the site's own brand red)
+                specifically for that one case, rather than shipping a
+                wordmark that's nearly unreadable in the site's default
+                light theme once scrolled. */}
+            <span
+              className={`font-wordmark text-2xl sm:text-3xl tracking-[0.24em] uppercase font-bold ${
+                isTransparent || theme === 'dark' ? 'text-logo-tan' : 'text-chile-rojo'
+              }`}
+            >
               ACUA
             </span>
           </button>

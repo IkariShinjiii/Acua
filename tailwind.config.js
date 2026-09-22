@@ -79,6 +79,12 @@ export default {
         "terracota": "#d68224",
         "olive": "#8a8b35",
         "sunset": "#eac891",
+        // Sampled directly from the real logo photo (averaged ~5,400 core
+        // letter pixels, avoiding anti-aliased edges) — close to `sunset`
+        // but genuinely distinct, not a duplicate: this is what the actual
+        // artwork's "ACUA" lettering is, not a UI accent that happens to
+        // look similar. Used only for the wordmark text (Navbar, splash).
+        "logo-tan": "#e2ca9f",
         "gradient-primary-start": "#ae431e",
         "gradient-primary-end": "#d68224",
 

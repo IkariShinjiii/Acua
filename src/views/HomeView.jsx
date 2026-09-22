@@ -186,7 +186,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                 alt=""
                 className="h-9 w-auto"
               />
-              <span className="font-wordmark text-3xl tracking-[0.24em] uppercase font-normal text-on-surface">
+              {/* Same light-background contrast problem as Navbar's wordmark
+                  (see its comment) — logo-tan reads fine on this splash's
+                  dark-theme near-black background but fails WCAG against
+                  its light-theme cream one, so light theme falls back to
+                  chile-rojo instead. */}
+              <span
+                className={`font-wordmark text-3xl tracking-[0.24em] uppercase font-bold ${
+                  theme === 'dark' ? 'text-logo-tan' : 'text-chile-rojo'
+                }`}
+              >
                 ACUA
               </span>
             </div>

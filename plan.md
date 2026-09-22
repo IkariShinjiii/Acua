@@ -3198,3 +3198,48 @@ bold rendering (thicker, slightly distorted) instead of the font's own
 real design. Verified live: computed `font-family` on the Navbar
 wordmark now reads `"Unica One", sans-serif`, confirmed visually at
 1440px desktop against the reference photo.
+
+## 67. Made the wordmark bold and matched the logo's color — with a real contrast problem caught along the way
+
+User request: make the "ACUA" wordmark bold, and match the actual
+logo's color.
+
+**Color**: rather than eyeball it, sampled the real logo photo
+directly — installed `jimp` temporarily, scanned the image for
+pixels matching the letters' warm-tan hue while excluding anti-aliased
+edges, and averaged ~5,400 core pixels to get `#e2ca9f`. This is close
+to (but genuinely distinct from) the site's existing `sunset` token
+(`#eac891`) — added as its own `logo-tan` color rather than reusing
+`sunset`, since the ask was to match the actual artwork, not to reuse
+a UI accent that happens to look similar.
+
+**A real problem, checked before shipping**: computed the WCAG
+contrast ratio of `logo-tan` against both of the wordmark's actual
+backgrounds. Against a dark background (the hero photo, or dark
+theme's near-black solid bar) it's 11.12:1 — excellent. Against
+light theme's solid cream bar, or the splash screen's light-theme
+background, it's 1.48:1 — badly fails WCAG's 3:1 floor for large text,
+which would have meant shipping a wordmark that's nearly invisible in
+the site's own default (light) theme once scrolled. Rather than ship
+that silently or ignore the literal request, added a conditional:
+`logo-tan` where the background is actually dark (`isTransparent` over
+the hero, or `theme === 'dark'`), falling back to `chile-rojo` (5.38:1,
+and already the site's own signature brand red) specifically for the
+light-background cases. Applied to both wordmark instances (`Navbar`,
+`HomeView`'s splash).
+
+Also dropped `font-normal` to `font-bold` on both, as asked — Unica One
+being single-weight (see §66) means this is the browser's synthetic
+bold rather than a true bold design, but for a font this geometric and
+blocky it renders cleanly with no visible distortion.
+
+Cleaned up a stray unused variable (`groupAccentHover` in `Navbar.jsx`)
+that the color change made dead code.
+
+Verified live across all four real combinations the wordmark can
+appear in: light-theme transparent-over-hero (logo-tan, legible),
+light-theme scrolled/solid (chile-rojo fallback, legible), dark-theme
+transparent (logo-tan), dark-theme scrolled/solid (logo-tan) — plus the
+splash screen in both themes. Confirmed via both computed
+`getComputedStyle(...).color` values and visual screenshots that each
+state resolves to the intended color and reads clearly.
