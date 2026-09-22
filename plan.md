@@ -2489,3 +2489,39 @@ Me checked (its default state) leaves the resulting session token in
 unchecked does the exact opposite — session in `sessionStorage` only,
 absent from `localStorage`. All 9 checks passed; the temporary account
 was deleted immediately after, confirmed via a follow-up count query.
+
+## 49. The patron dashboard had the same "fetch failure looks empty" bug — arguably the worst place for it
+
+Same bug class as §38 (Home/product pages), found in a third spot I
+hadn't touched: `PatronDashboardView`'s orders and commission-briefs
+fetches didn't even destructure `error` from the response — just
+`setOrders(data ?? [])` and `setBriefs(data ?? [])` regardless of
+outcome. A failed fetch (`data: null` on error) silently became "No
+orders yet" / "No custom commissions yet," identical to genuinely having
+none.
+
+This one is a step worse than §38: a storefront visitor seeing an empty
+catalog during an outage is a bad first impression, but a signed-in
+patron checking on an order or commission they *actually paid real money
+for* and seeing "No orders yet" is a direct, personal trust hit — it
+reads as "your order is gone," not "the page had trouble loading."
+
+**Fix**: same pattern as §38 — distinct `ordersFailed`/`briefsFailed`
+state, an honest "couldn't load — this is a connection issue on our end,
+not a sign anything's missing" message with a Try Again retry, instead
+of the misleading empty state. Used the request-generation-counter
+pattern (immune to React 18 StrictMode's dev-only double-invoke, per
+§38's postmortem on the boolean-flag version of this that broke under
+exactly that) rather than a plain boolean ref this time, since both
+fetches also needed to be independently retriable from their own Try
+Again button.
+
+Verified live with a temporary real account: logging in normally still
+shows the genuine "No orders yet" / "No custom commissions yet" empty
+states correctly (confirmed directly, since my own test script's first
+timing check flaked); with both endpoints forced to a simulated 500,
+each tab shows its own honest error with a Try Again button instead of
+the misleading empty state; lifting the simulated outage and clicking
+Try Again on each tab correctly recovers to the real (empty) state.
+Account deleted immediately after, confirmed via a follow-up count
+query.

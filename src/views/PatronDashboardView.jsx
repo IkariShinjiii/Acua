@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Package, Hammer, ShoppingBag, ArrowRight, LogOut } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
@@ -70,33 +70,79 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'orders');
   const [orders, setOrders] = useState(null);
   const [briefs, setBriefs] = useState(null);
+  // A failed fetch used to look identical to "you genuinely have none of
+  // these" — both just left orders/briefs as []. For a patron checking on
+  // something they actually paid for, that's a real trust problem: a
+  // transient network hiccup would show "No orders yet" for an order that
+  // really did go through, not just cosmetic emptiness like on the public
+  // storefront (see plan.md §38, the same bug on Home/product pages).
+  const [ordersFailed, setOrdersFailed] = useState(false);
+  const [briefsFailed, setBriefsFailed] = useState(false);
+  // Bumped on every load attempt so a still-in-flight request from a
+  // superseded attempt (a stale user, or a "Try Again" retry) can tell
+  // it's stale and discard its own result — same pattern as
+  // ProductDetailView's loadProduct, immune to React 18 StrictMode's
+  // dev-only double-invoke (see plan.md §38's postmortem on a boolean-
+  // flag version of this that broke under exactly that).
+  const ordersRequestId = useRef(0);
+  const briefsRequestId = useRef(0);
 
-  useEffect(() => {
+  const loadOrders = useCallback(() => {
     if (!user) return;
-    let cancelled = false;
-
+    const thisRequestId = ++ordersRequestId.current;
+    setOrders(null);
+    setOrdersFailed(false);
     supabase
       .from('orders')
       .select('*, product:products(title, image_url)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (!cancelled) setOrders(data ?? []);
+      .then(({ data, error }) => {
+        if (ordersRequestId.current !== thisRequestId) return;
+        if (error) {
+          setOrdersFailed(true);
+          setOrders([]);
+          return;
+        }
+        setOrders(data ?? []);
+      })
+      .catch(() => {
+        if (ordersRequestId.current !== thisRequestId) return;
+        setOrdersFailed(true);
+        setOrders([]);
       });
+  }, [user]);
 
+  const loadBriefs = useCallback(() => {
+    if (!user) return;
+    const thisRequestId = ++briefsRequestId.current;
+    setBriefs(null);
+    setBriefsFailed(false);
     supabase
       .from('commission_briefs')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (!cancelled) setBriefs(data ?? []);
+      .then(({ data, error }) => {
+        if (briefsRequestId.current !== thisRequestId) return;
+        if (error) {
+          setBriefsFailed(true);
+          setBriefs([]);
+          return;
+        }
+        setBriefs(data ?? []);
+      })
+      .catch(() => {
+        if (briefsRequestId.current !== thisRequestId) return;
+        setBriefsFailed(true);
+        setBriefs([]);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [user]);
+
+  useEffect(() => {
+    loadOrders();
+    loadBriefs();
+  }, [loadOrders, loadBriefs]);
 
   const tabs = [
     { id: 'orders', label: 'Active Purchases', icon: Package },
@@ -141,7 +187,22 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
         {activeTab === 'orders' && (
           <div className="space-y-4">
             {orders === null && <p className="text-sm text-on-surface-variant text-center py-16">Loading…</p>}
-            {orders?.length === 0 && (
+            {ordersFailed && (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <AlertCircle className="w-5 h-5 text-accent" />
+                <p className="text-sm text-on-surface-variant max-w-sm">
+                  Couldn't load your orders right now — this is a connection issue on our end, not
+                  a sign anything's missing.
+                </p>
+                <button
+                  onClick={loadOrders}
+                  className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+            {!ordersFailed && orders?.length === 0 && (
               <EmptyState
                 icon={ShoppingBag}
                 title="No orders yet"
@@ -190,7 +251,22 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
         {activeTab === 'commissions' && (
           <div className="space-y-4">
             {briefs === null && <p className="text-sm text-on-surface-variant text-center py-16">Loading…</p>}
-            {briefs?.length === 0 && (
+            {briefsFailed && (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <AlertCircle className="w-5 h-5 text-accent" />
+                <p className="text-sm text-on-surface-variant max-w-sm">
+                  Couldn't load your commissions right now — this is a connection issue on our
+                  end, not a sign anything's missing.
+                </p>
+                <button
+                  onClick={loadBriefs}
+                  className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+            {!briefsFailed && briefs?.length === 0 && (
               <EmptyState
                 icon={Hammer}
                 title="No custom commissions yet"
