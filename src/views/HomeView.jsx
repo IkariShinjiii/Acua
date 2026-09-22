@@ -7,8 +7,19 @@ import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
+import logoMarkCream from '../assets/logo-mark-cream.png';
+import logoMarkInk from '../assets/logo-mark-ink.png';
+
+// Below this, the preloader would just be a flash — not long enough to
+// register as an intentional splash, just a flicker. Above it, someone
+// on a fast connection is waiting on nothing. This is the floor, not a
+// fixed length: the gate still lifts the instant every fetch below has
+// actually resolved, whichever of the two takes longer.
+const MIN_SPLASH_MS = 500;
 
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
+  const { theme } = useTheme();
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
@@ -25,6 +36,42 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   // a ref (not a closure-local flag) since it needs to still say "don't
   // touch state" after unmount regardless of which call started the fetch.
   const unmountedRef = useRef(false);
+
+  // Full-page splash gate: the storefront used to reveal the hero instantly
+  // while "New Release" (ReviewReel's own independent fetch) and "Available
+  // Pieces" below it each popped in separately with their own tiny "Loading…"
+  // text once their fetch resolved — visually correct, but it meant
+  // scrolling down right after landing could show a half-loaded page. This
+  // holds one unified splash over the whole view until all three of those
+  // fetches (not just the two HomeView owns) have resolved, so there's
+  // nothing left to pop in once it lifts.
+  const [reelReady, setReelReady] = useState(false);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  const contentReady = pieces !== null && archiveItems !== null && reelReady;
+  const showSplash = !(contentReady && minSplashElapsed);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinSplashElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Scrolling behind the splash would let a visitor land mid-page before
+  // the gate lifts, defeating the point of gating in the first place.
+  // Both html and body need it: this document's root scrolling box is
+  // <html>, not <body> — overflow:hidden on body alone left window.scrollTo
+  // (and, by the same mechanism, real touch/wheel scrolling) still able to
+  // move the page, confirmed live before adding the documentElement half.
+  useEffect(() => {
+    if (!showSplash) return;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [showSplash]);
 
   const loadPieces = useCallback(() => {
     setPieces(null);
@@ -106,6 +153,25 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
 
   return (
     <div className="bg-sand text-on-surface font-sans antialiased min-h-screen flex flex-col selection:bg-chile-rojo selection:text-white">
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            key="home-splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="fixed inset-0 z-[60] bg-sand flex flex-col items-center justify-center gap-5"
+          >
+            <img
+              src={theme === 'dark' ? logoMarkCream : logoMarkInk}
+              alt="ACUA"
+              className="h-12 w-auto"
+            />
+            <div className="w-8 h-8 rounded-full border-[3px] border-chile-rojo/15 border-t-chile-rojo animate-spin" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="flex-grow">
 
         {/* 1. Hero Section */}
@@ -196,7 +262,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </a>
           </div>
 
-          <ReviewReel onSelectProduct={onViewProduct} />
+          <ReviewReel onSelectProduct={onViewProduct} onLoaded={() => setReelReady(true)} />
         </section>
 
         {/* 3. Available Pieces: Filter Tabs & Cloud UI Product Cards */}

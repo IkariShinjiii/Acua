@@ -21,8 +21,15 @@ function wrap(value, lapWidth) {
   return v;
 }
 
-export default function ReviewReel({ onSelectProduct }) {
+export default function ReviewReel({ onSelectProduct, onLoaded }) {
   const [pieces, setPieces] = useState(null);
+  // HomeView passes a fresh arrow function every render — a ref (rather than
+  // a dependency-array entry) means this fetch effect still only ever runs
+  // once on mount instead of re-firing on every parent re-render.
+  const onLoadedRef = useRef(onLoaded);
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+  }, [onLoaded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +44,11 @@ export default function ReviewReel({ onSelectProduct }) {
       .then(({ data, error }) => {
         if (cancelled) return;
         setPieces(error || !data ? [] : data.map(mapProductRow));
+        // Resolved either way — HomeView's full-page preloader waits on
+        // this alongside its own two fetches, and a permanent fetch error
+        // here shouldn't be the one thing that leaves that preloader stuck
+        // forever.
+        onLoadedRef.current?.();
       });
     return () => {
       cancelled = true;

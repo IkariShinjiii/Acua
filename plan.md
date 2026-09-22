@@ -2635,3 +2635,50 @@ under a throttled network profile: the footer's bounding box now stays
 below the fold (off-screen, matching one full viewport height) during
 loading, instead of appearing right under the spinner — confirmed with
 a before/after screenshot at the same throttled conditions.
+
+## 53. A real, gated full-page splash for the Shop — not just a longer spinner
+
+User request: make the Shop page's preloader "longer" so it's certain
+everything has finished loading before a visitor can scroll. Home
+wasn't actually covered by §51/52's Suspense-fallback work at all — it
+isn't lazy-loaded (it's the default view, bundled eagerly), so there
+was never any preloader there. What Home actually had were three
+*independent* data fetches (its own `pieces` and `archiveItems`, plus
+`ReviewReel`'s own separate `products` query for the "New Release"
+carousel), each popping in on its own the moment it resolved, with
+nothing but a tiny "Loading pieces…" text for the slowest of the
+three. A visitor who scrolled immediately after landing could see a
+half-loaded page.
+
+**Fix**: added a real full-page splash gate to `HomeView` — a fixed
+overlay (the theme-aware ACUA logo mark + a branded spinner) that stays
+up until `pieces`, `archiveItems`, *and* `ReviewReel`'s own fetch have
+all resolved, with a 500ms floor so it never reads as a flicker on a
+fast connection. `ReviewReel` gained an `onLoaded` callback (fired
+once its fetch resolves, success or fail, via a ref so the callback
+identity changing every parent render doesn't re-trigger the fetch
+effect) so `HomeView` can actually know when all three are done, not
+just its own two. Scrolling is blocked for the duration — genuinely
+blocked, not just visually implied — by setting `overflow: hidden` on
+*both* `document.documentElement` and `document.body` while the splash
+is up, restored on both once it lifts.
+
+That "both" mattered: the first version only set it on `body`, and
+live testing showed `window.scrollTo` (and, for the same reason, real
+wheel/touch scrolling) still moved the page — this document's root
+scrolling box turned out to be `<html>`, not `<body>`, so `body`'s
+overflow alone did nothing to block it.
+
+Verified live end-to-end at both 393px mobile and 1440px desktop,
+against the production build with the network throttled after initial
+load (isolating the splash's actual data-gating behavior from
+dev-server bundle-download noise, which otherwise dominates under
+throttling): the splash shows immediately on navigating back to Shop,
+a simulated mouse-wheel scroll during the splash moves the page 0px
+while `overflow: hidden` is confirmed set on both `html` and `body`,
+the splash correctly waits for all three fetches plus the 500ms floor
+before disappearing (~1-1.2s under the throttled profile used), wheel-
+scrolling works normally immediately after, and both overflow styles
+are confirmed restored to their original values. Also spot-checked
+dark mode, where the logo mark correctly swaps to the cream variant
+against the dark splash background.
