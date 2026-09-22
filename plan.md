@@ -2782,3 +2782,49 @@ Account" correctly shows the new error state — critically, *neither*
 the patron dashboard *nor* the admin view leaked through while the
 failure was active; lifting the interception and clicking Try Again
 correctly recovers to the full admin dashboard.
+
+## 57. Swept the rest of the codebase for the same bug class — found it twice more, both fixed
+
+Grepped for the "fetch failure looks like genuine emptiness" pattern
+across every remaining file after closing out §56, rather than assuming
+the four earlier fixes (Home/product/patron dashboard/auth) were the
+last of them. Found it in two more places, both real:
+
+**AdminView — the highest-stakes instance yet.** All four of the admin
+dashboard's own fetches (commission briefs, orders, products, archive
+items) treated a failure exactly like an empty table. Worse, three of
+those numbers (new briefs, orders in progress, pieces sold out) feed
+stat cards shown at the top of the dashboard *regardless of which tab
+is open* — meaning a Supabase hiccup while the site owner checks their
+own store could show "0 New Briefs, 0 Orders In Progress" as the very
+first thing they see, a real false alarm about their own business, not
+a cosmetic empty state. Fixed with four independent `xFailed` flags (one
+per fetch, so a hiccup on one query doesn't misreport the other three),
+a shared `AdminTabError` component (honest message + Try Again, reusing
+`refresh()`) gating each tab's content, and the three stat cards now
+render `—` instead of `0` for whichever count's fetch failed.
+
+**SearchOverlay.** The catalog fetch backing search-as-you-type had the
+same gap — a failure left `pieces` empty, so *any* search during an
+outage would show "No pieces match" for every term, indistinguishable
+from the catalog genuinely not having that item. Fixed with a
+`loadFailed` state and a request-id ref (the fetch is now called from
+both the open-effect and a manual retry, so a plain `cancelled` closure
+boolean wasn't enough — needed the same StrictMode-safe pattern used
+everywhere else this session), replacing the "no results"/"start
+typing" prompts with an honest error + Try Again while a failure is
+active.
+
+Verified live: `SearchOverlay` — simulated a 500 on the products
+endpoint, confirmed the new error state (not "no results") appears,
+lifted it and confirmed Try Again correctly restores normal search.
+`AdminView` — using the same temporary real admin account pattern
+(created via SQL, deleted immediately after with a follow-up count
+query), simulated 500s on *only* `commission_briefs` and `orders`
+(leaving `products`/`archive_items` untouched) and confirmed: the two
+affected stat cards show `—` while the third (genuinely unaffected)
+correctly still shows its real count; the Commissions and Orders tabs
+show the new error state while the untouched Inventory tab shows its
+real data normally, proving the four failures are tracked
+independently rather than one flag wrongly gating all four; Try Again
+correctly recovers every number and tab to normal afterward.

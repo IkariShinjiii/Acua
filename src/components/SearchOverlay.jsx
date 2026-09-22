@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search } from 'lucide-react';
+import { X, Search, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
@@ -9,28 +9,44 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 export default function SearchOverlay({ open, onClose, onSelectProduct }) {
   const [query, setQuery] = useState('');
   const [pieces, setPieces] = useState([]);
+  // A failed catalog fetch used to look exactly like "no pieces match
+  // that search" — a real outage would read as "this term doesn't exist"
+  // rather than "something's wrong," and since it happens before anyone's
+  // even typed anything, it would misfire on every single search attempt.
+  const [loadFailed, setLoadFailed] = useState(false);
   const inputRef = useRef(null);
   const dialogRef = useRef(null);
   useFocusTrap(dialogRef, open);
+  // Bumped on every load attempt (an open toggle or a manual "Try Again")
+  // so a still-in-flight request from a superseded attempt can't overwrite
+  // whatever a newer one already resolved.
+  const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    setQuery('');
-    // Focus after the entrance animation starts rendering the input.
-    const id = setTimeout(() => inputRef.current?.focus(), 50);
-    supabase
+  const loadPieces = useCallback(() => {
+    const thisRequestId = ++requestIdRef.current;
+    setLoadFailed(false);
+    return supabase
       .from('products')
       .select('*')
       .then(({ data, error }) => {
-        if (cancelled) return;
-        setPieces(error || !data ? [] : data.map(mapProductRow));
+        if (requestIdRef.current !== thisRequestId) return;
+        if (error || !data) {
+          setLoadFailed(true);
+          setPieces([]);
+          return;
+        }
+        setPieces(data.map(mapProductRow));
       });
-    return () => {
-      cancelled = true;
-      clearTimeout(id);
-    };
-  }, [open]);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    setQuery('');
+    // Focus after the entrance animation starts rendering the input.
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    loadPieces();
+    return () => clearTimeout(id);
+  }, [open, loadPieces]);
 
   useEffect(() => {
     if (!open) return;
@@ -90,15 +106,33 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto">
-              {q && results.length === 0 && (
-                <p className="text-center text-sm text-on-surface-variant py-12">
-                  No pieces match "{query}".
-                </p>
-              )}
-              {!q && (
-                <p className="text-center text-sm text-on-surface-variant py-12">
-                  Start typing to search Available Pieces.
-                </p>
+              {loadFailed ? (
+                <div className="flex flex-col items-center gap-3 py-12 text-center px-6">
+                  <AlertCircle className="w-5 h-5 text-accent" />
+                  <p className="text-sm text-on-surface-variant max-w-sm">
+                    Couldn't load the catalog to search — this is a connection issue on our end,
+                    not a sign there's nothing to find.
+                  </p>
+                  <button
+                    onClick={loadPieces}
+                    className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {q && results.length === 0 && (
+                    <p className="text-center text-sm text-on-surface-variant py-12">
+                      No pieces match "{query}".
+                    </p>
+                  )}
+                  {!q && (
+                    <p className="text-center text-sm text-on-surface-variant py-12">
+                      Start typing to search Available Pieces.
+                    </p>
+                  )}
+                </>
               )}
               {results.map((piece) => (
                 <button

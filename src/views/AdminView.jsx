@@ -13,6 +13,7 @@ import {
   Trash2,
   LayoutDashboard,
   LogOut,
+  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -58,9 +59,32 @@ function StatCard({ icon: Icon, label, value }) {
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-2xl font-serif text-on-surface leading-none">{value}</p>
+        <p className="text-2xl font-serif text-on-surface leading-none">{value ?? '—'}</p>
         <p className="text-xs text-on-surface-variant mt-1">{label}</p>
       </div>
+    </div>
+  );
+}
+
+// A failed fetch and a genuinely empty tab used to look identical here —
+// both just landed on "No X yet." That's a false alarm for the one
+// person actually running the store, not a cosmetic empty state, so it
+// gets its own honest message instead of quietly reusing the empty-state
+// copy.
+function AdminTabError({ label, onRetry }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <AlertCircle className="w-5 h-5 text-accent" />
+      <p className="text-sm text-on-surface-variant max-w-sm">
+        Couldn't load {label} right now — this is a connection issue on our end, not a sign
+        anything's missing.
+      </p>
+      <button
+        onClick={onRetry}
+        className="text-xs font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+      >
+        Try Again
+      </button>
     </div>
   );
 }
@@ -767,6 +791,15 @@ export default function AdminView() {
   const [orders, setOrders] = useState(null);
   const [pieces, setPieces] = useState(null);
   const [archiveItems, setArchiveItems] = useState(null);
+  // Each of the four admin fetches used to treat a failure exactly like a
+  // genuinely empty table — "0 briefs, 0 orders, 0 products, 0 archive
+  // items" — which for the site owner checking their own store is a real
+  // false alarm, not a cosmetic empty state. Tracked separately per tab so
+  // a hiccup on one query doesn't misreport the other three as empty too.
+  const [briefsFailed, setBriefsFailed] = useState(false);
+  const [ordersFailed, setOrdersFailed] = useState(false);
+  const [piecesFailed, setPiecesFailed] = useState(false);
+  const [archiveFailed, setArchiveFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
   const { toast, showToast, dismissToast } = useToast();
@@ -779,7 +812,9 @@ export default function AdminView() {
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!cancelled) setBriefs(error || !data ? [] : data);
+        if (cancelled) return;
+        setBriefsFailed(Boolean(error));
+        setBriefs(error || !data ? [] : data);
       });
 
     supabase
@@ -787,7 +822,9 @@ export default function AdminView() {
       .select('*, product:products(title), patron:profiles(full_name, email)')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!cancelled) setOrders(error || !data ? [] : data);
+        if (cancelled) return;
+        setOrdersFailed(Boolean(error));
+        setOrders(error || !data ? [] : data);
       });
 
     supabase
@@ -795,7 +832,9 @@ export default function AdminView() {
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!cancelled) setPieces(error || !data ? [] : data.map(mapProductRow));
+        if (cancelled) return;
+        setPiecesFailed(Boolean(error));
+        setPieces(error || !data ? [] : data.map(mapProductRow));
       });
 
     supabase
@@ -803,7 +842,9 @@ export default function AdminView() {
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!cancelled) setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
+        if (cancelled) return;
+        setArchiveFailed(Boolean(error));
+        setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
       });
 
     return () => {
@@ -811,9 +852,13 @@ export default function AdminView() {
     };
   }, [refreshKey]);
 
-  const newBriefCount = briefs?.filter((b) => b.status === 'brief_submitted').length ?? 0;
-  const pendingOrderCount = orders?.filter((o) => o.status !== 'delivered').length ?? 0;
-  const soldOutCount = pieces?.filter((p) => p.soldOut).length ?? 0;
+  // null (rendered as "—" by StatCard), not 0 — these stat cards are
+  // visible regardless of which tab is active, so a failed fetch showing
+  // "0 New Briefs Awaiting Review" would be the very first false alarm the
+  // site owner sees on their own dashboard, before ever reaching a tab.
+  const newBriefCount = briefsFailed ? null : briefs?.filter((b) => b.status === 'brief_submitted').length ?? 0;
+  const pendingOrderCount = ordersFailed ? null : orders?.filter((o) => o.status !== 'delivered').length ?? 0;
+  const soldOutCount = piecesFailed ? null : pieces?.filter((p) => p.soldOut).length ?? 0;
 
   return (
     <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
@@ -867,24 +912,32 @@ export default function AdminView() {
         {activeTab === 'commissions' &&
           (briefs === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : briefsFailed ? (
+            <AdminTabError label="commission briefs" onRetry={refresh} />
           ) : (
             <CommissionPipeline briefs={briefs} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'orders' &&
           (orders === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : ordersFailed ? (
+            <AdminTabError label="orders" onRetry={refresh} />
           ) : (
             <OrderFulfillment orders={orders} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'inventory' &&
           (pieces === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : piecesFailed ? (
+            <AdminTabError label="products" onRetry={refresh} />
           ) : (
             <InventoryCuration pieces={pieces} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'archive' &&
           (archiveItems === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : archiveFailed ? (
+            <AdminTabError label="archive items" onRetry={refresh} />
           ) : (
             <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} showToast={showToast} />
           ))}
