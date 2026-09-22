@@ -2363,3 +2363,27 @@ reported symptom ("clickable when moving on its own before, not after
 you swipe it"). With the fix restored, both a baseline plain click and a
 plain click performed after a real drag/release both correctly
 navigated to the product, confirmed across multiple repeated runs.
+
+## 46. Mobile nav's "Shop" button silently did nothing
+
+Real bug: the mobile drawer's "Shop" button only called
+`setCurrentView('home')`, unlike the desktop "Shop" link, which also
+scrolls to top. If you were already on Home and had scrolled down —
+likely the exact moment you'd open the nav menu in the first place —
+tapping "Shop" was a complete no-op: `setCurrentView('home')` doesn't
+trigger a re-render when you're already on that view, and nothing else
+in the handler did anything either. From the visitor's side, the button
+just didn't work.
+
+**Fix**: added the same `window.scrollTo({ top: 0, behavior: 'smooth'
+})` the desktop version already had.
+
+**Verified every navbar button, not just this one** — mobile drawer
+(Shop, Collections, Custom Request, Search, My Account, the logo/
+wordmark) and desktop nav (Shop, Collections, Custom Request, Search,
+Cart, Account, the theme toggle, the logo) — 15 checks total, each
+confirming the button's actual real-world effect (scroll position
+change, dialog opening, the right content becoming visible), not just
+that a click handler fired. The mobile Shop fix was confirmed directly:
+scrolled to 800px, opened the menu, tapped Shop, landed back at 0.
+Everything else already worked correctly.

@@ -224,6 +224,12 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               <button
                 onClick={() => {
                   setCurrentView('home');
+                  // Matches the desktop "Shop" link: without this, tapping
+                  // Shop while already on Home (just scrolled down — a very
+                  // likely reason to open the menu in the first place) did
+                  // nothing at all, since setCurrentView('home') is a no-op
+                  // re-render when you're already there.
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                   setMobileMenuOpen(false);
                 }}
                 className="text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
