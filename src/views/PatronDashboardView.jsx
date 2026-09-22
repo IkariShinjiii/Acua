@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle, Settings } from 'lucide-react';
+import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { MATERIAL_OPTIONS } from '../data/commissionOptions';
-import AccountSettingsPanel from '../components/AccountSettingsPanel';
 import { parseDeepLinkTab } from '../lib/dashboardTabs';
 
 function stageIndex(stages, id) {
@@ -159,7 +158,6 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   const tabs = [
     { id: 'orders', label: 'Active Purchases', icon: Package },
     { id: 'commissions', label: 'Custom Commissions', icon: Hammer },
-    { id: 'settings', label: 'Account Settings', icon: Settings },
   ];
 
   return (
@@ -316,8 +314,6 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
             })}
           </div>
         )}
-
-        {activeTab === 'settings' && <AccountSettingsPanel />}
       </div>
     </div>
   );

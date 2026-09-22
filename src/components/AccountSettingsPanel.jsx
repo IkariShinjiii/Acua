@@ -3,10 +3,12 @@ import { Check, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
-// Shared between PatronDashboardView and AdminView — every signed-in
-// account, patron or admin, is the same profiles row shape and deserves
-// the same ability to update their own name and password, not just
-// whichever one this was built for first.
+const MEMBER_SINCE_FORMATTER = new Intl.DateTimeFormat('en-PH', { month: 'long', year: 'numeric' });
+
+// Shared between PatronDashboardView, AdminView, and SettingsOverlay —
+// every signed-in account, patron or admin, is the same profiles row
+// shape and deserves the same ability to update their own name and
+// password, not just whichever one this was built for first.
 export default function AccountSettingsPanel() {
   const { user, profile, setLocalProfile, updatePassword } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
@@ -82,8 +84,21 @@ export default function AccountSettingsPanel() {
     }
   };
 
+  const memberSince = profile?.created_at ? MEMBER_SINCE_FORMATTER.format(new Date(profile.created_at)) : null;
+  const initial = (profile?.full_name || user?.email || '?').trim().charAt(0).toUpperCase();
+
   return (
-    <div className="max-w-lg space-y-6">
+    <div className="space-y-6">
+      <div className="flex items-center gap-3.5 px-1">
+        <div className="w-12 h-12 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center flex-shrink-0 font-serif text-xl">
+          {initial}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-on-surface truncate">{profile?.full_name || 'Your Account'}</p>
+          {memberSince && <p className="text-xs text-on-surface-variant">Member since {memberSince}</p>}
+        </div>
+      </div>
+
       <form
         onSubmit={handleSaveName}
         className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 space-y-4"

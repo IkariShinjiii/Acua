@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   LogOut,
   AlertCircle,
-  Settings,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -22,7 +21,6 @@ import { parsePesoToNumber, formatPeso } from '../lib/currency';
 import { useAuth } from '../context/AuthContext';
 import Toast, { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
-import AccountSettingsPanel from '../components/AccountSettingsPanel';
 import { parseDeepLinkTab } from '../lib/dashboardTabs';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
@@ -34,7 +32,6 @@ const TABS = [
   { id: 'orders', label: 'Order Fulfillment', icon: Package },
   { id: 'inventory', label: 'Inventory & Site Curation', icon: Gem },
   { id: 'archive', label: 'The Archive', icon: Archive },
-  { id: 'settings', label: 'Account Settings', icon: Settings },
 ];
 
 function stageIndex(stages, id) {
@@ -999,7 +996,6 @@ export default function AdminView({ initialTab }) {
           ) : (
             <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} showToast={showToast} />
           ))}
-        {activeTab === 'settings' && <AccountSettingsPanel />}
       </div>
       <Toast toast={toast} onDismiss={dismissToast} />
     </div>

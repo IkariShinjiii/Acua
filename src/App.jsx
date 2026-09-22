@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import AuthForm from './components/AuthForm';
 import CartDrawer from './components/CartDrawer';
 import SearchOverlay from './components/SearchOverlay';
+import SettingsOverlay from './components/SettingsOverlay';
 import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
@@ -236,6 +237,7 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // Set only via goToDashboardTab below, and reset on any other
   // navigation — same "don't carry over a stale deep-link" rule as
   // commissionPrefill, just for which patron-dashboard tab opens first.
@@ -307,7 +309,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
         onAccountClick={() => navigateTo('dashboard')}
-        onOpenSettings={() => goToDashboardTab('settings')}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       <CartDrawer
@@ -320,6 +322,7 @@ export default function App() {
         onClose={() => setIsSearchOpen(false)}
         onSelectProduct={handleViewProduct}
       />
+      <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
       {currentView === 'home' && (
         <HomeView

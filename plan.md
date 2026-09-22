@@ -3609,3 +3609,73 @@ Supabase JSON error page outside the app rather than the in-app error
 banner. That's expected only in this "not configured yet" interim state;
 once enabled, a real click properly redirects to Google's consent screen
 and back into the app.
+
+Confirmed afterward that the user finished the Google Cloud + Supabase
+dashboard side: hitting Supabase's own `/auth/v1/authorize?provider=google`
+directly now 302s to a real `accounts.google.com` consent screen with the
+correct client ID and callback URL, rather than the earlier raw
+"provider not enabled" JSON error. Google sign-in is fully live.
+
+## 77. Tasks #2–#5: one site-wide Settings panel replaces the duplicate button and per-dashboard tab
+
+These four tasks turned out to be one real change, not four separate
+ones: the "duplicate button" (#3) was two dropdown entries opening the
+exact same dashboard component on different starting tabs; turning
+Account Settings into general site settings with dark/light mode (#4)
+only makes sense if Settings becomes reachable whether signed in or not,
+since theme already worked for every visitor, signed in or not; and
+moving dark/light into Settings on mobile (#5) is the same move. Treating
+these as one redesign (also covering #2, "redesign account settings")
+avoided doing the visual redesign once on the old dashboard tab and then
+again on wherever it moved to.
+
+Built `SettingsOverlay.jsx` — a slide-in panel matching `CartDrawer`'s own
+pattern (focus trap, Escape/backdrop-click to close, spring-in from the
+right) — opened from the navbar regardless of auth state. It always shows
+an Appearance section (a real Light/Dark segmented control, not just an
+icon) and, only when signed in, the existing `AccountSettingsPanel`
+(Profile + Change Password). Signed out, it shows a plain "log in to
+manage your profile" prompt instead. This is now the *only* settings
+surface — removed the `'settings'` tab entirely from both
+`PatronDashboardView` and `AdminView` (and the `AccountSettingsPanel`
+import each no longer needs), and removed the standalone sun/moon toggle
+icon from the navbar header, since keeping it there once Settings owns
+theme control would just be two ways to do the same thing.
+
+Gave `AccountSettingsPanel` itself the redesign #2 asked for while it was
+already being touched for this move: an avatar-initial badge, the
+account's display name, and a "Member since {month year}" line pulled
+from `profiles.created_at`, above the existing Profile/Password cards —
+previously the panel was just two bare forms with no sense of whose
+account you were looking at.
+
+The navbar dropdown collapsed from "My Account" + "Account Settings" (or,
+signed out, just "Log In / Sign Up") into: "My Account" + "Settings" +
+"Log Out" signed in, "Log In / Sign Up" + "Settings" signed out — one
+settings entry point, always present. For #5's other half (mobile: move
+search out of the dropdown), Search was already a full-time icon on
+desktop but only ever reachable by opening the hamburger drawer on
+mobile — made it a persistent icon in the mobile top bar too (removing
+its `hidden md:inline-flex` restriction) and removed the now-redundant
+"Search" row from inside the drawer, whose own items collapsed the same
+way the desktop dropdown's did.
+
+Verified live end-to-end with a temporary real patron account across both
+desktop and a 390px mobile viewport: signed-out and signed-in dropdown
+contents match exactly what's described above with no duplicate entries;
+the Settings overlay opens correctly in both auth states; toggling
+Dark/Light from inside it actually flips `<html>`'s `dark` class; saving
+a name change from inside the overlay persists and shows the "Saved"
+confirmation; the dashboard's own tab bar no longer lists Settings at
+all; the mobile top bar shows a working Search icon with no standalone
+theme icon anywhere; and the mobile drawer no longer lists Search as a
+row and shows a single consolidated Settings entry. Zero console errors
+across the whole run. Test account deleted afterward, confirmed via a
+follow-up count query.
+
+One call worth flagging since it wasn't explicitly specified: removing
+the standalone theme-toggle icon everywhere (not just moving it out of
+the mobile drawer) was a judgment call reasoning from "Settings should
+own appearance control" rather than an explicit instruction — easy to
+revert (re-add the icon button next to Search/Cart) if a quick one-click
+toggle outside Settings turns out to be missed.

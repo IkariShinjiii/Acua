@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingBag, User, Menu, X, Sun, Moon, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+import { Search, ShoppingBag, User, Menu, X, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import logoMarkOlive from '../assets/logo-mark-olive.png';
@@ -18,7 +17,6 @@ export default function Navbar({
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const headerRef = useRef(null);
   // Every other overlay in the app (CartDrawer, SearchOverlay, ConfirmDialog)
@@ -182,7 +180,7 @@ export default function Navbar({
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button
               onClick={onOpenSearch}
-              className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
+              className={`inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
               aria-label="Search Catalog"
               aria-haspopup="dialog"
             >
@@ -251,7 +249,7 @@ export default function Navbar({
                           className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
                         >
                           <Settings className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
-                          Account Settings
+                          Settings
                         </button>
                         <div className="h-px bg-outline-variant/30 my-1" />
                         <button
@@ -267,35 +265,35 @@ export default function Navbar({
                         </button>
                       </>
                     ) : (
-                      <button
-                        role="menuitem"
-                        onClick={() => {
-                          onAccountClick?.();
-                          setAccountMenuOpen(false);
-                        }}
-                        className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
-                      >
-                        <User className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
-                        Log In / Sign Up
-                      </button>
+                      <>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            onAccountClick?.();
+                            setAccountMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                        >
+                          <User className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
+                          Log In / Sign Up
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            onOpenSettings?.();
+                            setAccountMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                        >
+                          <Settings className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
+                          Settings
+                        </button>
+                      </>
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-
-            <button
-              onClick={toggleTheme}
-              className={`inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-[18px] h-[18px] stroke-[1.5]" />
-              ) : (
-                <Moon className="w-[18px] h-[18px] stroke-[1.5]" />
-              )}
-            </button>
 
             {/* Mobile Menu Toggle */}
             <button
@@ -359,22 +357,13 @@ export default function Navbar({
                 Custom Request
               </button>
 
-              {/* Search and Account only ever appeared as desktop-only icons
-                  in the header (hidden md:inline-flex) — with nothing else
-                  reachable on mobile, there was no way to search or log in
-                  on a phone at all. */}
+              {/* Account (and, when signed in, its sub-actions) only ever
+                  appeared as a desktop-only icon in the header (hidden
+                  md:block) — with nothing else reachable on mobile, there
+                  was no way to log in on a phone at all. Search now has its
+                  own persistent icon in the top bar on every screen size,
+                  so it no longer needs a row here too. */}
               <div className="pt-2 border-t border-outline-variant/30 flex flex-col space-y-4">
-                <button
-                  onClick={() => {
-                    onOpenSearch?.();
-                    setMobileMenuOpen(false);
-                  }}
-                  aria-haspopup="dialog"
-                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
-                >
-                  <Search className="w-4 h-4 stroke-[1.5]" />
-                  Search
-                </button>
                 <button
                   onClick={() => {
                     onAccountClick?.();
@@ -383,23 +372,18 @@ export default function Navbar({
                   className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
                 >
                   <User className="w-4 h-4 stroke-[1.5]" />
-                  My Account
+                  {user ? 'My Account' : 'Log In / Sign Up'}
                 </button>
-                {/* Settings/Log Out only make sense once signed in — no
-                    mobile equivalent existed before since the account icon
-                    always just went straight to My Account. */}
-                {user && (
-                  <button
-                    onClick={() => {
-                      onOpenSettings?.();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
-                  >
-                    <Settings className="w-4 h-4 stroke-[1.5]" />
-                    Account Settings
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    onOpenSettings?.();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
+                >
+                  <Settings className="w-4 h-4 stroke-[1.5]" />
+                  Settings
+                </button>
                 {user && (
                   <button
                     onClick={() => {
