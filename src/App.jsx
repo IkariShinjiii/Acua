@@ -19,6 +19,7 @@ const AdminView = lazy(() => import('./views/AdminView'));
 const PatronDashboardView = lazy(() => import('./views/PatronDashboardView'));
 const CommissionView = lazy(() => import('./views/CommissionView'));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
+const FAQView = lazy(() => import('./views/FAQView'));
 // Not on the critical path — most visitors never open it, and it has no
 // loading state worth showing (it just pops in once ready).
 const ConciergeChat = lazy(() => import('./components/ConciergeChat'));
@@ -56,6 +57,7 @@ const DEFAULT_TITLE = 'ACUA | Handcrafted by the Coast';
 const DOCUMENT_TITLES = {
   commission: 'Custom Request | ACUA',
   dashboard: 'My Account | ACUA',
+  faq: 'FAQ | ACUA',
 };
 
 // The one login gate for every account — "My Account" and "Admin Login"
@@ -341,6 +343,11 @@ export default function App() {
             setCurrentView={navigateTo}
             onRequestSimilar={handleRequestSimilar}
           />
+        </Suspense>
+      )}
+      {currentView === 'faq' && (
+        <Suspense fallback={<ViewLoadingFallback />}>
+          <FAQView />
         </Suspense>
       )}
 

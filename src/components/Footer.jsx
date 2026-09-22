@@ -91,6 +91,9 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
             <button onClick={() => setCurrentView('commission')} className={linkClass}>
               Custom Request
             </button>
+            <button onClick={() => setCurrentView('faq')} className={linkClass}>
+              FAQ
+            </button>
           </div>
 
           <div className="flex flex-col gap-3">

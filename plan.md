@@ -3055,3 +3055,51 @@ Settings tab works identically in `AdminView`; the mobile drawer
 correctly shows Account Settings/Log Out only once signed in. Test
 account deleted immediately after, confirmed via a follow-up count
 query.
+
+## 63. A real FAQ page, built from what's already true — placeholders marked in code, not shown to visitors
+
+User request: build an FAQ section from facts already established
+elsewhere in the app, and leave clearly-marked placeholders for
+shipping/returns/payment until real answers are provided.
+
+Built as its own view (`FAQView.jsx`, lazy-loaded like Commission/
+Product Detail), reachable from the footer's Shop column, with an
+accordion (`src/data/faqs.js` holds the content, grouped into Our
+Pieces / Custom Commissions / Ordering & Payment / Shipping & Returns;
+several answers can be expanded at once, matching how an FAQ actually
+gets used — comparing two answers side by side rather than reading one
+at a time). Every real answer pulls from facts already established
+elsewhere (the Concierge system prompt, `ProductDetailView`,
+`CommissionView`) — nothing new was invented.
+
+For shipping/returns/payment, "placeholder" doesn't mean raw TODO text
+shown to real visitors on a live site — that would look broken. Each of
+those entries gives the same honest current answer the Concierge
+chatbot already gives for exactly this category of question ("this
+isn't published yet — email us and we'll sort it out directly"), while
+a `NEEDS_REAL_ANSWER` comment directly above each one in `faqs.js`
+marks unmistakably in the source which entries are pending and need
+their `answer` replaced once the real policy exists.
+
+**A real, unrelated regression surfaced while building this**: adding
+FAQView as a 6th lazy-loaded consumer flipped the production build's
+automatic chunking — `@supabase/supabase-js` (~228KB) had always been
+split into its own cacheable chunk, and this one addition caused the
+bundler (Vite 8's Rolldown backend) to merge it straight into the main
+bundle instead. Confirmed by `git stash`-ing this session's changes and
+rebuilding to see the clean baseline, then restoring them. Functionally
+harmless (`AuthContext` needs Supabase eagerly regardless of chunk
+boundaries, so nothing about *when* it loads changed) but a real
+caching regression: that ~228KB rarely changes, and merging it into the
+main bundle means every future deploy invalidates it too, forcing
+returning visitors to redownload it even when it hasn't changed. Fixed
+with an explicit `manualChunks` in `vite.config.js` pinning anything
+from `@supabase/supabase-js` to its own `supabase-vendor` chunk,
+independent of how many lazy views exist from here on. Confirmed fixed:
+`supabase-vendor` (214.54 kB) is back as its own file and the main
+bundle returned to its expected ~410KB.
+
+Verified live at 393px mobile and 1440px desktop: the FAQ page loads
+from the footer link, all four categories render, answers expand and
+collapse correctly on click, and multiple answers can be open
+simultaneously.
