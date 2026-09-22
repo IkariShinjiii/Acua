@@ -29,6 +29,21 @@ function isAcceptedFileType(file) {
 
 const VALID_MATERIAL_IDS = new Set(MATERIAL_OPTIONS.map((option) => option.id));
 
+// The commission brief is a long form (contact details, category,
+// material, budget, timeline, a multi-sentence narrative) — losing all of
+// it to an accidental refresh or back-button press would be a real,
+// frustrating loss, the same problem the cart already solves the same way.
+const DRAFT_KEY = 'acua-commission-draft';
+
+function readDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CommissionView({ prefill }) {
   const { user } = useAuth();
   // "Request Similar" fires from three places: a sold-out storefront piece
@@ -44,7 +59,8 @@ export default function CommissionView({ prefill }) {
   // the real description in the narrative instead.
   const prefillMaterialId =
     prefill?.material && VALID_MATERIAL_IDS.has(prefill.material) ? prefill.material : undefined;
-  const [formData, setFormData] = useState(() => ({
+
+  const getBlankFormData = () => ({
     fullName: '',
     email: user?.email ?? '',
     phone: '',
@@ -57,7 +73,17 @@ export default function CommissionView({ prefill }) {
           prefillMaterialId ? '' : ` (similar material: ${prefill.material})`
         } — `
       : '',
-  }));
+  });
+
+  const [formData, setFormData] = useState(() => {
+    const blank = getBlankFormData();
+    // A fresh "Request Similar" click is a deliberate action just taken —
+    // it should always win over a stale saved draft from some earlier,
+    // unrelated visit to this form.
+    if (prefill) return blank;
+    const draft = readDraft();
+    return draft ? { ...blank, ...draft } : blank;
+  });
 
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +92,20 @@ export default function CommissionView({ prefill }) {
   const [fileError, setFileError] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [failedUploadCount, setFailedUploadCount] = useState(0);
+
+  useEffect(() => {
+    // Once submitted, the brief is durably saved server-side and the draft
+    // has already been cleared (see handleSubmit) — this just needs to not
+    // immediately re-write it right back from the reset button's blank
+    // formData before that click's own logic gets a chance to matter.
+    if (isSubmitted) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+    } catch {
+      // Same as the cart: storage can throw in private-browsing/blocked
+      // contexts — the draft just won't survive a reload there.
+    }
+  }, [formData, isSubmitted]);
 
   // Each preview is a blob: URL from URL.createObjectURL, which holds its
   // referenced file data in memory until explicitly revoked — the browser
@@ -198,6 +238,13 @@ export default function CommissionView({ prefill }) {
     // are no longer needed — reclaim their memory instead of waiting for
     // an unmount that might not happen for a while in an SPA session.
     uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+    // The brief is durably saved server-side now — the local draft would
+    // otherwise still be sitting there next time this form opens.
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // Nothing to clean up if storage was inaccessible in the first place.
+    }
     setIsSubmitting(false);
     setIsSubmitted(true);
   };
@@ -275,6 +322,11 @@ export default function CommissionView({ prefill }) {
                       setUploadedImages([]);
                       setFileError('');
                       setFailedUploadCount(0);
+                      // Otherwise the just-submitted brief's own category,
+                      // material, and narrative stay sitting in the form —
+                      // "Submit Another Commission" should start fresh, not
+                      // resubmit a near-duplicate of the one just sent.
+                      setFormData(getBlankFormData());
                     }}
                     className="px-6 py-2.5 rounded-full bg-surface-container-high/60 hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
                   >

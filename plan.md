@@ -1921,3 +1921,41 @@ result during render instead; and the `Math.random()` "impure function"
 warning in `AdminView`'s tracking-number generator is a false positive,
 since that code only ever runs inside an `onClick` handler, never during
 render.
+
+## 32. Commission form drafts, and a stale-refill bug in "Submit Another Commission"
+
+The commission brief is a long form — contact details, category,
+material, budget, timeline, a multi-sentence narrative — and none of it
+survived an accidental refresh or back-button press. The cart already
+solves exactly this problem via `localStorage`; the commission form had
+nothing.
+
+**Fix**: added the same pattern. `formData` now saves to
+`localStorage` (`acua-commission-draft`) on every change, restored on
+mount — unless a fresh `prefill` is present (a "Request Similar" click
+is a deliberate action just taken, and should always win over a stale
+draft from some unrelated earlier visit), and cleared the moment a brief
+is successfully submitted, since it's durably saved server-side by then
+and shouldn't still be sitting in local storage the next time this form
+opens.
+
+**Found in the same area**: clicking "Submit Another Commission" never
+actually reset `formData` — it only cleared the uploaded-image state, so
+the just-submitted brief's own category, material, and full narrative
+stayed sitting in the form. A patron trying to submit a second, different
+commission would have had to manually clear every field themselves, or
+risk resubmitting a near-duplicate of the request they'd just sent.
+Fixed by extracting the initial-state logic into a `getBlankFormData()`
+helper (reused for the initial `useState`, so there's one source of
+truth) and calling it from the reset button.
+
+Verified live end-to-end, including cleaning up the real rows this
+created: filled in the name and narrative fields, did a genuine full
+page reload (not just an in-app navigation), reopened Custom Request,
+and confirmed both fields restored exactly; submitted the brief for
+real and confirmed the draft key was cleared from `localStorage`
+afterward; clicked "Submit Another Commission" and confirmed the form
+came back completely blank instead of still showing the prior
+submission's details. Both real test rows this created in the live
+`commission_briefs` table were deleted immediately after, confirmed via
+a follow-up count query.
