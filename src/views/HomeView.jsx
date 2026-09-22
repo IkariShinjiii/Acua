@@ -109,7 +109,12 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       <main className="flex-grow">
 
         {/* 1. Hero Section */}
-        <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-ink">
+        {/* dvh (not svh) tracks the *current* browser-chrome state rather
+            than assuming it's always maximally expanded — on iOS Safari,
+            100svh could fall a little short of what's actually visible at
+            first paint, letting the next section's heading peek up right
+            behind the bottom toolbar with no breathing room. */}
+        <section className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-ink">
           <div
             className="absolute inset-0 bg-cover bg-center w-full h-full"
             style={{
@@ -167,7 +172,12 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
         </section>
 
         {/* 2. New Arrivals: Framer ReviewReel Infinite Marquee Carousel */}
-        <section className="w-full mb-28 sm:mb-36 overflow-hidden">
+        {/* pt-12 is a deliberate cushion, not just spacing preference — even
+            with the dvh fix above, a hero and the section right after it
+            should never sit flush against each other with zero margin; that's
+            what let the heading crowd into the toolbar-covered sliver in the
+            first place. */}
+        <section className="w-full pt-12 sm:pt-16 mb-28 sm:mb-36 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
             <div>
               <h2 className="font-serif text-3xl sm:text-4xl text-on-surface font-normal tracking-tight">

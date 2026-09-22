@@ -2594,3 +2594,44 @@ Commission page appears (screenshotted mid-transition to confirm).
 Since the fallback is shared across all four lazy views, this also
 fixes the same "nothing visibly happens" gap for the product detail
 page, the admin dashboard, and the patron dashboard.
+
+## 52. Home page's hero bled into "New Release" on mobile; and the new preloader made the footer jump
+
+Two related reports from the user, both about page height on mobile.
+
+**Hero/New Release gap**: a screenshot showed the "New Release" section
+heading peeking up right at the very bottom of the hero, crowded
+against Safari's bottom toolbar — "looks weird seeing the text below."
+The hero (`HomeView`) is sized with `h-[100svh]`, and the section right
+after it had zero top padding, so the two sat flush against each other
+with no cushion at all. `svh` ("small viewport height") assumes the
+browser's toolbars are always at their most-expanded, but real-world
+iOS Safari doesn't always match that assumption exactly at first
+paint, and with zero margin between sections any shortfall shows up
+immediately as the next heading crowding into the toolbar-covered
+sliver. Fixed two ways: switched the hero to `h-[100dvh]` (dynamic
+viewport height, which tracks the browser's *actual current* chrome
+state rather than assuming a fixed one), and added `pt-12 sm:pt-16` to
+the "New Release" section so there's always deliberate breathing room
+regardless of any remaining sub-pixel viewport-unit mismatch. Verified
+in a headless browser at both 393px mobile and 1440px desktop — a
+clean 48px/64px gap between the hero and the heading at each size, no
+regression on desktop.
+
+**Footer jumping up during the new preloader**: introduced by §51's
+fix in the same session — replacing the barely-visible plain-text
+fallback with a real spinner made it stay on screen long enough for
+the user to notice a second, separate problem: the footer sat
+immediately below that spinner during loading, then jumped much
+further down once the real page mounted. Root cause: the
+`ViewLoadingFallback` wrapper was `min-h-[50vh]`, while all four real
+lazy views (`CommissionView`, `ProductDetailView`, `AdminView`,
+`PatronDashboardView`) use `min-h-screen` as their own root wrapper —
+so the page was roughly half as tall during loading as it is once
+content mounts, pulling the footer up into view immediately underneath
+the spinner. Fixed by matching the fallback to `min-h-screen`, the
+same height every destination view already commits to. Verified live
+under a throttled network profile: the footer's bounding box now stays
+below the fold (off-screen, matching one full viewport height) during
+loading, instead of appearing right under the spinner — confirmed with
+a before/after screenshot at the same throttled conditions.

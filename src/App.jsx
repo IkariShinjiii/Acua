@@ -29,12 +29,18 @@ const ConciergeChat = lazy(() => import('./components/ConciergeChat'));
 // screen for seconds with nothing to signal progress. The fade-in means it
 // reads as an intentional transition whether it's up for 50ms or 3s, rather
 // than a flash of unstyled text.
+// min-h-screen matches the root wrapper every one of the four lazy views
+// (Commission, product detail, admin, patron dashboard) uses for itself —
+// a shorter fallback here would leave the Footer (rendered as a fixed
+// sibling below, not inside this Suspense boundary) with far less page
+// above it during loading than once the real view mounts, so it would
+// visibly jump up and then back down on every single transition.
 const ViewLoadingFallback = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ duration: 0.25, ease: 'easeOut' }}
-    className="min-h-[50vh] flex flex-col items-center justify-center gap-4 pt-24"
+    className="min-h-screen flex flex-col items-center justify-center gap-4 pt-24"
   >
     <div className="w-9 h-9 rounded-full border-[3px] border-chile-rojo/15 border-t-chile-rojo animate-spin" />
     <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Loading…</span>
