@@ -2305,3 +2305,25 @@ with the account's email in its header, the tab title reading
 "Admin | ACUA", and its own working Log out button. Both temporary
 accounts were deleted immediately after, confirmed via a follow-up
 count query.
+
+## 43. Removed the palette-strip + sparkle badge from the commission form header
+
+Removed the decorative multi-color palette strip bar and the small
+circular sparkle-icon badge sitting above "Custom Commissions" on the
+commission form — both by request. Also removed the now-unused
+`Sparkles` import and the `.palette-strip` CSS class (used in exactly
+that one spot), rather than leaving dead code behind.
+
+Verified live in the mobile drawer view: the card now leads straight
+into the "Custom Commissions" heading, and `.palette-strip` no longer
+matches anything in the DOM.
+
+## 44. Confirmed the dev quick-switcher removal is actually live in production
+
+A follow-up screenshot still showed the "Active View" badge — checked
+Vercel directly rather than assuming: the current production deployment
+on `acua-three.vercel.app` is `READY` at commit `c117e37`, which *is*
+the commit that removed it (§42). The badge in that screenshot is a
+stale cached page on the reporting device, not a regression — closing
+and reopening the tab (or clearing site data) should show the current
+version.

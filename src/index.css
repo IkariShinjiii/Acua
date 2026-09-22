@@ -93,22 +93,6 @@
     @apply inline-flex items-center justify-center border-none rounded-full bg-chile-rojo px-8 py-4 text-sm font-semibold tracking-wide text-white shadow-terracotta-glow hover:brightness-90 active:scale-[0.98] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand;
   }
 
-  /* Palette Strip: ACUA brand accent bar (Chile Rojo / Terracota / Olive / Sunset) */
-  .palette-strip {
-    height: 4px;
-    background: linear-gradient(
-      to right,
-      #AE431E 0%,
-      #AE431E 25%,
-      #D68224 25%,
-      #D68224 50%,
-      #8A8B35 50%,
-      #8A8B35 75%,
-      #EAC891 75%,
-      #EAC891 100%
-    );
-    border-radius: 9999px;
-  }
 }
 
 /* Hide native scrollbars for seamless horizontal carousels */

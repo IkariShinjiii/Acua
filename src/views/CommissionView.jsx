@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
   UploadCloud,
   CheckCircle2,
   Clock,
@@ -278,9 +277,6 @@ export default function CommissionView({ prefill }) {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="cloud-card p-6 sm:p-12 lg:p-14 relative overflow-hidden"
         >
-          {/* Top Multi-Color Palette Accent Bar (From Mockup) */}
-          <div className="palette-strip w-28 mx-auto mb-8" />
-
           <AnimatePresence mode="wait">
             {isSubmitted ? (
               /* ======================================================= */
@@ -351,9 +347,6 @@ export default function CommissionView({ prefill }) {
 
                 {/* Form Header */}
                 <div className="text-center max-w-xl mx-auto space-y-2.5">
-                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-chile-rojo/10 text-accent mb-1">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
                   <h1 className="font-serif text-3xl sm:text-4xl lg:text-[42px] text-on-surface font-normal leading-[1.15]">
                     Custom Commissions
                   </h1>
