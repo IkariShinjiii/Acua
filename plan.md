@@ -3315,3 +3315,48 @@ theme × transparent-over-hero/scrolled, plus the splash in both
 themes): icon and wordmark now render in the identical olive tone in
 every one, matching the real logo artwork's own pairing rather than a
 mismatched theme-swapped icon next to a fixed-color word.
+
+## 70. Audit round: fixed issue #1 — saving a name reset the whole dashboard mid-save
+
+Ran a dedicated audit (Explore agent, find-only, no fixes) covering
+areas not yet touched this session: `ConfirmDialog`, `useFocusTrap`,
+`AdminView`'s Order/Inventory/Archive tabs, `AccountSettingsPanel`,
+the new account dropdown's keyboard behavior, `CommissionView`'s
+upload validation, and a final sweep for the "fetch failure looks
+like emptiness" pattern. Reported back 5 real, actionable findings
+plus 2 minor/polish items; user asked to fix them one at a time,
+checking in after each.
+
+**Issue #1 (highest severity): saving your name in Account Settings
+reset the whole dashboard mid-save.** Root cause: `handleSaveName`
+called `retryProfile()` after a successful write, to get the updated
+`full_name` into the shared `AuthContext` state so "Signed in as..."
+and anywhere else `profile` is read update immediately. But
+`retryProfile` is a full network refetch that sets `profileLoading`,
+and `AccountGate` (`App.jsx`) treats `user && profileLoading` as "we
+don't know this account's role yet" — unmounting whichever dashboard
+was showing in favor of a "Checking access…" placeholder, appropriate
+for a genuinely unknown state but not for a routine save while already
+looking at a page that only exists because the role was already
+known. Concrete symptom: saving your name briefly tore down and
+remounted the entire dashboard on its default tab, so the "✓ Saved"
+confirmation never had a chance to render — its own component was
+unmounted before the 2.5s display timer even started.
+
+**Fix**: added `setLocalProfile(patch)` to `AuthContext` — a
+synchronous local patch (`setProfile((prev) => ({ ...prev, ...patch
+}))`), not a network round trip, so it never touches `profileLoading`
+and never triggers `AccountGate`'s unmount path. `AccountSettingsPanel`
+now calls this instead of `retryProfile()` after a successful name
+save. `retryProfile` itself is untouched and still used for its
+original purpose (recovering from a genuine fetch failure via the
+"Try Again" button).
+
+Verified live with a temporary real account: saving a name no longer
+shows any "Checking access…" flash, the "✓ Saved" confirmation now
+correctly appears, the user stays on the Account Settings tab
+throughout (no tab reset), and the actual database write still
+persists correctly after a full page reload — confirming this was a
+client-side state-management fix, not a change to what actually gets
+saved. Test account deleted immediately after, confirmed via a
+follow-up count query.

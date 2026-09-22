@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 // the same ability to update their own name and password, not just
 // whichever one this was built for first.
 export default function AccountSettingsPanel() {
-  const { user, profile, retryProfile, updatePassword } = useAuth();
+  const { user, profile, setLocalProfile, updatePassword } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState('');
@@ -38,10 +38,11 @@ export default function AccountSettingsPanel() {
         setNameError(error.message);
         return;
       }
-      // Refetches into the shared AuthContext state so "Signed in as..."
-      // and anywhere else profile.full_name is read update immediately,
-      // not just this form's own local state.
-      retryProfile();
+      // A direct local patch, not a refetch — see setLocalProfile's own
+      // comment in AuthContext for why: retryProfile's network round trip
+      // sets profileLoading, which briefly tore down and remounted the
+      // whole dashboard around this exact form on every save.
+      setLocalProfile({ full_name: fullName.trim() });
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 2500);
     } catch (err) {

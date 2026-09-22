@@ -102,6 +102,20 @@ export function AuthProvider({ children }) {
     retryProfile: () => {
       if (session?.user) loadProfile(session.user.id);
     },
+    // For "I just successfully wrote this field myself, reflect it in the
+    // shared profile immediately" — a synchronous local patch, not a
+    // network refetch. Deliberately distinct from retryProfile: that one
+    // sets profileLoading, which AccountGate (App.jsx) treats as "we don't
+    // know this account's role yet" and responds to by unmounting whatever
+    // dashboard is currently showing in favor of a "Checking access…"
+    // placeholder — appropriate for an actual failed/unknown state, but not
+    // for a routine save while already looking at a page that only exists
+    // because the role was already known. Using retryProfile here for a
+    // full_name update caused exactly that: saving your name mid-session
+    // briefly tore down and remounted the whole dashboard, so the "✓
+    // Saved" confirmation never had a chance to render before its own
+    // component was unmounted.
+    setLocalProfile: (patch) => setProfile((prev) => (prev ? { ...prev, ...patch } : prev)),
     // emailRedirectTo matters here for the same reason it's already set
     // on the password-reset request below: without it, the confirmation
     // link falls back to whatever "Site URL" happens to be configured in
