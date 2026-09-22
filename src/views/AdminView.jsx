@@ -454,6 +454,15 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
   const addPiece = async (e) => {
     e.preventDefault();
     if (!draft.title || !draft.price) return;
+    // parsePesoToNumber returns 0 for any string it can't find a number in
+    // (e.g. "TBD" or a stray letter), which used to sail straight through as
+    // a legitimate ₱0 price with no warning — a typo in this field silently
+    // published a free piece.
+    const priceValue = parsePesoToNumber(draft.price);
+    if (priceValue <= 0) {
+      showToast('Enter a valid price, e.g. ₱12,000.', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase.from('products').insert({
@@ -461,7 +470,7 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
         category: draft.category,
         material: draft.material || 'Details TBD',
         description: 'New addition — details to be finalized.',
-        price_cents: Math.round(parsePesoToNumber(draft.price) * 100),
+        price_cents: Math.round(priceValue * 100),
         image_url:
           draft.image ||
           'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80',

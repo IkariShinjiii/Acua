@@ -3469,3 +3469,25 @@ previews at exactly 8 with the limit message shown, and a full submission
 with 8 valid files still succeeds. Test submissions and their uploaded
 Storage files were deleted from Supabase afterward, confirmed via a
 follow-up count query.
+
+## 74. Audit round, issue #5: a non-numeric price silently saved as ₱0
+
+`InventoryCuration`'s Add New Piece form validated the price field with
+just `!draft.price` — any non-empty string passed, including one with no
+digits in it at all. The actual number came from `parsePesoToNumber`
+(`src/lib/currency.js`), which returns `0` whenever its regex finds no
+digits to match, so typing "TBD" or a stray letter into the price field
+didn't error — it silently published a real piece into Available Pieces
+priced at ₱0. `addPiece` now parses the price first and rejects the
+submission with a toast ("Enter a valid price, e.g. ₱12,000.") whenever
+the parsed value is 0 or less, before the insert ever runs.
+
+Verified live with a temporary real admin account: entering "TBD" as the
+price and submitting left the form open with the typed title still in
+the field (submission correctly blocked, confirmed directly against the
+database — no row was ever inserted for it), while a real price
+(₱15,500) still saves normally, landing with the exact expected
+`price_cents` value. Test piece and account deleted afterward, confirmed
+via a follow-up count query.
+
+This closes out all 5 issues from this audit round.
