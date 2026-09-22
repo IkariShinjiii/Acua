@@ -2119,3 +2119,79 @@ simulated outage is lifted, successfully loads the real catalog; (3) the
 exact same checks pass against an actual production build
 (`vite preview`), not just the dev server, confirming the fix holds
 where it actually matters.
+
+## 39. ACUA Concierge — an AI chat assistant for the storefront
+
+Added a real chat concierge, at the user's request (inspired by a
+reference site, though that page turned out not to actually have a
+visible chatbot in its markup — built to the user's own stated scope
+instead: FAQ answering plus real catalog-aware recommendations).
+
+**Provider decision**: the user asked for Gemini "if it's free" or
+Anthropic "as long as it wouldn't cost us anything." Neither Anthropic
+nor OpenAI have a genuine ongoing free tier — new accounts get a small,
+one-time trial credit that then runs out and starts billing per token.
+Google's Gemini API is the one of the three with an actual persistent
+free tier (rate-limited, but comfortably enough for a small storefront's
+traffic), so that's what this uses.
+
+**Architecture**: a new Supabase Edge Function (`supabase/functions/
+concierge-chat/index.ts`), not a client-side API call — the alternative
+would put the Gemini key directly in the browser bundle, readable by
+anyone. The function:
+- Is deliberately `verify_jwt: false` (public/anonymous, matching
+  "Public can read products" — a concierge only signed-in patrons could
+  talk to would defeat the point).
+- Fetches the *live* `products` table on every request and includes it
+  in the system prompt, so recommendations are always real pieces at
+  their real current price — never invented, never stale — and
+  explicitly excludes recommending anything marked `sold_out` as
+  purchasable.
+- Its system prompt is built entirely from facts already published
+  elsewhere on the real site (materials, non-tarnish finishes, ships
+  from Iloilo City, the 48-hour quote turnaround, real commission
+  categories/materials/budget tiers from `commissionOptions.js`) —
+  deliberately excludes anything about specific shipping windows, return
+  policy, or legal terms, the same real content gap §18 already
+  identified and left out of the footer rather than inventing. The
+  model is explicitly instructed to say "I don't know" and point to
+  email/Instagram/TikTok for anything outside that.
+- Caps conversation history (12 messages) and per-message length (2000
+  chars) — cheap per call and a basic bound on abuse, on top of
+  Gemini's own free-tier rate limit.
+
+**Frontend** (`src/components/ConciergeChat.jsx`): a floating chat
+widget, code-split via `lazy()` (most visitors never open it) and
+excluded from the admin view for the same reason the footer is. Unlike
+`CartDrawer`/`SearchOverlay`, this is deliberately *not* a focus-trapped
+modal — real storefront chat widgets (Intercom, Crisp, etc.) let you
+keep browsing the page while it's open, so it doesn't block Tab from
+reaching the rest of the site. Still handles Escape-to-close (restoring
+focus to the toggle button), auto-focuses its input on open, and marks
+the message list `role="log" aria-live="polite"` so new replies are
+announced. Calls the Edge Function via
+`supabase.functions.invoke('concierge-chat', ...)` and shows a graceful,
+on-brand fallback message (not a crash or an infinite spinner) if the
+call fails for any reason.
+
+**Not yet live**: the Edge Function is deployed and reachable, but
+`GEMINI_API_KEY` hasn't been set — it currently returns a clear "not set
+up yet" message instead of a real reply, which is deliberate (a 503 with
+an honest error, not a silent failure). I have no tool access to set
+Edge Function secrets myself (no dashboard, no CLI in this environment);
+the user needs to: (1) get a free key from
+[Google AI Studio](https://aistudio.google.com/apikey), (2) add it as
+an Edge Function secret named `GEMINI_API_KEY` via Project Settings →
+Edge Functions → Secrets in the Supabase dashboard for project
+`ldwbjhdzouteqfyibkrl`. No redeploy needed after that — the function
+reads the secret at request time.
+
+Verified live end-to-end short of the actual model call: the toggle
+button opens/closes the panel, the welcome message shows, the input
+auto-focuses, `aria-expanded` toggles correctly, Escape closes and
+restores focus to the toggle button, a sent message appears as a user
+bubble with a typing indicator, and — since no key is set yet — the
+Edge Function's honest "not configured" response correctly surfaces as
+a graceful assistant-styled error bubble rather than a hang or a crash,
+confirming the whole pipeline (frontend → Edge Function → Gemini call →
+error handling) is wired correctly end to end.

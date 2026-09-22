@@ -18,6 +18,9 @@ const AdminView = lazy(() => import('./views/AdminView'));
 const PatronDashboardView = lazy(() => import('./views/PatronDashboardView'));
 const CommissionView = lazy(() => import('./views/CommissionView'));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
+// Not on the critical path — most visitors never open it, and it has no
+// loading state worth showing (it just pops in once ready).
+const ConciergeChat = lazy(() => import('./components/ConciergeChat'));
 
 const ViewLoadingFallback = () => (
   <div className="pt-40 text-center text-sm text-on-surface-variant">Loading…</div>
@@ -335,6 +338,14 @@ export default function App() {
           carry the public marketing footer. */}
       {currentView !== 'admin' && (
         <Footer setCurrentView={navigateTo} onTrackCommission={() => goToDashboardTab('commissions')} />
+      )}
+
+      {/* Same reasoning as the footer — a customer-facing concierge has
+          no place in the internal admin tool. */}
+      {currentView !== 'admin' && (
+        <Suspense fallback={null}>
+          <ConciergeChat />
+        </Suspense>
       )}
     </div>
   );
