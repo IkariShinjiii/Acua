@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   AlertCircle,
+  Settings,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -21,6 +22,8 @@ import { parsePesoToNumber, formatPeso } from '../lib/currency';
 import { useAuth } from '../context/AuthContext';
 import Toast, { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AccountSettingsPanel from '../components/AccountSettingsPanel';
+import { parseDeepLinkTab } from '../lib/dashboardTabs';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { FILTER_TABS } from '../data/products';
@@ -31,6 +34,7 @@ const TABS = [
   { id: 'orders', label: 'Order Fulfillment', icon: Package },
   { id: 'inventory', label: 'Inventory & Site Curation', icon: Gem },
   { id: 'archive', label: 'The Archive', icon: Archive },
+  { id: 'settings', label: 'Account Settings', icon: Settings },
 ];
 
 function stageIndex(stages, id) {
@@ -784,9 +788,16 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
 /* ------------------------------------------------------------------ */
 /* Root                                                                  */
 /* ------------------------------------------------------------------ */
-export default function AdminView() {
+export default function AdminView({ initialTab }) {
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('commissions');
+  const [activeTab, setActiveTab] = useState(parseDeepLinkTab(initialTab) ?? 'commissions');
+  // useState's initial value only applies on the very first mount — see
+  // the same fix (and its full reasoning) in PatronDashboardView. Without
+  // this, clicking Account Settings from the navbar dropdown while an
+  // admin is already viewing AdminView would silently fail to switch tabs.
+  useEffect(() => {
+    setActiveTab(parseDeepLinkTab(initialTab) ?? 'commissions');
+  }, [initialTab]);
   const [briefs, setBriefs] = useState(null);
   const [orders, setOrders] = useState(null);
   const [pieces, setPieces] = useState(null);
@@ -941,6 +952,7 @@ export default function AdminView() {
           ) : (
             <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} showToast={showToast} />
           ))}
+        {activeTab === 'settings' && <AccountSettingsPanel />}
       </div>
       <Toast toast={toast} onDismiss={dismissToast} />
     </div>

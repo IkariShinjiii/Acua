@@ -2979,3 +2979,79 @@ what is the capital of France?") both correctly decline the same way;
 a genuine ACUA question ("What materials do you use?") still gets a
 real, correct, on-brand answer — confirming the fix didn't make the
 concierge unhelpful for its actual purpose.
+
+## 62. Account dropdown + a real Settings feature — and a critical privilege-escalation hole found along the way
+
+User request: turn the plain Account icon into a dropdown, and add a
+settings menu for managing account info.
+
+**Before writing any of it**, checked what a self-service profile update
+would actually touch, since that's exactly the kind of thing worth
+confirming is safe *before* building a UI on top of it — and found a
+critical, currently-exploitable vulnerability: the `profiles` table's
+UPDATE policy had no `WITH CHECK` (Postgres treats that as reusing the
+`USING` clause, `auth.uid() = id`, for both), and the `authenticated`
+role's grants covered every column, including `is_admin`. Verified live
+with a temporary real account: a single direct PATCH request let a
+completely ordinary signed-up user set `is_admin: true` on their own
+row and become a full admin, bypassing the app's UI entirely. Flagged
+it and got explicit confirmation before touching production, then
+fixed it at the grant level — `REVOKE UPDATE ON profiles FROM
+authenticated; GRANT UPDATE (full_name) ON profiles TO authenticated;`
+— so self-promotion and self-service email changes are now impossible
+regardless of what any client sends, while the legitimate case (editing
+your own name) still works. Verified all three outcomes live before
+building anything else: self-promotion to admin now 403s, changing
+email via this table now 403s, updating full_name still 200s. Every
+test account/row was deleted immediately after each check.
+
+**The feature itself**, built on the now-safe table:
+- `AccountSettingsPanel.jsx` — one shared component (not duplicated)
+  used by both `PatronDashboardView` and `AdminView`, since every
+  signed-in account is the same profiles row shape regardless of role.
+  Lets someone update their full name (writes to `profiles`) and change
+  their password (reuses `AuthContext.updatePassword`, the same call
+  `ResetPasswordGate` already uses). Email isn't editable here on
+  purpose — changing it needs Supabase's own confirmation flow on the
+  `auth.users` record, not a write to this denormalized copy, and that
+  flow isn't built; points to email support instead of guessing or
+  half-implementing it.
+- `Navbar`'s Account icon is now a real dropdown (`role="menu"`,
+  Escape/click-outside close it, matching the existing mobile-drawer and
+  Cart/Search overlay conventions) showing "My Account" / "Account
+  Settings" / "Log Out" when signed in, or "Log In / Sign Up" when not.
+  The mobile drawer gained matching "Account Settings" and "Log Out"
+  entries (signed-in only) — previously the only way to reach either was
+  desktop-only.
+- Both `PatronDashboardView` and `AdminView` gained an "Account
+  Settings" tab, reachable by the same `goToDashboardTab` deep-link
+  mechanism `Footer`'s "Track a Commission" already used.
+
+**Two real bugs found and fixed during verification, both about the
+same root cause**: `useState(initialTab ?? 'orders')` only applies its
+initial value on the very first mount. Since navigating to Settings
+from the dropdown *while already viewing the dashboard* doesn't remount
+anything, the `initialTab` prop changing had no effect — clicking
+Account Settings from an already-open dashboard silently did nothing.
+Fixed with a `useEffect` that reactively follows the prop. That alone
+wasn't enough: clicking Settings, manually switching to a different tab
+locally, then clicking Settings *again* set `dashboardInitialTab` back
+to the exact same string it already held, and React bails out of
+re-rendering (and re-firing the effect) on an unchanged value. Fixed by
+having `goToDashboardTab` append a `#<n>` request-id suffix that's
+unique on every call regardless of repeated tab names, stripped back
+off by a small shared `parseDeepLinkTab` helper
+(`src/lib/dashboardTabs.js`) before use.
+
+Verified live end-to-end with a temporary real account (promoted to
+admin via direct SQL partway through, to test both dashboards with the
+same account): dropdown correctly shows the right items signed-in vs.
+signed-out, closes on Escape and on an outside click; navigating to
+Settings works on first click *and* after manually switching tabs and
+clicking it again (the exact scenario that caught the second bug);
+updating the full name persists correctly after a full page reload;
+password mismatch validation is correctly caught; the same Account
+Settings tab works identically in `AdminView`; the mobile drawer
+correctly shows Account Settings/Log Out only once signed in. Test
+account deleted immediately after, confirmed via a follow-up count
+query.

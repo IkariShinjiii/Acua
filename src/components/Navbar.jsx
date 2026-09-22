@@ -1,14 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingBag, User, Menu, X, Sun, Moon } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, X, Sun, Moon, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import logoMarkCream from '../assets/logo-mark-cream.png';
 import logoMarkInk from '../assets/logo-mark-ink.png';
 
-export default function Navbar({ currentView, setCurrentView, cartCount = 2, onOpenCart, onOpenSearch, onAccountClick }) {
+export default function Navbar({
+  currentView,
+  setCurrentView,
+  cartCount = 2,
+  onOpenCart,
+  onOpenSearch,
+  onAccountClick,
+  onOpenSettings,
+}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const headerRef = useRef(null);
 
   useEffect(() => {
@@ -22,14 +33,20 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
   // Matches CartDrawer/SearchOverlay: Escape closes it, same as tapping
   // outside — otherwise this is the only overlay in the app a keyboard or
   // touch user has no way to dismiss except re-pressing the toggle itself.
+  // Covers both the mobile drawer and the account dropdown — either one
+  // being open means the same "tap outside/Escape closes it" rule applies.
   useEffect(() => {
-    if (!mobileMenuOpen) return;
+    if (!mobileMenuOpen && !accountMenuOpen) return;
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false);
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+        setAccountMenuOpen(false);
+      }
     };
     const onPointerDown = (e) => {
       if (headerRef.current && !headerRef.current.contains(e.target)) {
         setMobileMenuOpen(false);
+        setAccountMenuOpen(false);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -38,7 +55,7 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
       window.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('pointerdown', onPointerDown);
     };
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, accountMenuOpen]);
 
   // Switching view and reading the DOM in the same tick doesn't work from
   // any page other than home: setCurrentView's re-render hasn't committed
@@ -172,13 +189,85 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
               )}
             </button>
 
-            <button
-              onClick={onAccountClick}
-              className={`hidden md:inline-flex p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
-              aria-label="Account Profile"
-            >
-              <User className="w-[18px] h-[18px] stroke-[1.5]" />
-            </button>
+            <div className="relative hidden md:block">
+              <button
+                onClick={() => setAccountMenuOpen((v) => !v)}
+                className={`inline-flex items-center gap-0.5 p-2 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo ${ringOffset} rounded-full border-none bg-transparent cursor-pointer ${textStrong} ${accentHover}`}
+                aria-label="Account menu"
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
+              >
+                <User className="w-[18px] h-[18px] stroke-[1.5]" />
+                <ChevronDown
+                  className={`w-3.5 h-3.5 stroke-[1.5] transition-transform duration-200 ${accountMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {accountMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    role="menu"
+                    aria-label="Account menu"
+                    className="absolute right-0 top-full mt-2 w-52 bg-surface-elevated rounded-2xl shadow-cloud ring-1 ring-black/5 p-1.5 flex flex-col"
+                  >
+                    {user ? (
+                      <>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            onAccountClick?.();
+                            setAccountMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                        >
+                          <User className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
+                          My Account
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            onOpenSettings?.();
+                            setAccountMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                        >
+                          <Settings className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
+                          Account Settings
+                        </button>
+                        <div className="h-px bg-outline-variant/30 my-1" />
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            signOut();
+                            setAccountMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-accent hover:bg-chile-rojo/10 transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                        >
+                          <LogOut className="w-4 h-4 stroke-[1.5]" />
+                          Log Out
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          onAccountClick?.();
+                          setAccountMenuOpen(false);
+                        }}
+                        className="flex items-center gap-2.5 text-left text-sm px-3 py-2.5 rounded-xl text-on-surface hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                      >
+                        <User className="w-4 h-4 stroke-[1.5] text-on-surface-variant" />
+                        Log In / Sign Up
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             <button
               onClick={toggleTheme}
@@ -281,6 +370,33 @@ export default function Navbar({ currentView, setCurrentView, cartCount = 2, onO
                   <User className="w-4 h-4 stroke-[1.5]" />
                   My Account
                 </button>
+                {/* Settings/Log Out only make sense once signed in — no
+                    mobile equivalent existed before since the account icon
+                    always just went straight to My Account. */}
+                {user && (
+                  <button
+                    onClick={() => {
+                      onOpenSettings?.();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-on-surface hover:text-accent bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
+                  >
+                    <Settings className="w-4 h-4 stroke-[1.5]" />
+                    Account Settings
+                  </button>
+                )}
+                {user && (
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="inline-flex items-center gap-2.5 text-left text-sm uppercase tracking-[0.18em] py-2 text-accent hover:text-terracota bg-transparent border-none cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-sand"
+                  >
+                    <LogOut className="w-4 h-4 stroke-[1.5]" />
+                    Log Out
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>

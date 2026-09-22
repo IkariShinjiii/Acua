@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle } from 'lucide-react';
+import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { MATERIAL_OPTIONS } from '../data/commissionOptions';
+import AccountSettingsPanel from '../components/AccountSettingsPanel';
+import { parseDeepLinkTab } from '../lib/dashboardTabs';
 
 function stageIndex(stages, id) {
   const i = stages.findIndex((s) => s.id === id);
@@ -67,7 +69,17 @@ function StageTracker({ stages, currentId }) {
 
 export default function PatronDashboardView({ setCurrentView, initialTab }) {
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState(initialTab ?? 'orders');
+  const [activeTab, setActiveTab] = useState(parseDeepLinkTab(initialTab) ?? 'orders');
+  // useState's initial value only applies on the very first mount — deep
+  // links triggered while this component is already mounted (e.g. opening
+  // the account dropdown and clicking Settings while already viewing
+  // Orders) change the initialTab prop without remounting anything, so
+  // without this the tab would silently fail to switch. Reactively follows
+  // the prop on every change; a direct tab-button click afterward still
+  // sticks, since that's a separate state update this effect doesn't touch.
+  useEffect(() => {
+    setActiveTab(parseDeepLinkTab(initialTab) ?? 'orders');
+  }, [initialTab]);
   const [orders, setOrders] = useState(null);
   const [briefs, setBriefs] = useState(null);
   // A failed fetch used to look identical to "you genuinely have none of
@@ -147,6 +159,7 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   const tabs = [
     { id: 'orders', label: 'Active Purchases', icon: Package },
     { id: 'commissions', label: 'Custom Commissions', icon: Hammer },
+    { id: 'settings', label: 'Account Settings', icon: Settings },
   ];
 
   return (
@@ -303,6 +316,8 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
             })}
           </div>
         )}
+
+        {activeTab === 'settings' && <AccountSettingsPanel />}
       </div>
     </div>
   );

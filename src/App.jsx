@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import HomeView from './views/HomeView';
@@ -110,7 +110,7 @@ function AccountGate({ setCurrentView, initialTab }) {
   if (isAdmin) {
     return (
       <Suspense fallback={<ViewLoadingFallback />}>
-        <AdminView />
+        <AdminView initialTab={initialTab} />
       </Suspense>
     );
   }
@@ -238,6 +238,9 @@ export default function App() {
   // navigation — same "don't carry over a stale deep-link" rule as
   // commissionPrefill, just for which patron-dashboard tab opens first.
   const [dashboardInitialTab, setDashboardInitialTab] = useState(undefined);
+  // Only ever incremented, never read for its own value — see the comment
+  // on goToDashboardTab below for why this exists.
+  const dashboardTabRequestIdRef = useRef(0);
   const { isAdmin, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
 
@@ -272,9 +275,19 @@ export default function App() {
     setCurrentView('commission');
   };
 
+  // The '#n' suffix guarantees this is a distinct string every single call,
+  // even when it's the same tab as last time — without it, clicking
+  // Settings, manually switching to a different tab locally, then clicking
+  // Settings again would set dashboardInitialTab to the exact same value
+  // it already held, and React bails out of re-rendering on an unchanged
+  // value, so the dashboard's own useEffect watching this prop would never
+  // re-fire and the tab would silently fail to switch back. Consumers
+  // split off the '#n' before using the tab name (see PatronDashboardView/
+  // AdminView's identical parsing).
   const goToDashboardTab = (tab) => {
     setCommissionPrefill(null);
-    setDashboardInitialTab(tab);
+    dashboardTabRequestIdRef.current += 1;
+    setDashboardInitialTab(`${tab}#${dashboardTabRequestIdRef.current}`);
     setCurrentView('dashboard');
   };
 
@@ -292,6 +305,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenSearch={() => setIsSearchOpen(true)}
         onAccountClick={() => navigateTo('dashboard')}
+        onOpenSettings={() => goToDashboardTab('settings')}
       />
 
       <CartDrawer
