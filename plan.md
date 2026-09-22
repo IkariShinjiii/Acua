@@ -1959,3 +1959,34 @@ came back completely blank instead of still showing the prior
 submission's details. Both real test rows this created in the live
 `commission_briefs` table were deleted immediately after, confirmed via
 a follow-up count query.
+
+## 33. Submit handlers had no safety net against an unexpected throw
+
+`CommissionView.handleSubmit` and `AuthForm.handleSubmit` both set a
+`isSubmitting`/`submitting` flag to disable their button, then relied on
+every subsequent `setIsSubmitting(false)` being reached individually
+along each success/failure branch. Supabase's query and storage builders
+normally resolve with `{ error }` rather than throwing even on a network
+failure — but that's not an absolute guarantee for every edge case, and
+neither handler had a fallback for one. If anything in between ever
+threw instead of resolving normally, every `setIsSubmitting(false)` on
+every other branch would be skipped, leaving the submit button
+permanently disabled until the visitor thought to reload the page —
+with a login form or a commission brief, exactly the two forms an actual
+customer (not staff) depends on working.
+
+**Fix**: wrapped both handlers in `try { ... } catch (err) { setError(...)
+} finally { setSubmitting(false) }`, so the loading flag always clears
+and the visitor always sees a real error message, regardless of how the
+operation failed.
+
+Verified live in two parts: forced a genuine synchronous throw (not just
+the ordinary `{ error }` path already handled before this change) by
+overriding `crypto.randomUUID` — the same call `handleSubmit` makes as
+its very first line — to throw, and confirmed the submit button
+re-enabled with its normal label instead of staying stuck, and the
+thrown error's own message rendered in the visible error banner; then
+confirmed the ordinary successful-submission path still works exactly
+as before. The one real row this second check created in
+`commission_briefs` was deleted immediately after, confirmed via a
+follow-up query.

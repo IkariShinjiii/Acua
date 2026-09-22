@@ -21,31 +21,37 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
     setError('');
     setSubmitting(true);
 
-    if (mode === 'forgot') {
-      const { error: resetError } = await requestPasswordReset(email);
-      setSubmitting(false);
-      if (resetError) {
-        setError(resetError.message);
+    // See the same guard in CommissionView.handleSubmit — an unexpected
+    // throw here (rather than the usual resolved { error }) would otherwise
+    // skip setSubmitting(false) and leave the button stuck disabled.
+    try {
+      if (mode === 'forgot') {
+        const { error: resetError } = await requestPasswordReset(email);
+        if (resetError) {
+          setError(resetError.message);
+          return;
+        }
+        setResetSent(true);
         return;
       }
-      setResetSent(true);
-      return;
-    }
 
-    const { error: authError } =
-      mode === 'signup' ? await signUp(email, password, fullName) : await signIn(email, password);
+      const { error: authError } =
+        mode === 'signup' ? await signUp(email, password, fullName) : await signIn(email, password);
 
-    setSubmitting(false);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
 
-    if (authError) {
-      setError(authError.message);
-      return;
-    }
-
-    if (mode === 'signup') {
-      setSignupSuccess(true);
-    } else {
-      onSuccess?.();
+      if (mode === 'signup') {
+        setSignupSuccess(true);
+      } else {
+        onSuccess?.();
+      }
+    } catch (err) {
+      setError(err?.message || 'Something went wrong. Check your connection and try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 

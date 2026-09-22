@@ -192,61 +192,70 @@ export default function CommissionView({ prefill }) {
     setSubmitError('');
     setIsSubmitting(true);
 
-    // Generated client-side, before the brief row exists, so reference
-    // images can be uploaded under this id first and the brief can be
-    // inserted once with reference_image_urls already populated. Briefs
-    // can only be updated by an admin (see "Admins can update briefs"),
-    // so an anonymous patron has no way to attach paths after the fact.
-    const briefId = crypto.randomUUID();
-    const uploadedPaths = [];
-    let failedUploads = 0;
-    for (const [idx, img] of uploadedImages.entries()) {
-      const ext = img.name.includes('.') ? img.name.split('.').pop() : 'jpg';
-      const path = `${briefId}/${idx}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('commission-references')
-        .upload(path, img.file, { contentType: img.file.type });
-      if (uploadError) {
-        failedUploads += 1;
-      } else {
-        uploadedPaths.push(path);
-      }
-    }
-    setFailedUploadCount(failedUploads);
-
-    const { error } = await supabase.from('commission_briefs').insert({
-      id: briefId,
-      user_id: user?.id ?? null,
-      full_name: formData.fullName,
-      email: formData.email,
-      phone: formData.phone || null,
-      category: formData.category,
-      material: formData.material,
-      budget_range: formData.budget,
-      timeline: formData.timeline || null,
-      narrative: formData.narrative || null,
-      reference_image_urls: uploadedPaths,
-    });
-
-    if (error) {
-      setIsSubmitting(false);
-      setSubmitError(error.message);
-      return;
-    }
-
-    // Successfully uploaded to storage now, so the local blob previews
-    // are no longer needed — reclaim their memory instead of waiting for
-    // an unmount that might not happen for a while in an SPA session.
-    uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
-    // The brief is durably saved server-side now — the local draft would
-    // otherwise still be sitting there next time this form opens.
+    // Supabase's query/storage builders normally resolve with { error }
+    // rather than throwing even on a network failure, but that's not an
+    // absolute guarantee for every edge case — without this, an unexpected
+    // throw here would skip every setIsSubmitting(false) below and leave
+    // the submit button permanently stuck disabled until a page reload.
     try {
-      localStorage.removeItem(DRAFT_KEY);
-    } catch {
-      // Nothing to clean up if storage was inaccessible in the first place.
+      // Generated client-side, before the brief row exists, so reference
+      // images can be uploaded under this id first and the brief can be
+      // inserted once with reference_image_urls already populated. Briefs
+      // can only be updated by an admin (see "Admins can update briefs"),
+      // so an anonymous patron has no way to attach paths after the fact.
+      const briefId = crypto.randomUUID();
+      const uploadedPaths = [];
+      let failedUploads = 0;
+      for (const [idx, img] of uploadedImages.entries()) {
+        const ext = img.name.includes('.') ? img.name.split('.').pop() : 'jpg';
+        const path = `${briefId}/${idx}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('commission-references')
+          .upload(path, img.file, { contentType: img.file.type });
+        if (uploadError) {
+          failedUploads += 1;
+        } else {
+          uploadedPaths.push(path);
+        }
+      }
+      setFailedUploadCount(failedUploads);
+
+      const { error } = await supabase.from('commission_briefs').insert({
+        id: briefId,
+        user_id: user?.id ?? null,
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone || null,
+        category: formData.category,
+        material: formData.material,
+        budget_range: formData.budget,
+        timeline: formData.timeline || null,
+        narrative: formData.narrative || null,
+        reference_image_urls: uploadedPaths,
+      });
+
+      if (error) {
+        setSubmitError(error.message);
+        return;
+      }
+
+      // Successfully uploaded to storage now, so the local blob previews
+      // are no longer needed — reclaim their memory instead of waiting for
+      // an unmount that might not happen for a while in an SPA session.
+      uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+      // The brief is durably saved server-side now — the local draft would
+      // otherwise still be sitting there next time this form opens.
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        // Nothing to clean up if storage was inaccessible in the first place.
+      }
+      setIsSubmitted(true);
+    } catch (err) {
+      setSubmitError(err?.message || 'Something went wrong. Check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
-    setIsSubmitted(true);
   };
 
   return (
