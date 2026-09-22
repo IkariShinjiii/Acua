@@ -2327,3 +2327,39 @@ the commit that removed it (§42). The badge in that screenshot is a
 stale cached page on the reporting device, not a regression — closing
 and reopening the tab (or clearing site data) should show the current
 version.
+
+## 45. Reel cards became permanently unclickable after the first swipe
+
+Real, confirmed bug: once a visitor swiped/dragged the "New Release"
+reel even once, every card became permanently unclickable afterward —
+on both mobile and desktop, since Framer Motion's `drag="x"` handles
+touch and mouse through the same code path, so this was never a
+platform-specific issue to begin with.
+
+Root cause: `dragMovedRef` (set `true` mid-drag so the trailing click a
+drag-release can spuriously fire on some browsers gets ignored, rather
+than accidentally navigating away) was only ever reset back to `false`
+in `handleDragStart` — i.e., at the start of the *next* drag. Nothing
+ever reset it after a drag actually *ended*. So the first swipe past the
+4px movement threshold left it stuck `true` forever, and every
+subsequent tap — including plain taps with zero dragging — silently hit
+the `if (!dragMovedRef.current)` guard and did nothing, until another
+drag happened to start (which reset it, only to get stuck `true` again
+moments later).
+
+**Fix**: reset it in `handleDragEnd`, deferred by one tick (`setTimeout(
+..., 50)`) rather than synchronously — synchronously would risk the
+opposite bug, since the browser can still fire a native click right as
+the drag releases, and that's the exact click this ref exists to
+suppress; resetting one tick later lets that trailing click still see it
+as `true` and get ignored as designed, then clears it in time for the
+visitor's next real, independent tap.
+
+Verified with a temporary Playwright script, including a negative
+control to confirm the test actually catches the bug rather than
+trivially passing: with the fix reverted, a plain click worked *before*
+any drag but silently failed *after* one — an exact match for the
+reported symptom ("clickable when moving on its own before, not after
+you swipe it"). With the fix restored, both a baseline plain click and a
+plain click performed after a real drag/release both correctly
+navigated to the product, confirmed across multiple repeated runs.

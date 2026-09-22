@@ -96,6 +96,18 @@ export default function ReviewReel({ onSelectProduct }) {
     isDraggingRef.current = false;
     resumeAtRef.current = performance.now() + RESUME_DELAY_MS;
     x.set(wrap(x.get(), lapWidthRef.current));
+    // dragMovedRef used to only ever get reset to false in handleDragStart
+    // — meaning the *first* swipe past the 4px threshold left it stuck
+    // true forever, silently swallowing every later tap's onClick (even
+    // plain taps with no drag at all) until another drag happened to
+    // start. The browser can still fire a native click right as a drag
+    // gesture releases (the exact click this ref exists to suppress), so
+    // this can't reset synchronously — deferring one tick lets that
+    // trailing click see it as true and get ignored as intended, then
+    // clears it in time for the visitor's next real, independent tap.
+    setTimeout(() => {
+      dragMovedRef.current = false;
+    }, 50);
   };
 
   return (
