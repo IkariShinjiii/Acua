@@ -3754,3 +3754,88 @@ for the same reason — evaluated once per query instead of once per row.
 Applied the identical fix (`0012_commission_briefs_insert_policy_perf.sql`),
 confirmed the advisor clears, and verified live that an anonymous
 commission submission (the exact path this policy gates) still succeeds.
+
+## 79. Reviewing tonight's own new code found 4 more real bugs — fixed
+
+With time still left before the user's 6am wake-up, ran one more audit
+pass — this time pointed at tonight's OWN new code specifically (the
+concierge streaming/rate-limit work, Google sign-in, the Settings
+overlay, and the CommissionPipeline race fix from §78), on the theory
+that the least battle-tested code from the same night is exactly where
+a fresh review is most likely to find something real. It found 5; 4 were
+concrete and fixable, 1 touches the core identity model with genuine
+uncertainty about Supabase's own account-linking behavior and is flagged
+below for a decision rather than silently patched.
+
+**AdminView's top-level refetch had no equivalent of CartDrawer's own
+timeout hardening — and §78's CommissionPipeline fix depends on it
+landing.** `previousBriefsRef`/`previousOrdersRef` only clear `saving`
+once `briefs`/`orders` becomes a genuinely new reference, which only
+happens once the shared four-query refetch (commission_briefs, orders,
+products, archive_items) actually resolves — and that refetch had no
+timeout, meaning the exact "promise never settles" failure mode already
+proven real for CartDrawer would leave the Send Quote / Mark as X button
+disabled forever, with a successful toast already shown, and no way to
+retry short of a reload. Added the same `Promise.race`-against-a-timeout
+pattern (a shared `withTimeout()` helper, 10s) to all four queries.
+Verified live: aborted the refetch specifically (letting the initial tab
+load succeed first), confirmed the button correctly stays disabled, then
+confirmed that once the 10s timeout fires, the tab correctly switches to
+its existing "Couldn't load commission briefs" error view (with its own
+Try Again) rather than staying stuck on stale data with a dead button.
+
+**A Google sign-in failure after the redirect had zero visible feedback.**
+`signInWithOAuth` redirects straight to Supabase's own `/authorize`
+endpoint rather than resolving in-page, so `handleGoogleSignIn`'s error
+branch only ever catches failures *before* that redirect. Anything after
+— the visitor declines on Google's consent screen, or the linking fails
+— comes back as `#error=...&error_description=...` sitting in the URL,
+which nothing read. Made `Toast`/`useToast` (previously admin-only)
+available app-wide by mounting them in `App.jsx`, added an effect that
+checks for that hash on load, surfaces the description as a toast, and
+cleans the URL. Verified live by loading the app with a synthetic
+`#error=access_denied&error_description=...` fragment: the toast shows
+the right message and the hash is gone afterward.
+
+**A connection drop mid-reply in the concierge chat left a truncated
+assistant bubble that survived "Try Again" and got replayed to Gemini as
+real conversation history.** `sendToConcierge`'s `catch` block always
+appended a new error bubble but never removed whatever partial reply had
+already streamed in before the drop, and `handleRetry` only strips
+`isError` bubbles — not that dangling partial one. Now slices it off
+before adding the error bubble. Verified live by mocking `fetch` to
+return a real streaming `Response` whose body yields one chunk and then
+rejects: the truncated reply is gone from the message list, only the
+error bubble remains.
+
+**The concierge's streaming reader loop had no unmount guard — and
+tonight's rewrite widened the window this actually matters in.** The old
+`supabase.functions.invoke()` call was one short await; the new manual
+`reader.read()` loop can span however long the full generation takes,
+and `ConciergeChat` unmounts the instant a visitor (who can chat before
+ever signing in) finishes logging into an admin account. Added a
+`mountedRef` (guarding every `setState` the loop makes) and a real
+`AbortController` wired into the `fetch` call, aborted on unmount, so the
+connection actually closes early instead of quietly finishing unseen.
+Verified live with a controlled slow-drip mock stream: signing into an
+admin account mid-stream genuinely aborts the fetch (confirmed via the
+signal firing and the stream's own pull count going flat afterward), with
+zero React "state update on unmounted component" warnings.
+
+**Flagged, not fixed: `profiles.email` has no unique constraint, and the
+interaction with Google's account-linking has a real but uncertain edge
+case.** If someone signs up with email/password, never confirms that
+email, then later uses "Continue with Google" with the same address,
+Supabase's default auto-linking requires the existing identity to be
+verified first — depending on exact GoTrue behavior, this either surfaces
+as the now-handled redirect-error case above, or could create a second
+`auth.users`/`profiles` row for the same person, silently splitting one
+visitor's order history across two unrelated accounts (nothing crashes,
+which is arguably the worse outcome). Deliberately left alone tonight
+rather than unilaterally changing the core identity schema (e.g. adding
+a unique constraint, which would trade a silent split for a loud
+signup failure) — this is a real product decision the user should make
+directly rather than wake up to a change like that already made.
+
+All 4 fixes verified live, committed, and pushed; test accounts/briefs
+deleted afterward and confirmed via follow-up count queries.

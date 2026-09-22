@@ -39,6 +39,27 @@ function stageIndex(stages, id) {
   return i === -1 ? 0 : i;
 }
 
+// A genuine network-level drop was confirmed live (see plan.md §78) to
+// leave a supabase-js query's own promise permanently pending — neither
+// resolving with an error nor rejecting. For most fetches that just means
+// a stuck loading spinner, but CommissionPipeline/OrderFulfillment's
+// busy-guard fix specifically waits for THIS refetch to land before
+// re-enabling its "Mark as X" button (see their own comments) — if it
+// never lands, that button stays disabled forever with no way to retry
+// short of a full reload. Racing every query here against a bounded
+// timeout means a hang degrades to the same visible "couldn't load"
+// state a real error already produces, instead of hanging indefinitely.
+const FETCH_TIMEOUT_MS = 10000;
+function withTimeout(promise) {
+  const timeout = new Promise((resolve) =>
+    setTimeout(() => resolve({ data: null, error: { message: 'Timed out' } }), FETCH_TIMEOUT_MS)
+  );
+  // A genuine rejection (as opposed to a hang) still needs to resolve the
+  // race to *something* the caller's .then(({ data, error }) => ...) can
+  // read — otherwise it's just an unhandled rejection instead.
+  return Promise.race([promise, timeout]).catch((err) => ({ data: null, error: err }));
+}
+
 function StatusBadge({ label, tone = 'neutral' }) {
   const toneClass =
     tone === 'done'
@@ -879,45 +900,49 @@ export default function AdminView({ initialTab }) {
   useEffect(() => {
     let cancelled = false;
 
-    supabase
-      .from('commission_briefs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setBriefsFailed(Boolean(error));
-        setBriefs(error || !data ? [] : data);
-      });
+    withTimeout(
+      supabase
+        .from('commission_briefs')
+        .select('*')
+        .order('created_at', { ascending: false })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setBriefsFailed(Boolean(error));
+      setBriefs(error || !data ? [] : data);
+    });
 
-    supabase
-      .from('orders')
-      .select('*, product:products(title), patron:profiles(full_name, email)')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setOrdersFailed(Boolean(error));
-        setOrders(error || !data ? [] : data);
-      });
+    withTimeout(
+      supabase
+        .from('orders')
+        .select('*, product:products(title), patron:profiles(full_name, email)')
+        .order('created_at', { ascending: false })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setOrdersFailed(Boolean(error));
+      setOrders(error || !data ? [] : data);
+    });
 
-    supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setPiecesFailed(Boolean(error));
-        setPieces(error || !data ? [] : data.map(mapProductRow));
-      });
+    withTimeout(
+      supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setPiecesFailed(Boolean(error));
+      setPieces(error || !data ? [] : data.map(mapProductRow));
+    });
 
-    supabase
-      .from('archive_items')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setArchiveFailed(Boolean(error));
-        setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
-      });
+    withTimeout(
+      supabase
+        .from('archive_items')
+        .select('*')
+        .order('created_at', { ascending: false })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setArchiveFailed(Boolean(error));
+      setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
+    });
 
     return () => {
       cancelled = true;

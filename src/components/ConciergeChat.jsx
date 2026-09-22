@@ -89,6 +89,26 @@ export default function ConciergeChat() {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const toggleButtonRef = useRef(null);
+  // The streaming reader loop below has no equivalent of CartDrawer's/
+  // CommissionPipeline's own `cancelled` flag — App.jsx unmounts this
+  // whole component the instant a signed-out visitor (who can chat with
+  // the concierge same as anyone) finishes signing into an admin account
+  // (showingAdmin hides it). If a reply was still streaming in at that
+  // moment, the old supabase.functions.invoke() call was one short await;
+  // this manual chunk-by-chunk reader loop can span however long the full
+  // generation takes, widening the window a lot. mountedRef guards every
+  // setState the loop makes after that; the AbortController actually closes
+  // the fetch early too, rather than just leaving it running unseen.
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    },
+    []
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -123,6 +143,8 @@ export default function ConciergeChat() {
   const sendToConcierge = async (conversationForApi) => {
     setIsSending(true);
     let streamedAnyText = false;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/concierge-chat`, {
         method: 'POST',
@@ -132,20 +154,23 @@ export default function ConciergeChat() {
           apikey: SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({ messages: conversationForApi }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => null);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            isError: true,
-            content:
-              data?.error ||
-              "Sorry, I'm having trouble responding right now — please try again in a moment.",
-          },
-        ]);
+        if (mountedRef.current) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              isError: true,
+              content:
+                data?.error ||
+                "Sorry, I'm having trouble responding right now — please try again in a moment.",
+            },
+          ]);
+        }
         return;
       }
 
@@ -157,6 +182,7 @@ export default function ConciergeChat() {
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         if (!chunk) continue;
+        if (!mountedRef.current) continue; // still drains the stream; just stops rendering it
 
         if (!streamedAnyText) {
           streamedAnyText = true;
@@ -171,7 +197,7 @@ export default function ConciergeChat() {
         }
       }
 
-      if (!streamedAnyText) {
+      if (!streamedAnyText && mountedRef.current) {
         setMessages((prev) => [
           ...prev,
           {
@@ -181,17 +207,31 @@ export default function ConciergeChat() {
           },
         ]);
       }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          isError: true,
-          content: 'Something went wrong reaching the concierge. Please check your connection and try again.',
-        },
-      ]);
+    } catch (err) {
+      // The unmount cleanup effect calls abortControllerRef.current?.abort()
+      // deliberately — that's not a real failure to report, just this
+      // request being torn down along with the component that started it.
+      if (err?.name === 'AbortError') return;
+      if (mountedRef.current) {
+        setMessages((prev) => {
+          // A connection drop mid-stream (reader.read() throwing after some
+          // text had already arrived) used to leave that truncated reply
+          // sitting in state — handleRetry only strips isError bubbles, not
+          // this one, so it survived a retry and got sent back to Gemini as
+          // if it were a real completed "model" turn. Drop it here instead.
+          const withoutPartialReply = streamedAnyText ? prev.slice(0, -1) : prev;
+          return [
+            ...withoutPartialReply,
+            {
+              role: 'assistant',
+              isError: true,
+              content: 'Something went wrong reaching the concierge. Please check your connection and try again.',
+            },
+          ];
+        });
+      }
     } finally {
-      setIsSending(false);
+      if (mountedRef.current) setIsSending(false);
     }
   };
 

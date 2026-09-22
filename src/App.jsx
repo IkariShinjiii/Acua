@@ -7,6 +7,7 @@ import AuthForm from './components/AuthForm';
 import CartDrawer from './components/CartDrawer';
 import SearchOverlay from './components/SearchOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
+import Toast, { useToast } from './components/Toast';
 import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
@@ -247,6 +248,27 @@ export default function App() {
   const dashboardTabRequestIdRef = useRef(0);
   const { isAdmin, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
+  const { toast, showToast, dismissToast } = useToast();
+
+  // signInWithOAuth (AuthContext.signInWithGoogle) redirects straight to
+  // Supabase's own /authorize endpoint rather than resolving in-page — a
+  // failure *after* that redirect (the visitor denies consent, or Google/
+  // Supabase can't complete it) comes back here as an "#error=...&error_
+  // description=..." fragment, not a normal in-app error path. Without
+  // this, that failure was completely invisible: the button just looked
+  // like it silently did nothing, with a stray #error fragment left
+  // sitting in the address bar.
+  useEffect(() => {
+    if (!window.location.hash.includes('error=')) return;
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const description = params.get('error_description');
+    showToast(
+      description ? description.replace(/\+/g, ' ') : "Google sign-in didn't go through. Please try again.",
+      'error'
+    );
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Whether 'dashboard' is currently showing the admin tools rather than
   // a patron's own orders/commissions — there's no separate 'admin' view
@@ -323,6 +345,7 @@ export default function App() {
         onSelectProduct={handleViewProduct}
       />
       <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <Toast toast={toast} onDismiss={dismissToast} />
 
       {currentView === 'home' && (
         <HomeView
