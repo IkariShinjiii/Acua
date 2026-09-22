@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { MotionConfig } from 'framer-motion'
 import './index.css'
 import App from './App.jsx'
+import Preloader from './components/Preloader.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { CartProvider } from './context/CartContext.jsx'
@@ -22,6 +23,9 @@ createRoot(document.getElementById('root')).render(
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
+        {/* EXPERIMENTAL — see Preloader.jsx. Sits alongside App rather than
+            inside it so this stays a single, easy-to-revert diff. */}
+        <Preloader />
       </MotionConfig>
     </ErrorBoundary>
   </StrictMode>,
