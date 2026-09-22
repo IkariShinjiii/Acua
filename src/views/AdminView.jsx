@@ -95,17 +95,22 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
 
   const advance = async (id, nextStatus, extra = {}, successMessage) => {
     setSaving(id);
-    const { error } = await supabase
-      .from('commission_briefs')
-      .update({ status: nextStatus, ...extra })
-      .eq('id', id);
-    setSaving(null);
-    if (error) {
-      showToast(`Couldn't update that brief: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase
+        .from('commission_briefs')
+        .update({ status: nextStatus, ...extra })
+        .eq('id', id);
+      if (error) {
+        showToast(`Couldn't update that brief: ${error.message}`, 'error');
+        return;
+      }
+      if (successMessage) showToast(successMessage, 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't update that brief: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(null);
     }
-    if (successMessage) showToast(successMessage, 'success');
-    onUpdated();
   };
 
   const sendQuote = (brief) => {
@@ -264,16 +269,20 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
         ? `PHLPOST-${Math.floor(10000000 + Math.random() * 89999999)}`
         : order.tracking_number;
 
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: next.id, tracking_number: trackingNumber })
-      .eq('id', order.id);
-    if (error) {
-      showToast(`Couldn't update that order: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: next.id, tracking_number: trackingNumber })
+        .eq('id', order.id);
+      if (error) {
+        showToast(`Couldn't update that order: ${error.message}`, 'error');
+        return;
+      }
+      showToast(`Order marked as ${next.label.toLowerCase()}.`, 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't update that order: ${err?.message || 'check your connection and try again.'}`, 'error');
     }
-    showToast(`Order marked as ${next.label.toLowerCase()}.`, 'success');
-    onUpdated();
   };
 
   return (
@@ -340,56 +349,69 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
   const [saving, setSaving] = useState(false);
 
   const toggleSoldOut = async (piece) => {
-    const { error } = await supabase
-      .from('products')
-      .update({ sold_out: !piece.soldOut })
-      .eq('id', piece.id);
-    if (error) {
-      showToast(`Couldn't update that piece: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ sold_out: !piece.soldOut })
+        .eq('id', piece.id);
+      if (error) {
+        showToast(`Couldn't update that piece: ${error.message}`, 'error');
+        return;
+      }
+      showToast(piece.soldOut ? 'Marked available again.' : 'Marked sold out.', 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't update that piece: ${err?.message || 'check your connection and try again.'}`, 'error');
     }
-    showToast(piece.soldOut ? 'Marked available again.' : 'Marked sold out.', 'success');
-    onUpdated();
   };
 
   const toggleOneOfOne = async (piece) => {
-    const { error } = await supabase
-      .from('products')
-      .update({ is_one_of_one: !piece.isOneOfOne })
-      .eq('id', piece.id);
-    if (error) {
-      showToast(`Couldn't update that piece: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_one_of_one: !piece.isOneOfOne })
+        .eq('id', piece.id);
+      if (error) {
+        showToast(`Couldn't update that piece: ${error.message}`, 'error');
+        return;
+      }
+      showToast(piece.isOneOfOne ? 'No longer marked 1-of-1.' : 'Marked as a 1-of-1 piece.', 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't update that piece: ${err?.message || 'check your connection and try again.'}`, 'error');
     }
-    showToast(piece.isOneOfOne ? 'No longer marked 1-of-1.' : 'Marked as a 1-of-1 piece.', 'success');
-    onUpdated();
   };
 
   const addPiece = async (e) => {
     e.preventDefault();
     if (!draft.title || !draft.price) return;
     setSaving(true);
-    const { error } = await supabase.from('products').insert({
-      title: draft.title,
-      category: draft.category,
-      material: draft.material || 'Details TBD',
-      description: 'New addition — details to be finalized.',
-      price_cents: Math.round(parsePesoToNumber(draft.price) * 100),
-      image_url:
-        draft.image ||
-        'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80',
-      sold_out: false,
-      is_one_of_one: draft.isOneOfOne,
-    });
-    setSaving(false);
-    if (error) {
-      showToast(`Couldn't save that piece: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase.from('products').insert({
+        title: draft.title,
+        category: draft.category,
+        material: draft.material || 'Details TBD',
+        description: 'New addition — details to be finalized.',
+        price_cents: Math.round(parsePesoToNumber(draft.price) * 100),
+        image_url:
+          draft.image ||
+          'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80',
+        sold_out: false,
+        is_one_of_one: draft.isOneOfOne,
+      });
+      if (error) {
+        showToast(`Couldn't save that piece: ${error.message}`, 'error');
+        return;
+      }
+      setDraft({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '', isOneOfOne: false });
+      setShowAddForm(false);
+      showToast(`"${draft.title}" added to Available Pieces.`, 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't save that piece: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
     }
-    setDraft({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '', isOneOfOne: false });
-    setShowAddForm(false);
-    showToast(`"${draft.title}" added to Available Pieces.`, 'success');
-    onUpdated();
   };
 
   return (
@@ -551,35 +573,45 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
     e.preventDefault();
     if (!draft.title || !draft.image) return;
     setSaving(true);
-    const { error } = await supabase.from('archive_items').insert({
-      title: draft.title,
-      category: draft.category,
-      material: draft.material,
-      image_url: draft.image,
-      alt_text: draft.alt || draft.title,
-    });
-    setSaving(false);
-    if (error) {
-      showToast(`Couldn't save that piece: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase.from('archive_items').insert({
+        title: draft.title,
+        category: draft.category,
+        material: draft.material,
+        image_url: draft.image,
+        alt_text: draft.alt || draft.title,
+      });
+      if (error) {
+        showToast(`Couldn't save that piece: ${error.message}`, 'error');
+        return;
+      }
+      showToast(`"${draft.title}" added to The Archive.`, 'success');
+      setDraft({ title: '', category: JEWELRY_CATEGORIES[0], material: MATERIAL_OPTIONS[0].id, image: '', alt: '' });
+      setShowAddForm(false);
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't save that piece: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
     }
-    showToast(`"${draft.title}" added to The Archive.`, 'success');
-    setDraft({ title: '', category: JEWELRY_CATEGORIES[0], material: MATERIAL_OPTIONS[0].id, image: '', alt: '' });
-    setShowAddForm(false);
-    onUpdated();
   };
 
   const removeItem = async (item) => {
     if (!confirm(`Remove "${item.title}" from The Archive? This can't be undone.`)) return;
     setDeletingId(item.id);
-    const { error } = await supabase.from('archive_items').delete().eq('id', item.id);
-    setDeletingId(null);
-    if (error) {
-      showToast(`Couldn't remove that piece: ${error.message}`, 'error');
-      return;
+    try {
+      const { error } = await supabase.from('archive_items').delete().eq('id', item.id);
+      if (error) {
+        showToast(`Couldn't remove that piece: ${error.message}`, 'error');
+        return;
+      }
+      showToast(`"${item.title}" removed.`, 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't remove that piece: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setDeletingId(null);
     }
-    showToast(`"${item.title}" removed.`, 'success');
-    onUpdated();
   };
 
   return (

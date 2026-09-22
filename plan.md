@@ -2013,3 +2013,23 @@ view, so it didn't need one).
 Verified live: toggling the mobile menu three times (closed → open →
 closed) showed `aria-expanded` correctly reading `false` → `true` →
 `false` at each step.
+
+## 35. Same safety net extended to AdminView's async actions
+
+§33 added try/catch/finally to the two customer-facing submit forms
+(login/signup, commission brief). AdminView had the identical
+"setSaving(true)/(false) on every individual branch, nothing catching a
+throw" pattern across all seven of its own async actions — advancing a
+commission or order's stage, sending a quote, toggling sold-out/1-of-1,
+and adding or removing a piece from Available Pieces or The Archive.
+Wrapped every one in the same `try { ... } catch (err) { showToast(...) }
+finally { setSaving/setDeletingId(...) }` shape, so an unexpected failure
+surfaces a real toast instead of either silently failing or leaving a
+button stuck disabled.
+
+Verified via a clean build and lint pass (no new warnings) — exercising
+these live would need a real admin login I don't have credentials for,
+same as §29's Toast fix. The change itself is the same mechanical,
+low-risk pattern already verified twice this session (§33's forced-throw
+test on `CommissionView`/`AuthForm`), just applied consistently rather
+than left as an isolated fix on two forms and skipped on the rest.
