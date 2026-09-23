@@ -1,0 +1,11 @@
+-- Defensive hardening, not a fix for an active bug: researched Supabase's
+-- own identity-linking behavior (plan.md §79's flagged item) and it
+-- already prevents the duplicate-account scenario that prompted this —
+-- automatic linking matches by email and reuses the same auth.users row
+-- regardless of whether an existing identity was confirmed, and Supabase
+-- already blocks a genuine duplicate signup with an obfuscated no-op.
+-- Still worth enforcing at the schema level as a safety net, in case some
+-- future code path or manual admin edit would otherwise violate the
+-- "one profile per email" invariant this app already assumes everywhere.
+-- No existing duplicates confirmed before applying.
+alter table public.profiles add constraint profiles_email_key unique (email);

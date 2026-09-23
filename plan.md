@@ -3839,3 +3839,31 @@ directly rather than wake up to a change like that already made.
 
 All 4 fixes verified live, committed, and pushed; test accounts/briefs
 deleted afterward and confirmed via follow-up count queries.
+
+## 80. Followed up on the one flagged item — turned out not to be a bug
+
+The user asked to tackle the flagged `profiles.email`/Google-linking item
+from §79. Reading Supabase's own identity-linking docs more carefully
+before touching anything changed the conclusion: "when a new identity
+*can* be linked to an existing user, Supabase Auth will remove any other
+unconfirmed identities linked to that user" describes linking
+*succeeding* and cleaning up stale unconfirmed identities as a security
+measure — not linking failing because an existing identity was
+unconfirmed. Automatic linking matches by email and reuses the same
+`auth.users` row either way, and linking an identity to an existing user
+doesn't insert a new `auth.users` row, so `handle_new_user()` never fires
+a second time through this path. Confirmed this directly rather than
+trusting the docs alone: tried inserting a second `auth.users` row with
+an email that already existed, and it was rejected by Supabase's own
+`users_email_partial_key` constraint before ever reaching anything this
+app defines — the duplicate-account scenario the original finding
+described genuinely can't happen.
+
+Asked the user how they wanted to handle it now that it wasn't an active
+bug; they chose to add the constraint anyway as cheap defensive
+hardening. Confirmed no existing duplicate emails in `profiles` first,
+then added a `unique` constraint on `profiles.email`
+(`0013_profiles_email_unique.sql`). Verified live: a normal new signup
+still creates a profile row fine, and a genuine duplicate attempt is
+rejected (by Supabase's own `auth.users` constraint even before reaching
+this one, confirming the redundancy is real and harmless either way).
