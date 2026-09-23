@@ -12,14 +12,19 @@ import logoMarkOlive from '../assets/logo-mark-olive.png';
 // shared palette — nothing else on the site uses blue/teal, and this is
 // still an experiment, not a decided brand addition.
 //
-// The crest shape went through two real revisions: a first pass with
+// The crest shape went through several real revisions: a first pass with
 // small, evenly-spaced humps read as a generic "wavy line," not the
 // reference's few, large, irregular rounded mounds with dramatic height
 // variation — redrawn with a taller canvas and fewer, bigger curves so
 // the silhouette itself reads as water rather than a repeating pattern.
-// The fill also gained a top-to-bottom gradient (plus a soft highlight
-// near the crest) instead of one flat color, for some actual depth
-// rather than a flat poster-color panel.
+// The flat body above the crest gained a top-to-bottom gradient instead
+// of one flat color, for some actual depth — but giving the crest's OWN
+// fill a second, independent copy of that same gradient (restarting at
+// the light end right where the first one had already reached the dark
+// end) created a hard, visible seam exactly at the boundary between the
+// two, which is what actually read as "a flat rectangle with a wave
+// doodle stuck below it." The crest now picks up in solid, matching
+// TEAL_DEEP instead — a seamless continuation, not a second gradient.
 //
 // Earlier passes also had the crest just translating upward as a static
 // shape, which read as a waterfall filling a glass rather than surf
@@ -160,6 +165,12 @@ export default function Preloader() {
         }}
         onAnimationComplete={() => setFilled(true)}
       >
+        {/* Same opacity as the wave-zone below (0.85, not a mismatched
+            0.85/0.88 split), and the wave-zone's own teal fill picks up
+            in solid TEAL_DEEP exactly where this gradient ends — a
+            separate gradient restarting at TEAL_LIGHT right at that
+            boundary was the real cause of the hard "flat edge" seam,
+            not the crest shape itself. */}
         <div
           className="relative flex-1 overflow-hidden"
           style={{ background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`, opacity: 0.85 }}
@@ -201,19 +212,13 @@ export default function Preloader() {
             />
           </svg>
         </div>
-        <div className="relative w-full h-[170px] sm:h-[230px] flex-shrink-0" style={{ opacity: 0.88 }}>
+        <div className="relative w-full h-[170px] sm:h-[230px] flex-shrink-0" style={{ opacity: 0.85 }}>
           <svg
             viewBox="0 0 1440 240"
             preserveAspectRatio="none"
             className="absolute inset-0 w-full h-full block"
             aria-hidden="true"
           >
-            <defs>
-              <linearGradient id="preloader-teal-crest" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={TEAL_LIGHT} />
-                <stop offset="100%" stopColor={TEAL_DEEP} />
-              </linearGradient>
-            </defs>
             <motion.path
               d={closeBelow(PALE_CREST_A)}
               fill={PALE_WATER}
@@ -222,7 +227,7 @@ export default function Preloader() {
             />
             <motion.path
               d={closeBelow(TEAL_CREST_A)}
-              fill="url(#preloader-teal-crest)"
+              fill={TEAL_DEEP}
               animate={{ d: [closeBelow(TEAL_CREST_A), closeBelow(TEAL_CREST_B), closeBelow(TEAL_CREST_A)] }}
               transition={{ duration: SURGE_DURATION_S * 0.85, repeat: Infinity, ease: 'easeInOut' }}
             />
