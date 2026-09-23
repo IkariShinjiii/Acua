@@ -6,11 +6,15 @@ import logoMarkOlive from '../assets/logo-mark-olive.png';
 // this goes anywhere near main. Water rises from the top of the screen
 // and grows until it engulfs the whole viewport — including the logo,
 // which stays faintly visible through the water's own translucency
-// rather than being hidden once covered. Colors (a pale blue-gray + a
-// saturated teal, per a reference the owner shared) are scoped to this
-// file alone via arbitrary Tailwind/inline values, not added to the
-// shared palette — nothing else on the site uses blue/teal, and this is
-// still an experiment, not a decided brand addition.
+// rather than being hidden once covered. The teal (per a reference the
+// owner shared) is scoped to this file alone via arbitrary Tailwind/
+// inline values, not added to the shared palette — nothing else on the
+// site uses blue/teal, and this is still an experiment, not a decided
+// brand addition. An earlier pass also layered in a lighter blue-gray
+// "peeking above the crest" shape for extra depth, but it read as a
+// stray pale artifact sitting awkwardly between the solid body and the
+// crest rather than adding anything — removed, leaving just the one
+// teal crest plus its foam highlight.
 //
 // The crest shape went through several real revisions: a first pass with
 // small, evenly-spaced humps read as a generic "wavy line," not the
@@ -42,7 +46,6 @@ const FILL_DURATION_S = 1.7;
 const FADE_DURATION_S = 0.4;
 const SURGE_DURATION_S = 1.15;
 
-const PALE_WATER = '#D8E7E3';
 const TEAL_LIGHT = '#4FC3A6';
 const TEAL_DEEP = '#1F8A72';
 const FOAM = '#F1FAF7';
@@ -58,10 +61,6 @@ function waitForWindowLoad() {
 // shapes instead of a generic repeating wavy line. Each *_B variant keeps
 // the exact same command structure as its *_A pair (only the control
 // points move) so Framer Motion can morph directly between them.
-const PALE_CREST_A =
-  'M0,120 C240,10 400,230 660,90 C880,5 1020,235 1260,80 C1350,30 1410,110 1440,90';
-const PALE_CREST_B =
-  'M0,95 C240,230 400,10 660,140 C880,235 1020,5 1260,130 C1350,180 1410,50 1440,100';
 const TEAL_CREST_A =
   'M0,140 C220,30 380,220 640,110 C860,20 1000,230 1240,100 C1340,40 1400,120 1440,100';
 const TEAL_CREST_B =
@@ -219,12 +218,6 @@ export default function Preloader() {
             className="absolute inset-0 w-full h-full block"
             aria-hidden="true"
           >
-            <motion.path
-              d={closeBelow(PALE_CREST_A)}
-              fill={PALE_WATER}
-              animate={{ d: [closeBelow(PALE_CREST_A), closeBelow(PALE_CREST_B), closeBelow(PALE_CREST_A)] }}
-              transition={{ duration: SURGE_DURATION_S, repeat: Infinity, ease: 'easeInOut' }}
-            />
             <motion.path
               d={closeBelow(TEAL_CREST_A)}
               fill={TEAL_DEEP}
