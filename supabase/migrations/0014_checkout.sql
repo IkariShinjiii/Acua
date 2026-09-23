@@ -64,7 +64,15 @@ begin
 end;
 $$;
 
+-- Revoking from PUBLIC alone isn't enough (0006's own note on this) --
+-- Supabase's default setup also grants EXECUTE directly to anon on every
+-- new function in this schema, confirmed via the security advisor
+-- flagging this function as anon-callable right after creation, the same
+-- gap 0009's rate-limit function had to work around. The internal
+-- private.is_admin() check still rejects a non-admin caller either way,
+-- but there's no reason to leave the door open at the grant level too.
 revoke execute on function public.admin_confirm_order_payment(uuid) from public;
+revoke execute on function public.admin_confirm_order_payment(uuid) from anon;
 grant execute on function public.admin_confirm_order_payment(uuid) to authenticated;
 
 -- claim_product_if_available's own comment (0001_init.sql) already says
