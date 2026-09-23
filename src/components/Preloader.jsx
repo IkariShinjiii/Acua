@@ -49,6 +49,12 @@ const SURGE_DURATION_S = 1.15;
 const TEAL_LIGHT = '#4FC3A6';
 const TEAL_DEEP = '#1F8A72';
 const FOAM = '#F1FAF7';
+// The site's own `bg-sand` token is a very pale, almost-white cream --
+// right for a real page background, but on its own behind a wave meant to
+// read as water meeting a beach, it looked closer to plain white than
+// sand. This is a warmer, more visibly beige tone, scoped to the
+// preloader alone rather than changing the shared token everywhere else.
+const SAND_BEIGE = '#E4D3AE';
 
 function waitForWindowLoad() {
   if (document.readyState === 'complete') return Promise.resolve();
@@ -97,6 +103,7 @@ export default function Preloader() {
   // animatable property — the container below is a fixed full-screen
   // height and instead slides fully into place from above.
   const [viewportHeight] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
+  const [crestD, setCrestD] = useState(TEAL_CREST_A);
   const SURGE_PROGRESS = [0, 0.34, 0.24, 0.6, 0.46, 0.85, 0.68, 1];
   const yKeyframes = SURGE_PROGRESS.map((p) => -(1 - p) * viewportHeight);
 
@@ -133,10 +140,11 @@ export default function Preloader() {
         if (leaving) setDone(true);
       }}
     >
-      {/* The sand floor — matches the real page's own background, so
-          anything the rising water hasn't reached yet already looks like
-          the real page rather than a flash of blank color. */}
-      <div className="absolute inset-0 bg-sand" />
+      {/* The sand floor — a warmer beige than the real page's own pale
+          background (see SAND_BEIGE above), since here it needs to read
+          as an actual beach the water is rolling onto, not just a neutral
+          page backdrop. */}
+      <div className="absolute inset-0" style={{ background: SAND_BEIGE }} />
 
       {/* The logo sits BELOW the water fill in stacking order, so the
           fill's own translucency is what dims it once the water passes
@@ -218,16 +226,22 @@ export default function Preloader() {
             className="absolute inset-0 w-full h-full block"
             aria-hidden="true"
           >
-            <motion.path
-              d={closeBelow(TEAL_CREST_A)}
-              fill={TEAL_DEEP}
-              animate={{ d: [closeBelow(TEAL_CREST_A), closeBelow(TEAL_CREST_B), closeBelow(TEAL_CREST_A)] }}
-              transition={{ duration: SURGE_DURATION_S * 0.85, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            {/* The solid fill used to run its OWN independent `animate`
+                tween of the same [A, B, A] keyframes as the foam stroke
+                below -- two separate Framer Motion animation instances
+                that LOOK identical but aren't actually locked together,
+                so the teal shape and the foam line could drift out of
+                phase with each other rather than tracing the same curve
+                at the same instant. Now the fill has no animation of its
+                own at all -- it just renders whatever curve the foam
+                path (the single source of truth) reports as its live,
+                in-progress `d` on every frame, via `onUpdate` below. */}
+            <path d={closeBelow(crestD)} fill={TEAL_DEEP} />
             {/* Foam — an open (unclosed) stroke tracing the exact same
                 curve as the teal crest above, so the highlight always
                 rides right at the waterline rather than needing its own
-                separately-tuned path. */}
+                separately-tuned path. This is now the ONE animated path;
+                the fill above just mirrors its live `d` every frame. */}
             <motion.path
               d={TEAL_CREST_A}
               fill="none"
@@ -237,6 +251,7 @@ export default function Preloader() {
               opacity="0.8"
               animate={{ d: [TEAL_CREST_A, TEAL_CREST_B, TEAL_CREST_A] }}
               transition={{ duration: SURGE_DURATION_S * 0.85, repeat: Infinity, ease: 'easeInOut' }}
+              onUpdate={(latest) => setCrestD(latest.d)}
             />
           </svg>
         </div>
