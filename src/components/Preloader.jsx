@@ -12,42 +12,57 @@ import logoMarkOlive from '../assets/logo-mark-olive.png';
 // shared palette — nothing else on the site uses blue/teal, and this is
 // still an experiment, not a decided brand addition.
 //
-// Earlier passes had the wave's own edge just translating upward as a
-// static shape, which read as a waterfall filling a glass rather than
-// surf rolling onto a shoreline — real waves have a moving, surging
-// crest with foam, not a fixed silhouette. The crest here morphs between
-// two hump layouts on a loop (Framer Motion animating between two `d`
-// path strings with the same command structure) while also rising, and
-// a stroked highlight riding the same curve as the teal crest reads as
-// foam.
+// The crest shape went through two real revisions: a first pass with
+// small, evenly-spaced humps read as a generic "wavy line," not the
+// reference's few, large, irregular rounded mounds with dramatic height
+// variation — redrawn with a taller canvas and fewer, bigger curves so
+// the silhouette itself reads as water rather than a repeating pattern.
+// The fill also gained a top-to-bottom gradient (plus a soft highlight
+// near the crest) instead of one flat color, for some actual depth
+// rather than a flat poster-color panel.
+//
+// Earlier passes also had the crest just translating upward as a static
+// shape, which read as a waterfall filling a glass rather than surf
+// rolling onto a shoreline. The crest morphs between two mound layouts on
+// a loop (Framer Motion animating between two `d` path strings with the
+// same command structure) while also rising, and a stroked highlight
+// riding the same curve as the teal crest reads as foam.
 //
 // The fade-out still waits on *real* readiness — a minimum display time
 // (so a fast load doesn't just flash once) AND the window 'load' event,
 // whichever finishes later — so a slow real load never gets cut short,
 // but nothing lingers once the real page is actually visible.
-const MIN_DISPLAY_MS = 1900;
-const FILL_DURATION_S = 1.9;
+const MIN_DISPLAY_MS = 1800;
+const FILL_DURATION_S = 1.7;
 const FADE_DURATION_S = 0.4;
-const SURGE_DURATION_S = 1.6;
+const SURGE_DURATION_S = 1.15;
 
 const PALE_WATER = '#D8E7E3';
-const TEAL_WATER = '#3AA98D';
-const FOAM = '#EAF6F2';
+const TEAL_LIGHT = '#4FC3A6';
+const TEAL_DEEP = '#1F8A72';
+const FOAM = '#F1FAF7';
 
 function waitForWindowLoad() {
   if (document.readyState === 'complete') return Promise.resolve();
   return new Promise((resolve) => window.addEventListener('load', resolve, { once: true }));
 }
 
-// Two crest layouts per layer, same command structure (only the control
-// points move) so Framer Motion can morph directly between them — the
-// "surge" that makes the water read as rolling rather than static.
-const PALE_CREST_A = 'M0,55 C140,20 260,85 400,50 C540,15 660,80 780,45 C920,10 1030,70 1170,40 C1290,15 1360,50 1440,35';
-const PALE_CREST_B = 'M0,40 C140,80 260,15 400,55 C540,90 660,25 780,60 C920,95 1030,40 1170,70 C1290,90 1360,45 1440,60';
-const TEAL_CREST_A = 'M0,85 C130,55 250,100 390,75 C530,45 650,95 770,70 C910,50 1030,90 1170,65 C1290,50 1370,80 1440,68';
-const TEAL_CREST_B = 'M0,70 C130,100 250,55 390,90 C530,105 650,60 770,95 C910,100 1030,55 1170,90 C1290,105 1370,60 1440,85';
+// Few, large, irregular mounds with dramatic height swings (a tall 240
+// viewBox gives room for that range) rather than many small, evenly
+// spaced humps — matching the reference's rounded, varied-scale blob
+// shapes instead of a generic repeating wavy line. Each *_B variant keeps
+// the exact same command structure as its *_A pair (only the control
+// points move) so Framer Motion can morph directly between them.
+const PALE_CREST_A =
+  'M0,120 C240,10 400,230 660,90 C880,5 1020,235 1260,80 C1350,30 1410,110 1440,90';
+const PALE_CREST_B =
+  'M0,95 C240,230 400,10 660,140 C880,235 1020,5 1260,130 C1350,180 1410,50 1440,100';
+const TEAL_CREST_A =
+  'M0,140 C220,30 380,220 640,110 C860,20 1000,230 1240,100 C1340,40 1400,120 1440,100';
+const TEAL_CREST_B =
+  'M0,110 C220,220 380,25 640,150 C860,230 1000,15 1240,140 C1340,190 1400,60 1440,110';
 
-const closeBelow = (d) => `${d} L1440,140 L0,140 Z`;
+const closeBelow = (d) => `${d} L1440,240 L0,240 Z`;
 
 export default function Preloader() {
   const [filled, setFilled] = useState(false);
@@ -56,17 +71,17 @@ export default function Preloader() {
   const [done, setDone] = useState(false);
   // Animating the container's own `height` through a multi-keyframe
   // advance/retreat/advance array turned out to be a real Framer Motion
-  // trap here — confirmed live by sampling the actual rendered height
-  // every 60ms: it advanced through the early keyframes correctly, then
-  // froze permanently around 82% and never reached full height, meaning
+  // trap — confirmed live by sampling the actual rendered height over
+  // time: it advanced through the early keyframes correctly, then froze
+  // permanently partway through and never reached full height, meaning
   // the preloader would never finish. True regardless of whether the
-  // keyframes were unit strings ('32vh', ...) or plain pixel numbers, so
-  // the problem is specifically layout-affecting `height` keyframes, not
-  // units. A `y` transform (translateY) is Framer Motion's most
-  // basic, reliable animatable property — the container below is a fixed
-  // full-screen height and instead slides fully into place from above.
+  // keyframes were unit strings or plain pixel numbers, so the problem is
+  // specifically layout-affecting `height` keyframes, not units. A `y`
+  // transform (translateY) is Framer Motion's most basic, reliable
+  // animatable property — the container below is a fixed full-screen
+  // height and instead slides fully into place from above.
   const [viewportHeight] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
-  const SURGE_PROGRESS = [0, 0.32, 0.24, 0.58, 0.48, 0.82, 0.7, 1];
+  const SURGE_PROGRESS = [0, 0.34, 0.24, 0.6, 0.46, 0.85, 0.68, 1];
   const yKeyframes = SURGE_PROGRESS.map((p) => -(1 - p) * viewportHeight);
 
   useEffect(() => {
@@ -133,9 +148,23 @@ export default function Preloader() {
         }}
         onAnimationComplete={() => setFilled(true)}
       >
-        <div className="flex-1" style={{ backgroundColor: TEAL_WATER, opacity: 0.82 }} />
-        <div className="relative w-full h-[110px] sm:h-[150px] flex-shrink-0" style={{ opacity: 0.85 }}>
-          <svg viewBox="0 0 1440 140" preserveAspectRatio="none" className="absolute inset-0 w-full h-full block" aria-hidden="true">
+        <div
+          className="flex-1"
+          style={{ background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`, opacity: 0.85 }}
+        />
+        <div className="relative w-full h-[170px] sm:h-[230px] flex-shrink-0" style={{ opacity: 0.88 }}>
+          <svg
+            viewBox="0 0 1440 240"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full block"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="preloader-teal-crest" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={TEAL_LIGHT} />
+                <stop offset="100%" stopColor={TEAL_DEEP} />
+              </linearGradient>
+            </defs>
             <motion.path
               d={closeBelow(PALE_CREST_A)}
               fill={PALE_WATER}
@@ -144,7 +173,7 @@ export default function Preloader() {
             />
             <motion.path
               d={closeBelow(TEAL_CREST_A)}
-              fill={TEAL_WATER}
+              fill="url(#preloader-teal-crest)"
               animate={{ d: [closeBelow(TEAL_CREST_A), closeBelow(TEAL_CREST_B), closeBelow(TEAL_CREST_A)] }}
               transition={{ duration: SURGE_DURATION_S * 0.85, repeat: Infinity, ease: 'easeInOut' }}
             />
@@ -156,9 +185,9 @@ export default function Preloader() {
               d={TEAL_CREST_A}
               fill="none"
               stroke={FOAM}
-              strokeWidth="5"
+              strokeWidth="6"
               strokeLinecap="round"
-              opacity="0.75"
+              opacity="0.8"
               animate={{ d: [TEAL_CREST_A, TEAL_CREST_B, TEAL_CREST_A] }}
               transition={{ duration: SURGE_DURATION_S * 0.85, repeat: Infinity, ease: 'easeInOut' }}
             />
