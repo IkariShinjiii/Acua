@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle } from 'lucide-react';
+import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
@@ -66,7 +66,80 @@ function StageTracker({ stages, currentId }) {
   );
 }
 
-export default function PatronDashboardView({ setCurrentView, initialTab }) {
+const COMMISSION_POLL_INTERVAL_MS = 2000;
+const COMMISSION_POLL_TIMEOUT_MS = 20000;
+
+// Reached after PayMongo redirects back from a deposit/balance payment
+// (create-commission-payment's return_url, read by App.jsx and passed
+// down as `confirmingCommission`). The brief isn't actually updated yet at
+// this point — paymongo-webhook does that asynchronously — so this polls
+// for the specific stage's paid timestamp rather than assuming success
+// just because the patron landed back here.
+function CommissionPaymentBanner({ confirmingCommission, onResolved }) {
+  const [outcome, setOutcome] = useState('pending');
+  const { id: briefId, stage } = confirmingCommission ?? {};
+
+  useEffect(() => {
+    if (!briefId) return undefined;
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    const poll = async () => {
+      const { data, error } = await supabase
+        .from('commission_briefs')
+        .select('deposit_paid_at, balance_paid_at')
+        .eq('id', briefId)
+        .single();
+
+      if (cancelled) return;
+
+      const paidAt = stage === 'deposit' ? data?.deposit_paid_at : data?.balance_paid_at;
+      if (!error && paidAt) {
+        setOutcome('success');
+        onResolved();
+        return;
+      }
+      if (Date.now() - startedAt >= COMMISSION_POLL_TIMEOUT_MS) {
+        setOutcome('timeout');
+        return;
+      }
+      setTimeout(poll, COMMISSION_POLL_INTERVAL_MS);
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [briefId, stage, onResolved]);
+
+  if (!briefId) return null;
+
+  if (outcome === 'pending') {
+    return (
+      <div className="flex items-center gap-3 bg-surface-elevated rounded-2xl shadow-cloud-sm p-4 mb-4">
+        <div className="w-5 h-5 rounded-full border-2 border-outline-variant/40 border-t-accent animate-spin flex-shrink-0" />
+        <p className="text-sm text-on-surface-variant">Confirming your payment…</p>
+      </div>
+    );
+  }
+
+  if (outcome === 'success') {
+    return (
+      <div className="flex items-center gap-2 bg-olive/10 text-olive rounded-2xl p-4 mb-4 text-sm font-medium">
+        <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Payment confirmed — updated below.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-2 bg-chile-rojo/10 text-accent rounded-2xl p-4 mb-4 text-sm">
+      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+      <span>Still confirming — this is taking a moment longer than usual. Refresh in a bit.</span>
+    </div>
+  );
+}
+
+export default function PatronDashboardView({ setCurrentView, initialTab, confirmingCommission }) {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState(parseDeepLinkTab(initialTab) ?? 'orders');
   // useState's initial value only applies on the very first mount — deep
@@ -89,6 +162,15 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   // storefront (see plan.md §38, the same bug on Home/product pages).
   const [ordersFailed, setOrdersFailed] = useState(false);
   const [briefsFailed, setBriefsFailed] = useState(false);
+  // Which brief's deposit/balance payment is currently being started —
+  // guards against a double-click firing two Payment Intents for the same
+  // brief, and lets the button show its own inline error rather than a
+  // global toast.
+  const [payingBriefId, setPayingBriefId] = useState(null);
+  // { briefId, message } rather than a bare string — several briefs can be
+  // pay-eligible at once, and a failed attempt on one shouldn't surface its
+  // error under every other brief's own payment button too.
+  const [payError, setPayError] = useState(null);
   // Bumped on every load attempt so a still-in-flight request from a
   // superseded attempt (a stale user, or a "Try Again" retry) can tell
   // it's stale and discard its own result — same pattern as
@@ -154,6 +236,33 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
     loadOrders();
     loadBriefs();
   }, [loadOrders, loadBriefs]);
+
+  const payCommission = async (briefId, stage) => {
+    setPayError(null);
+    setPayingBriefId(briefId);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-commission-payment', {
+        body: { commission_brief_id: briefId, stage },
+      });
+      if (error) {
+        setPayError({ briefId, message: error.message || 'Something went wrong. Please try again.' });
+        setPayingBriefId(null);
+        return;
+      }
+      if (data?.error) {
+        setPayError({ briefId, message: data.error });
+        setPayingBriefId(null);
+        return;
+      }
+      window.location.assign(data.redirect_url);
+    } catch (err) {
+      setPayError({
+        briefId,
+        message: err?.message || 'Something went wrong. Check your connection and try again.',
+      });
+      setPayingBriefId(null);
+    }
+  };
 
   const tabs = [
     { id: 'orders', label: 'Active Purchases', icon: Package },
@@ -261,6 +370,9 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
 
         {activeTab === 'commissions' && (
           <div className="space-y-4">
+            {confirmingCommission && (
+              <CommissionPaymentBanner confirmingCommission={confirmingCommission} onResolved={loadBriefs} />
+            )}
             {briefs === null && <p className="text-sm text-on-surface-variant text-center py-16">Loading…</p>}
             {briefsFailed && (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
@@ -309,6 +421,38 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
                     <p className="text-sm text-on-surface/80 mt-3 leading-relaxed">{brief.narrative}</p>
                   )}
                   <StageTracker stages={COMMISSION_STAGES} currentId={brief.status} />
+                  {(brief.status === 'quote_sent' || brief.status === 'awaiting_balance') &&
+                    brief.quote_price_cents &&
+                    (() => {
+                      const depositCents = Math.round(brief.quote_price_cents / 2);
+                      const amountCents =
+                        brief.status === 'quote_sent' ? depositCents : brief.quote_price_cents - depositCents;
+                      const stage = brief.status === 'quote_sent' ? 'deposit' : 'balance';
+                      const isPaying = payingBriefId === brief.id;
+                      return (
+                        <div className="mt-4 pt-4 border-t border-outline-variant/30">
+                          <button
+                            onClick={() => payCommission(brief.id, stage)}
+                            disabled={isPaying}
+                            className="btn-terracotta w-full sm:w-auto justify-center disabled:opacity-50"
+                          >
+                            {isPaying ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                <span>Starting payment…</span>
+                              </div>
+                            ) : (
+                              `Pay ${stage === 'deposit' ? 'Deposit' : 'Balance'} (₱${(amountCents / 100).toLocaleString()})`
+                            )}
+                          </button>
+                          {payError?.briefId === brief.id && (
+                            <p className="flex items-start gap-1.5 text-xs text-accent mt-2">
+                              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> {payError.message}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
               );
             })}

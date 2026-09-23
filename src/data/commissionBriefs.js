@@ -7,5 +7,6 @@ export const COMMISSION_STAGES = [
   { id: 'brief_submitted', label: 'Brief Submitted' },
   { id: 'quote_sent', label: 'Quote & Concept Approval' },
   { id: 'in_production', label: 'In Production' },
+  { id: 'awaiting_balance', label: 'Awaiting Balance' },
   { id: 'delivered', label: 'Final Delivery' },
 ];

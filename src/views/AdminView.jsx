@@ -297,6 +297,17 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                   )}
                   {brief.status === 'in_production' && (
                     <button
+                      onClick={() =>
+                        advance(brief.id, 'awaiting_balance', {}, 'Balance requested from patron.')
+                      }
+                      disabled={isSaving}
+                      className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                    >
+                      Production Complete → Request Balance
+                    </button>
+                  )}
+                  {brief.status === 'awaiting_balance' && (
+                    <button
                       onClick={() => advance(brief.id, 'delivered', {}, 'Marked as delivered.')}
                       disabled={isSaving}
                       className="w-full px-4 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
@@ -359,6 +370,32 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
     }
   }, [orders]);
 
+  // A manual fallback for the rare case a PayMongo webhook never arrives
+  // despite the customer having actually paid — calls the same atomic
+  // claim_product_if_available the webhook itself uses (via a security
+  // definer RPC gated on private.is_admin() internally, since this admin
+  // session's own role has no direct execute grant on that function — see
+  // 0014_checkout.sql), so a stuck 1-of-1 order confirmed this way still
+  // can't double-sell the same piece.
+  const confirmPayment = async (order) => {
+    setSaving(order.id);
+    try {
+      const { error } = await supabase.rpc('admin_confirm_order_payment', {
+        p_order_id: order.id,
+      });
+      if (error) {
+        showToast(`Couldn't confirm that order: ${error.message}`, 'error');
+        setSaving(null);
+        return;
+      }
+      showToast('Order confirmed as paid.', 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't confirm that order: ${err?.message || 'check your connection and try again.'}`, 'error');
+      setSaving(null);
+    }
+  };
+
   const advance = async (order) => {
     const idx = stageIndex(ORDER_STAGES, order.status);
     const next = ORDER_STAGES[idx + 1];
@@ -390,6 +427,11 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
   return (
     <div className="space-y-4">
       {orders.map((order) => {
+        // Deliberately not in ORDER_STAGES (see src/data/orders.js) — a
+        // generic stageIndex lookup falls back to index 0 for an unknown
+        // status, which would silently mislabel this as "Processing"
+        // rather than the "hasn't actually paid yet" state it really is.
+        const isAwaitingPayment = order.status === 'awaiting_payment';
         const idx = stageIndex(ORDER_STAGES, order.status);
         const next = ORDER_STAGES[idx + 1];
         const isSaving = saving === order.id;
@@ -401,7 +443,11 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-serif text-lg text-on-surface">#{order.id.slice(0, 8)}</h3>
-                <StatusBadge label={ORDER_STAGES[idx].label} tone={idx === ORDER_STAGES.length - 1 ? 'done' : 'active'} />
+                {isAwaitingPayment ? (
+                  <StatusBadge label="Awaiting Payment" tone="active" />
+                ) : (
+                  <StatusBadge label={ORDER_STAGES[idx].label} tone={idx === ORDER_STAGES.length - 1 ? 'done' : 'active'} />
+                )}
               </div>
               <p className="text-xs text-on-surface-variant mt-1">
                 {order.patron?.full_name || order.patron?.email || 'Guest'} •{' '}
@@ -413,7 +459,16 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
                 {order.tracking_number && <span>Tracking: {order.tracking_number}</span>}
               </div>
             </div>
-            {next ? (
+            {isAwaitingPayment ? (
+              <button
+                onClick={() => confirmPayment(order)}
+                disabled={isSaving}
+                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Confirm Payment Received
+              </button>
+            ) : next ? (
               <button
                 onClick={() => advance(order)}
                 disabled={isSaving}

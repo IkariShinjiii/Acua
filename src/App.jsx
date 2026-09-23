@@ -20,6 +20,7 @@ import { useCart } from './context/CartContext';
 const AdminView = lazy(() => import('./views/AdminView'));
 const PatronDashboardView = lazy(() => import('./views/PatronDashboardView'));
 const CommissionView = lazy(() => import('./views/CommissionView'));
+const CheckoutView = lazy(() => import('./views/CheckoutView'));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 const FAQView = lazy(() => import('./views/FAQView'));
 // Not on the critical path — most visitors never open it, and it has no
@@ -60,6 +61,7 @@ const DOCUMENT_TITLES = {
   commission: 'Custom Request | ACUA',
   dashboard: 'My Account | ACUA',
   faq: 'FAQ | ACUA',
+  checkout: 'Checkout | ACUA',
 };
 
 // The one login gate for every account — "My Account" and "Admin Login"
@@ -71,7 +73,7 @@ const DOCUMENT_TITLES = {
 // profiles.is_admin = true (set by hand in Supabase, never self-service)
 // gets the admin dashboard, everyone else gets their own orders/
 // commissions.
-function AccountGate({ setCurrentView, initialTab }) {
+function AccountGate({ setCurrentView, initialTab, confirmingCommission }) {
   const { user, isAdmin, loading, profileLoading, profileFailed, retryProfile } = useAuth();
 
   if (loading || (user && profileLoading)) {
@@ -121,7 +123,11 @@ function AccountGate({ setCurrentView, initialTab }) {
 
   return (
     <Suspense fallback={<ViewLoadingFallback />}>
-      <PatronDashboardView setCurrentView={setCurrentView} initialTab={initialTab} />
+      <PatronDashboardView
+        setCurrentView={setCurrentView}
+        initialTab={initialTab}
+        confirmingCommission={confirmingCommission}
+      />
     </Suspense>
   );
 }
@@ -246,6 +252,12 @@ export default function App() {
   // Only ever incremented, never read for its own value — see the comment
   // on goToDashboardTab below for why this exists.
   const dashboardTabRequestIdRef = useRef(0);
+  // Set only by the return-URL effect below, once, right after PayMongo
+  // redirects the customer back here post-checkout.
+  const [confirmingCheckoutGroupId, setConfirmingCheckoutGroupId] = useState(null);
+  // Same idea, for a commission deposit/balance payment instead of a cart
+  // checkout — { id, stage } or null.
+  const [confirmingCommission, setConfirmingCommission] = useState(null);
   const { isAdmin, passwordRecovery } = useAuth();
   const { count: cartCount } = useCart();
   const { toast, showToast, dismissToast } = useToast();
@@ -267,6 +279,40 @@ export default function App() {
       'error'
     );
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // PayMongo's own hosted GCash page does a real full-page redirect back
+  // to return_url once the customer authorizes (or abandons) payment —
+  // same "read it once on mount, then scrub the URL" shape as the OAuth
+  // error effect above, just for a query param instead of a hash fragment.
+  // The order isn't actually confirmed yet at this point (the
+  // paymongo-webhook Edge Function does that asynchronously), so
+  // CheckoutView polls for it rather than this effect assuming success.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutGroupId = params.get('checkout');
+    if (!checkoutGroupId) return;
+    setConfirmingCheckoutGroupId(checkoutGroupId);
+    setCurrentView('checkout');
+    window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Same return-URL shape, for a commission deposit/balance payment
+  // (create-commission-payment's return_url) instead of a cart checkout —
+  // routes to the dashboard's Commissions tab rather than a dedicated page,
+  // since that's already where a patron tracks a commission's status.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const commissionId = params.get('commission');
+    const stage = params.get('stage');
+    if (!commissionId || !stage) return;
+    setConfirmingCommission({ id: commissionId, stage });
+    dashboardTabRequestIdRef.current += 1;
+    setDashboardInitialTab(`commissions#${dashboardTabRequestIdRef.current}`);
+    setCurrentView('dashboard');
+    window.history.replaceState(null, '', window.location.pathname + window.location.hash);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -293,6 +339,7 @@ export default function App() {
   const navigateTo = (view) => {
     setCommissionPrefill(null);
     setDashboardInitialTab(undefined);
+    setConfirmingCommission(null);
     setCurrentView(view);
   };
 
@@ -322,6 +369,13 @@ export default function App() {
     setCurrentView('product');
   };
 
+  const handleCheckout = () => {
+    // A fresh checkout attempt is never "confirming" a stale one from
+    // earlier in the session.
+    setConfirmingCheckoutGroupId(null);
+    setCurrentView('checkout');
+  };
+
   return (
     <div className="min-h-screen bg-sand text-on-surface font-sans">
       <Navbar
@@ -338,6 +392,7 @@ export default function App() {
         open={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onViewProduct={handleViewProduct}
+        onCheckout={handleCheckout}
       />
       <SearchOverlay
         open={isSearchOpen}
@@ -360,7 +415,11 @@ export default function App() {
         </Suspense>
       )}
       {currentView === 'dashboard' && (
-        <AccountGate setCurrentView={navigateTo} initialTab={dashboardInitialTab} />
+        <AccountGate
+          setCurrentView={navigateTo}
+          initialTab={dashboardInitialTab}
+          confirmingCommission={confirmingCommission}
+        />
       )}
       {currentView === 'product' && (
         <Suspense fallback={<ViewLoadingFallback />}>
@@ -374,6 +433,11 @@ export default function App() {
       {currentView === 'faq' && (
         <Suspense fallback={<ViewLoadingFallback />}>
           <FAQView />
+        </Suspense>
+      )}
+      {currentView === 'checkout' && (
+        <Suspense fallback={<ViewLoadingFallback />}>
+          <CheckoutView setCurrentView={navigateTo} confirmingGroupId={confirmingCheckoutGroupId} />
         </Suspense>
       )}
 
