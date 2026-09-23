@@ -64,6 +64,18 @@ const TEAL_CREST_B =
 
 const closeBelow = (d) => `${d} L1440,240 L0,240 Z`;
 
+// Below the crest, the water was one flat gradient rectangle — accurate
+// depth-wise, but the sheer size of that plain field next to the one
+// curved edge at the top is exactly what read as "boxy." These are thin,
+// open (unstroked, not filled) current lines living inside that body at
+// a few different depths, each drifting between two gentle curves on its
+// own loop — the same "real water has movement everywhere, not just at
+// its edge" idea as the crest, just fainter and slower since they're
+// meant to read as something glimpsed beneath the surface, not a second
+// wave.
+const RIPPLE_A = 'M0,20 C200,2 400,38 640,16 C880,-4 1080,42 1300,12 C1380,4 1420,22 1440,14';
+const RIPPLE_B = 'M0,12 C200,38 400,-2 640,26 C880,42 1080,2 1300,30 C1380,38 1420,6 1440,20';
+
 export default function Preloader() {
   const [filled, setFilled] = useState(false);
   const [ready, setReady] = useState(false);
@@ -149,9 +161,46 @@ export default function Preloader() {
         onAnimationComplete={() => setFilled(true)}
       >
         <div
-          className="flex-1"
+          className="relative flex-1 overflow-hidden"
           style={{ background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`, opacity: 0.85 }}
-        />
+        >
+          <svg
+            viewBox="0 0 1440 50"
+            preserveAspectRatio="none"
+            className="absolute inset-x-0 w-full h-16"
+            style={{ top: '18%' }}
+            aria-hidden="true"
+          >
+            <motion.path
+              d={RIPPLE_A}
+              fill="none"
+              stroke={FOAM}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              opacity="0.28"
+              animate={{ d: [RIPPLE_A, RIPPLE_B, RIPPLE_A] }}
+              transition={{ duration: SURGE_DURATION_S * 2.1, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </svg>
+          <svg
+            viewBox="0 0 1440 50"
+            preserveAspectRatio="none"
+            className="absolute inset-x-0 w-full h-16"
+            style={{ top: '52%' }}
+            aria-hidden="true"
+          >
+            <motion.path
+              d={RIPPLE_B}
+              fill="none"
+              stroke={FOAM}
+              strokeWidth="2"
+              strokeLinecap="round"
+              opacity="0.18"
+              animate={{ d: [RIPPLE_B, RIPPLE_A, RIPPLE_B] }}
+              transition={{ duration: SURGE_DURATION_S * 1.7, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </svg>
+        </div>
         <div className="relative w-full h-[170px] sm:h-[230px] flex-shrink-0" style={{ opacity: 0.88 }}>
           <svg
             viewBox="0 0 1440 240"
