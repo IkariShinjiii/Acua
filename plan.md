@@ -4002,3 +4002,28 @@ externally-linkable paths as of the previous commit) to `sitemap.xml`,
 which had been left out.
 
 Both fixes committed and pushed to main.
+
+**Follow-up same night**: the owner asked how to reach the admin dashboard
+after logging in with the account this session had confirmed was already
+`is_admin`. There's no separate admin URL or menu item — the navbar's
+"My Account" is the one entry point for every account, and `AccountGate`
+(`App.jsx`) decides between `AdminView` and `PatronDashboardView` based on
+the signed-in account's `is_admin`, per §4E/§6. Pointed to that, plus the
+two likely gotchas (mobile keeps the same entry inside the hamburger menu,
+not a separate icon; signing in via Google could land on a different
+account than the one actually flagged admin).
+
+Also added, same night: **admin can now edit the homepage hero** (image,
+caption, details) — previously fully hardcoded in `HomeView.jsx`, so
+changing the photo or copy meant a code deploy. A new singleton
+`hero_content` table (`0017_hero_content.sql`, public read / admin-only
+write via the same `private.is_admin()` RLS shape as every other
+admin-writable table) is seeded with the content that used to be
+hardcoded; a new "Homepage Hero" tab in `AdminView` reuses `ImagePicker`
+for the photo plus a caption input and a details textarea; `HomeView`
+fetches the row but falls back to that same seeded content by default, so
+there's no loading state of its own — same idea as pieces/archive's
+background refresh. Verified live against the real project: the homepage
+renders the DB row's actual content, and a direct anonymous REST call
+confirmed RLS genuinely blocks a non-admin write (0 rows affected, heading
+unchanged) rather than trusting the policy by inspection alone.
