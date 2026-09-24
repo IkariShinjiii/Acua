@@ -3867,3 +3867,33 @@ then added a `unique` constraint on `profiles.email`
 still creates a profile row fine, and a genuine duplicate attempt is
 rejected (by Supabase's own `auth.users` constraint even before reaching
 this one, confirming the redundancy is real and harmless either way).
+
+## 81. Wave preloader shipped to main
+
+Built on its own branch (`preloader-wave-experiment`) and iterated with the
+owner over several rounds of phone screenshots before being approved for
+main. Final design (`src/components/Preloader.jsx`, mounted in `main.jsx`
+as a sibling of `App`): opaque teal water comes down from the top in
+advance/retreat/advance surges until it covers the screen, over a beige
+sand background with the logo centered. The water's bottom edge is an
+irregular wave that morphs on a loop, traced by a translucent foam line;
+the logo disappears once the wave passes over it. Fades out once both the
+fill has finished and the page's `load` event has fired (with a 1.8s
+minimum), then unmounts.
+
+Things learned along the way that the code comments also record:
+- Animating the panel's `height` through a multi-keyframe array froze
+  partway in Framer Motion and never finished, which would have blocked the
+  site. It animates `y` on a fixed-height panel instead.
+- The crest fill and the foam line were two independent animations and
+  drifted out of phase. The fill now mirrors the foam path's live `d` via
+  `onUpdate`, so there is one source of truth.
+- The crest was originally filled *below* its curve, which made it a
+  separate band hanging under the water. It now fills above the curve, so
+  the foam line is the water's leading edge. The panel is one crest-height
+  taller than the screen so no strip of sand remains at full coverage.
+
+Verified before merging: the preloader unmounts after roughly 2.5s and the
+site is clickable, both normally and with `prefers-reduced-motion: reduce`
+emulated (the app's `MotionConfig reducedMotion="user"` skips the slide
+for those visitors), with no page errors.

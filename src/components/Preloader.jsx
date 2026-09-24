@@ -2,14 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import logoMarkOlive from '../assets/logo-mark-olive.png';
 
-// EXPERIMENTAL — built on its own branch for the owner to look at before
-// this goes anywhere near main. Opaque teal water comes down from the top
-// of the screen in advance/retreat/advance surges until it covers the whole
-// viewport, hiding the logo as it passes over. The water's leading (bottom)
-// edge is an irregular, morphing wave traced by a translucent foam line;
-// below that line is open sand. The teal is scoped to this file rather than
-// the shared palette — nothing else on the site uses it, and this is still
-// an experiment, not a decided brand addition.
+// Opaque teal water comes down from the top of the screen in
+// advance/retreat/advance surges until it covers the whole viewport, hiding
+// the logo as it passes over. The water's leading (bottom) edge is an
+// irregular, morphing wave traced by a translucent foam line; below that
+// line is open sand. The teal is scoped to this file rather than the shared
+// palette, since nothing else on the site uses it.
 //
 // The fade-out still waits on *real* readiness — a minimum display time
 // (so a fast load doesn't just flash once) AND the window 'load' event,

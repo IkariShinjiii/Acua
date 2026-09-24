@@ -23,8 +23,8 @@ createRoot(document.getElementById('root')).render(
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
-        {/* EXPERIMENTAL — see Preloader.jsx. Sits alongside App rather than
-            inside it so this stays a single, easy-to-revert diff. */}
+        {/* A sibling of App rather than inside it, so it overlays the very
+            first paint and unmounts itself without touching App's state. */}
         <Preloader />
       </MotionConfig>
     </ErrorBoundary>
