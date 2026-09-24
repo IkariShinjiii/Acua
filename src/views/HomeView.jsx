@@ -441,7 +441,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       <h3 className="font-sans text-sm sm:text-lg text-on-surface font-medium mb-2 sm:mb-1.5 leading-snug line-clamp-2 group-hover:text-accent transition-colors">
                         {piece.title}
                       </h3>
-                      <p className="hidden sm:block font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
+                      <p className="max-sm:hidden font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
                         {piece.description}
                       </p>
                     </div>
@@ -453,7 +453,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       {piece.soldOut ? (
                         <button
                           onClick={() => onRequestSimilar?.({ ...piece, source: 'catalog' })}
-                          className="pointer-events-auto text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                          className="pointer-events-auto py-2 -my-2 text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         >
                           Request Similar
                         </button>
