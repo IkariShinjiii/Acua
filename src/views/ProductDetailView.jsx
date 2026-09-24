@@ -140,7 +140,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             setCurrentView('home');
             setTimeout(() => document.getElementById('available-pieces')?.scrollIntoView(), 50);
           }}
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors mb-8 border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors pt-3 -mt-3 pb-3 mb-5 border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Available Pieces
         </button>
@@ -210,7 +210,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                     <div className="flex items-center gap-3 bg-surface-elevated rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
                       <button
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         aria-label="Decrease quantity"
                       >
                         <Minus className="w-3.5 h-3.5" />
@@ -218,7 +218,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                       <span className="text-sm w-5 text-center">{quantity}</span>
                       <button
                         onClick={() => setQuantity((q) => q + 1)}
-                        className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         aria-label="Increase quantity"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -228,7 +228,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
 
                   <button
                     onClick={handleAddToCart}
-                    className={`flex-1 sm:flex-none font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center gap-2 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
+                    className={`sm:flex-none font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center gap-2 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                       added ? 'bg-olive text-white' : 'bg-chile-rojo hover:brightness-90 text-white'
                     }`}
                   >

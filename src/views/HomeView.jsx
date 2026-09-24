@@ -288,7 +288,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </div>
 
             <a
-              className="font-sans text-xs font-semibold text-accent hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase"
+              className="font-sans text-xs font-semibold text-accent hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase py-3 -my-3"
               href="#available-pieces"
             >
               VIEW ALL

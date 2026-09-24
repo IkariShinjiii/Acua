@@ -411,7 +411,7 @@ export default function App() {
           no place in the internal admin tool. */}
       {!showingAdmin && (
         <Suspense fallback={null}>
-          <ConciergeChat />
+          <ConciergeChat hidden={isCartOpen || isSearchOpen} />
         </Suspense>
       )}
     </div>

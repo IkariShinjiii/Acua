@@ -95,11 +95,11 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, category, or material…"
                 aria-label="Search by name, category, or material"
-                className="flex-1 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/60 text-sm"
+                className="flex-1 py-3 -my-3 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/60 text-sm"
               />
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                className="p-2.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
                 aria-label="Close search"
               >
                 <X className="w-4 h-4" />

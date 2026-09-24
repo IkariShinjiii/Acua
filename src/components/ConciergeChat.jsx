@@ -79,7 +79,11 @@ function TypingIndicator({ logoMark }) {
 // deliberately doesn't trap focus or block the rest of the page, matching
 // how real storefront chat widgets (Intercom, Crisp, etc.) behave: you can
 // keep browsing while it's open.
-export default function ConciergeChat() {
+// `hidden`: App sets this while the cart or search overlay is open — the
+// launcher sits above everything (z-150) and otherwise covered the cart's
+// checkout button. Hidden with display:none rather than unmounted, so an
+// in-progress conversation survives.
+export default function ConciergeChat({ hidden = false }) {
   const { theme } = useTheme();
   const avatarLogoMark = theme === 'dark' ? logoMarkCream : logoMarkInk;
   const [isOpen, setIsOpen] = useState(false);
@@ -272,7 +276,7 @@ export default function ConciergeChat() {
   const lastMessageFailed = messages.length > 0 && messages[messages.length - 1]?.isError;
 
   return (
-    <>
+    <div className={hidden ? 'hidden' : undefined}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -369,10 +373,10 @@ export default function ConciergeChat() {
         aria-label={isOpen ? 'Close concierge chat' : 'Chat with the ACUA concierge'}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className="fixed bottom-[calc(1.5rem_+_env(safe-area-inset-bottom))] right-4 sm:right-6 z-[150] w-14 h-14 rounded-full bg-chile-rojo text-white shadow-terracotta-glow flex items-center justify-center border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+        className="fixed bottom-[calc(1.5rem_+_env(safe-area-inset-bottom))] right-4 sm:right-6 z-[150] w-14 h-14 rounded-full bg-chile-rojo text-white shadow-terracotta-glow ring-2 ring-[#F9F6F0]/80 flex items-center justify-center border-none cursor-pointer hover:brightness-90 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
-    </>
+    </div>
   );
 }
