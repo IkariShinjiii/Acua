@@ -22,6 +22,7 @@ const PatronDashboardView = lazy(() => import('./views/PatronDashboardView'));
 const CommissionView = lazy(() => import('./views/CommissionView'));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 const FAQView = lazy(() => import('./views/FAQView'));
+const LegalView = lazy(() => import('./views/LegalView'));
 // Not on the critical path — most visitors never open it, and it has no
 // loading state worth showing (it just pops in once ready).
 const ConciergeChat = lazy(() => import('./components/ConciergeChat'));
@@ -60,6 +61,8 @@ const DOCUMENT_TITLES = {
   commission: 'Custom Request | ACUA',
   dashboard: 'My Account | ACUA',
   faq: 'FAQ | ACUA',
+  privacy: 'Privacy Policy | ACUA',
+  terms: 'Terms of Service | ACUA',
 };
 
 // The one login gate for every account — "My Account" and "Admin Login"
@@ -236,6 +239,14 @@ function productIdFromUrl() {
   return new URLSearchParams(window.location.search).get('product');
 }
 
+// Views with their own real path (linkable, e.g. from PayMongo's merchant
+// application or the sign-up form); vercel.json rewrites them to index.html.
+// Every other view lives on /.
+const VIEW_PATHS = { privacy: '/privacy', terms: '/terms' };
+function viewFromPath() {
+  return Object.keys(VIEW_PATHS).find((view) => VIEW_PATHS[view] === window.location.pathname);
+}
+
 // Scrolls back to where a Back/Forward entry was left, once the restored
 // view has rendered tall enough. Home is the slow case: it locks scrolling
 // under its own splash and fills in as its data arrives. Gives up after 3s
@@ -255,7 +266,7 @@ function restoreScroll(y) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState(() => (productIdFromUrl() ? 'product' : 'home'));
+  const [currentView, setCurrentView] = useState(() => (productIdFromUrl() ? 'product' : viewFromPath() ?? 'home'));
   // Set only via handleRequestSimilar below, so a plain nav click into the
   // Commission view never carries over a stale "inspired by" reference.
   const [commissionPrefill, setCommissionPrefill] = useState(null);
@@ -332,7 +343,7 @@ export default function App() {
       const fromUrl = productIdFromUrl();
       const entry = e.state?.acuaView
         ? e.state
-        : { acuaView: fromUrl ? 'product' : 'home', productId: fromUrl };
+        : { acuaView: fromUrl ? 'product' : viewFromPath() ?? 'home', productId: fromUrl };
       setCommissionPrefill(null);
       setDashboardInitialTab(undefined);
       setSelectedProductId(entry.productId ?? null);
@@ -353,7 +364,7 @@ export default function App() {
     if (productId) params.set('product', productId);
     else params.delete('product');
     const query = params.toString();
-    const url = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
+    const url = (VIEW_PATHS[currentView] ?? '/') + (query ? `?${query}` : '') + window.location.hash;
     const entry = { acuaView: currentView, productId };
 
     if (!historyInitializedRef.current) {
@@ -456,6 +467,11 @@ export default function App() {
             onRequestSimilar={handleRequestSimilar}
             onViewProduct={handleViewProduct}
           />
+        </Suspense>
+      )}
+      {(currentView === 'privacy' || currentView === 'terms') && (
+        <Suspense fallback={<ViewLoadingFallback />}>
+          <LegalView doc={currentView} setCurrentView={navigateTo} />
         </Suspense>
       )}
       {currentView === 'faq' && (

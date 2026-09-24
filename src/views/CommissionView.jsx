@@ -723,6 +723,13 @@ export default function CommissionView({ prefill }) {
                   </button>
                 </div>
 
+                <p className="text-[11px] text-on-surface-variant text-center sm:text-right leading-relaxed -mt-4">
+                  We use your details and reference images only to quote and make your piece. See our{' '}
+                  <a href="/privacy" target="_blank" rel="noopener" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
               </form>
             )}
           </AnimatePresence>

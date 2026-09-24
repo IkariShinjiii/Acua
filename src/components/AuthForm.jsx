@@ -312,6 +312,20 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             : 'Create Account'}
         </button>
 
+        {mode === 'signup' && (
+          <p className="text-[11px] text-on-surface-variant text-center leading-relaxed">
+            By creating an account, you agree to our{' '}
+            <a href="/terms" target="_blank" rel="noopener" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" target="_blank" rel="noopener" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        )}
+
         {mode === 'forgot' && (
           <button
             type="button"

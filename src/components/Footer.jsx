@@ -125,6 +125,24 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
 
         <div className="mt-12 pt-6 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/85 uppercase tracking-wider">
           <span>© {new Date().getFullYear()} ACUA. Handcrafted by the coast.</span>
+          <nav aria-label="Legal" className="flex items-center gap-5">
+            {[
+              ['privacy', '/privacy', 'Privacy'],
+              ['terms', '/terms', 'Terms'],
+            ].map(([view, href, label]) => (
+              <a
+                key={view}
+                href={href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView(view);
+                }}
+                className="py-2 -my-2 text-white/85 hover:text-white transition-colors rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
           <span className="text-[#f9e6c2] normal-case tracking-widest">
             Naturally rooted. Intentionally designed.
           </span>
