@@ -4,6 +4,7 @@ import { Plus, Check, AlertCircle } from 'lucide-react';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
 import { unsplashSrcSet } from '../lib/responsiveImage';
+import { holdPreloader } from '../lib/preloaderGate';
 import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -55,6 +56,14 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   const [maxSplashElapsed, setMaxSplashElapsed] = useState(false);
   const contentReady = pieces !== null && archiveItems !== null && reelReady;
   const showSplash = !minSplashElapsed || (!contentReady && !maxSplashElapsed);
+
+  // On a first visit the wave preloader covers this view; holding it until
+  // the same content-ready point means it fades straight onto the finished
+  // page, rather than fading out onto this view's own splash below it.
+  useEffect(() => {
+    if (contentReady || maxSplashElapsed) return undefined;
+    return holdPreloader();
+  }, [contentReady, maxSplashElapsed]);
 
   useEffect(() => {
     const minTimer = setTimeout(() => setMinSplashElapsed(true), MIN_SPLASH_MS);

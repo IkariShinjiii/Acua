@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import logoMarkOlive from '../assets/logo-mark-olive.png';
+import { whenPreloaderUnheld } from '../lib/preloaderGate';
 
 // Opaque teal water comes down from the top of the screen in
 // advance/retreat/advance surges until it covers the whole viewport, hiding
@@ -9,11 +10,13 @@ import logoMarkOlive from '../assets/logo-mark-olive.png';
 // line is open sand. The teal is scoped to this file rather than the shared
 // palette, since nothing else on the site uses it.
 //
-// The fade-out still waits on *real* readiness — a minimum display time
-// (so a fast load doesn't just flash once) AND the window 'load' event,
-// whichever finishes later — so a slow real load never gets cut short,
-// but nothing lingers once the real page is actually visible.
+// The fade-out waits on *real* readiness, whichever finishes last: a
+// minimum display time (so a fast load doesn't just flash once), the window
+// 'load' event, and any view holding the preloader until its first data has
+// arrived (see lib/preloaderGate — HomeView does) — capped at MAX_HOLD_MS so
+// a slow API can never keep the site covered.
 const MIN_DISPLAY_MS = 1800;
+const MAX_HOLD_MS = 4000;
 const FILL_DURATION_S = 1.7;
 const FADE_DURATION_S = 0.4;
 const SURGE_DURATION_S = 1.15;
@@ -92,7 +95,11 @@ export default function Preloader() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([waitForWindowLoad(), new Promise((r) => setTimeout(r, MIN_DISPLAY_MS))]).then(() => {
+    Promise.all([
+      waitForWindowLoad(),
+      new Promise((r) => setTimeout(r, MIN_DISPLAY_MS)),
+      Promise.race([whenPreloaderUnheld(), new Promise((r) => setTimeout(r, MAX_HOLD_MS))]),
+    ]).then(() => {
       if (!cancelled) setReady(true);
     });
     return () => {
