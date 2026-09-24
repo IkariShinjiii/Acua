@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   AlertCircle,
+  Pencil,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -21,6 +22,7 @@ import { parsePesoToNumber, formatPeso } from '../lib/currency';
 import { useAuth } from '../context/AuthContext';
 import Toast, { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ImagePicker from '../components/ImagePicker';
 import { parseDeepLinkTab } from '../lib/dashboardTabs';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
@@ -440,16 +442,104 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
 /* ------------------------------------------------------------------ */
 /* Inventory & Site Curation                                            */
 /* ------------------------------------------------------------------ */
+const EMPTY_PRODUCT = {
+  title: '',
+  category: FILTER_TABS[1],
+  material: '',
+  price: '',
+  description: '',
+  image: '',
+  isOneOfOne: false,
+};
+
+const fieldClass =
+  'rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset';
+
+// Shared by "Add New Piece" and each piece's Edit button, so both collect
+// the same fields: until now a new piece couldn't be given a description
+// (every one went live as "New addition — details to be finalized.") and an
+// existing piece's name, price, photo or text could only be changed by
+// editing the database by hand.
+function ProductForm({ initial, submitLabel, saving, onSubmit, onCancel, isNew }) {
+  const [draft, setDraft] = useState(initial);
+  const [uploading, setUploading] = useState(false);
+  const set = (key) => (e) => setDraft((d) => ({ ...d, [key]: e.target.value }));
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(draft);
+      }}
+      className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
+    >
+      <input required placeholder="Title *" aria-label="Title" value={draft.title} onChange={set('title')} className={fieldClass} />
+      <select value={draft.category} onChange={set('category')} aria-label="Category" className={fieldClass}>
+        {FILTER_TABS.filter((t) => t !== 'All').map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+      <input placeholder="Material" aria-label="Material" value={draft.material} onChange={set('material')} className={fieldClass} />
+      <input
+        required
+        placeholder="Price (e.g. ₱12,000) *"
+        aria-label="Price"
+        value={draft.price}
+        onChange={set('price')}
+        className={fieldClass}
+      />
+      <textarea
+        placeholder="Description — what it's made of, how it wears, what makes it special"
+        aria-label="Description"
+        rows={3}
+        value={draft.description}
+        onChange={set('description')}
+        className={`${fieldClass} sm:col-span-2 resize-y`}
+      />
+      <ImagePicker
+        value={draft.image}
+        onChange={(url) => setDraft((d) => ({ ...d, image: url }))}
+        onUploadingChange={setUploading}
+        required
+      />
+      {isNew && (
+        <label className="sm:col-span-2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface-container-low text-sm text-on-surface cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={draft.isOneOfOne}
+            onChange={(e) => setDraft((d) => ({ ...d, isOneOfOne: e.target.checked }))}
+            className="w-4 h-4 accent-chile-rojo cursor-pointer"
+          />
+          This is a 1-of-1 unique piece (only one unit will ever be sold)
+        </label>
+      )}
+      <div className="sm:col-span-2 flex flex-col-reverse sm:flex-row gap-3">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="sm:flex-1 px-5 py-2.5 rounded-full bg-surface-container text-on-surface text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={saving || uploading}
+          className="sm:flex-1 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+        >
+          {saving ? 'Saving…' : uploading ? 'Waiting for photo…' : submitLabel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function InventoryCuration({ pieces, onUpdated, showToast }) {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [draft, setDraft] = useState({
-    title: '',
-    category: FILTER_TABS[1],
-    material: '',
-    price: '',
-    image: '',
-    isOneOfOne: false,
-  });
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const toggleSoldOut = async (piece) => {
@@ -486,9 +576,9 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
     }
   };
 
-  const addPiece = async (e) => {
-    e.preventDefault();
-    if (!draft.title || !draft.price) return;
+  // Shared validation + column mapping for add and edit. Returns null (after
+  // a toast) when the form isn't valid.
+  const toColumns = (draft) => {
     // parsePesoToNumber returns 0 for any string it can't find a number in
     // (e.g. "TBD" or a stray letter), which used to sail straight through as
     // a legitimate ₱0 price with no warning — a typo in this field silently
@@ -496,32 +586,62 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
     const priceValue = parsePesoToNumber(draft.price);
     if (priceValue <= 0) {
       showToast('Enter a valid price, e.g. ₱12,000.', 'error');
-      return;
+      return null;
     }
+    if (!draft.image) {
+      showToast('Add a photo of the piece first.', 'error');
+      return null;
+    }
+    return {
+      title: draft.title.trim(),
+      category: draft.category,
+      material: draft.material.trim() || 'Details TBD',
+      description: draft.description.trim() || null,
+      price_cents: Math.round(priceValue * 100),
+      image_url: draft.image,
+    };
+  };
+
+  const addPiece = async (draft) => {
+    const columns = toColumns(draft);
+    if (!columns) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('products').insert({
-        title: draft.title,
-        category: draft.category,
-        material: draft.material || 'Details TBD',
-        description: 'New addition — details to be finalized.',
-        price_cents: Math.round(priceValue * 100),
-        image_url:
-          draft.image ||
-          'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=80',
-        sold_out: false,
-        is_one_of_one: draft.isOneOfOne,
-      });
+      const { error } = await supabase
+        .from('products')
+        .insert({ ...columns, sold_out: false, is_one_of_one: draft.isOneOfOne });
       if (error) {
         showToast(`Couldn't save that piece: ${error.message}`, 'error');
         return;
       }
-      setDraft({ title: '', category: FILTER_TABS[1], material: '', price: '', image: '', isOneOfOne: false });
       setShowAddForm(false);
-      showToast(`"${draft.title}" added to Available Pieces.`, 'success');
+      showToast(`"${columns.title}" added to Available Pieces.`, 'success');
       onUpdated();
     } catch (err) {
       showToast(`Couldn't save that piece: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const savePiece = async (piece, draft) => {
+    const columns = toColumns(draft);
+    if (!columns) return;
+    // A replaced photo's old fallback URL would be a different piece's
+    // stock image, so it's cleared rather than kept as the backup.
+    if (columns.image_url !== piece.image) columns.fallback_image_url = null;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('products').update(columns).eq('id', piece.id);
+      if (error) {
+        showToast(`Couldn't save your changes: ${error.message}`, 'error');
+        return;
+      }
+      setEditingId(null);
+      showToast(`"${columns.title}" updated.`, 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't save your changes: ${err?.message || 'check your connection and try again.'}`, 'error');
     } finally {
       setSaving(false);
     }
@@ -541,122 +661,103 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
 
       <AnimatePresence>
         {showAddForm && (
-          <motion.form
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            onSubmit={addPiece}
-            className="overflow-hidden bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
-          >
-            <input
-              required
-              placeholder="Title *"
-              aria-label="Title"
-              value={draft.title}
-              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <ProductForm
+              initial={EMPTY_PRODUCT}
+              submitLabel="Save Piece"
+              saving={saving}
+              onSubmit={addPiece}
+              onCancel={() => setShowAddForm(false)}
+              isNew
             />
-            <select
-              value={draft.category}
-              onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-              aria-label="Category"
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
-            >
-              {FILTER_TABS.filter((t) => t !== 'All').map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <input
-              placeholder="Material"
-              aria-label="Material"
-              value={draft.material}
-              onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
-            />
-            <input
-              required
-              placeholder="Price (e.g. ₱12,000) *"
-              aria-label="Price"
-              value={draft.price}
-              onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
-            />
-            <input
-              placeholder="Image URL (optional)"
-              aria-label="Image URL"
-              value={draft.image}
-              onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
-            />
-            <label className="sm:col-span-2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface-container-low text-sm text-on-surface cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={draft.isOneOfOne}
-                onChange={(e) => setDraft((d) => ({ ...d, isOneOfOne: e.target.checked }))}
-                className="w-4 h-4 accent-chile-rojo cursor-pointer"
-              />
-              This is a 1-of-1 unique piece (only one unit will ever be sold)
-            </label>
-            <button
-              type="submit"
-              disabled={saving}
-              className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
-            >
-              {saving ? 'Saving…' : 'Save Piece'}
-            </button>
-          </motion.form>
+          </motion.div>
         )}
       </AnimatePresence>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {pieces.map((piece) => (
-          <div key={piece.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm overflow-hidden">
-            <div className="relative aspect-square bg-surface-container-low">
-              <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" loading="lazy" />
-              {piece.isOneOfOne && (
-                <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
-                  1-of-1
-                </span>
-              )}
-              {piece.soldOut && (
-                <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">
-                  <span className="bg-surface-elevated text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
-                    Sold Out
-                  </span>
-                </div>
-              )}
+        {pieces.map((piece) =>
+          editingId === piece.id ? (
+            <div key={piece.id} className="col-span-full">
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+                Editing "{piece.title}"
+              </p>
+              <ProductForm
+                initial={{
+                  title: piece.title,
+                  category: piece.category,
+                  material: piece.material === 'Details TBD' ? '' : piece.material ?? '',
+                  price: piece.price,
+                  description: piece.description ?? '',
+                  image: piece.image ?? '',
+                  isOneOfOne: piece.isOneOfOne,
+                }}
+                submitLabel="Save Changes"
+                saving={saving}
+                onSubmit={(draft) => savePiece(piece, draft)}
+                onCancel={() => setEditingId(null)}
+              />
             </div>
-            <div className="p-4 space-y-2">
-              <p className="font-sans text-sm font-medium text-on-surface">{piece.title}</p>
-              <p className="text-xs text-on-surface-variant">{piece.category} • {piece.price}</p>
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => toggleSoldOut(piece)}
-                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
-                    piece.soldOut
-                      ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
-                      : 'bg-ink text-white hover:opacity-90'
-                  }`}
-                >
-                  {piece.soldOut ? 'Mark Available' : 'Mark Sold Out'}
-                </button>
-                <button
-                  onClick={() => toggleOneOfOne(piece)}
-                  title="Toggle whether only one unit of this piece will ever be sold"
-                  className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
-                    piece.isOneOfOne
-                      ? 'bg-chile-rojo text-white hover:brightness-90'
-                      : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
-                  }`}
-                >
-                  {piece.isOneOfOne ? '1-of-1 ✓' : 'Mark 1-of-1'}
-                </button>
+          ) : (
+            <div key={piece.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm overflow-hidden">
+              <div className="relative aspect-square bg-surface-container-low">
+                <img src={piece.image} alt={piece.title} className="w-full h-full object-cover" loading="lazy" />
+                {piece.isOneOfOne && (
+                  <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                    1-of-1
+                  </span>
+                )}
+                {piece.soldOut && (
+                  <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">
+                    <span className="bg-surface-elevated text-on-surface text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                      Sold Out
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-sans text-sm font-medium text-on-surface">{piece.title}</p>
+                    <p className="text-xs text-on-surface-variant">{piece.category} • {piece.price}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setEditingId(piece.id);
+                    }}
+                    aria-label={`Edit ${piece.title}`}
+                    className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-surface-container text-on-surface text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => toggleSoldOut(piece)}
+                    className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
+                      piece.soldOut
+                        ? 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                        : 'bg-ink text-white hover:opacity-90'
+                    }`}
+                  >
+                    {piece.soldOut ? 'Mark Available' : 'Mark Sold Out'}
+                  </button>
+                  <button
+                    onClick={() => toggleOneOfOne(piece)}
+                    title="Toggle whether only one unit of this piece will ever be sold"
+                    className={`flex-1 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated ${
+                      piece.isOneOfOne
+                        ? 'bg-chile-rojo text-white hover:brightness-90'
+                        : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                    }`}
+                  >
+                    {piece.isOneOfOne ? '1-of-1 ✓' : 'Mark 1-of-1'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
         {pieces.length === 0 && (
           <p className="col-span-full text-center text-sm text-on-surface-variant py-12">
             No pieces yet — add one above.
@@ -680,6 +781,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
     alt: '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   // The item currently awaiting a confirm/cancel decision in the dialog
   // below, or null — replaces window.confirm(), which is exactly the kind
@@ -689,7 +791,11 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
 
   const addItem = async (e) => {
     e.preventDefault();
-    if (!draft.title || !draft.image) return;
+    if (!draft.title) return;
+    if (!draft.image) {
+      showToast('Add a photo of the piece first.', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase.from('archive_items').insert({
@@ -793,13 +899,11 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
                 </option>
               ))}
             </select>
-            <input
-              required
-              placeholder="Image URL *"
-              aria-label="Image URL"
+            <ImagePicker
               value={draft.image}
-              onChange={(e) => setDraft((d) => ({ ...d, image: e.target.value }))}
-              className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
+              onChange={(url) => setDraft((d) => ({ ...d, image: url }))}
+              onUploadingChange={setUploadingImage}
+              required
             />
             <input
               placeholder="Image alt text (optional — falls back to title)"
@@ -810,10 +914,10 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             />
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploadingImage}
               className="sm:col-span-2 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
             >
-              {saving ? 'Saving…' : 'Save Piece'}
+              {saving ? 'Saving…' : uploadingImage ? 'Waiting for photo…' : 'Save Piece'}
             </button>
           </motion.form>
         )}
