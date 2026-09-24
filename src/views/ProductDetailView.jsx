@@ -6,6 +6,7 @@ import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
 import { unsplashSrcSet } from '../lib/responsiveImage';
 import { useCart } from '../context/CartContext';
+import RelatedPieces from '../components/RelatedPieces';
 
 // PostgREST's code for ".single() matched zero rows" — the one case that
 // actually means "this product doesn't exist," as opposed to any other
@@ -13,7 +14,7 @@ import { useCart } from '../context/CartContext';
 // visitor as if the piece they clicked on was never real.
 const NOT_FOUND_CODE = 'PGRST116';
 
-export default function ProductDetailView({ productId, setCurrentView, onRequestSimilar }) {
+export default function ProductDetailView({ productId, setCurrentView, onRequestSimilar, onViewProduct }) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -263,6 +264,8 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             </div>
           </div>
         </div>
+
+        {onViewProduct && <RelatedPieces product={product} onViewProduct={onViewProduct} />}
       </div>
     </main>
   );

@@ -450,9 +450,11 @@ export default function App() {
       {currentView === 'product' && (
         <Suspense fallback={<ViewLoadingFallback />}>
           <ProductDetailView
+            key={selectedProductId}
             productId={selectedProductId}
             setCurrentView={navigateTo}
             onRequestSimilar={handleRequestSimilar}
+            onViewProduct={handleViewProduct}
           />
         </Suspense>
       )}
