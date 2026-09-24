@@ -3,4 +3,10 @@
   <url>
     <loc>https://acua-three.vercel.app/</loc>
   </url>
+  <url>
+    <loc>https://acua-three.vercel.app/privacy</loc>
+  </url>
+  <url>
+    <loc>https://acua-three.vercel.app/terms</loc>
+  </url>
 </urlset>

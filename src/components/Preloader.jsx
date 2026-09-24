@@ -240,7 +240,14 @@ export default function Preloader() {
               opacity="0.8"
               animate={{ d: [TEAL_CREST_A, TEAL_CREST_B, TEAL_CREST_A] }}
               transition={{ duration: SURGE_DURATION_S * 0.85, repeat: Infinity, ease: 'easeInOut' }}
-              onUpdate={(latest) => setCrestD(latest.d)}
+              onUpdate={(latest) => {
+                // On an early frame, before Framer Motion's `d` interpolation
+                // has produced a value, `latest.d` is briefly `undefined` —
+                // setting that renders an invalid `d="undefined"` attribute
+                // on the fill path below for one frame (a real console
+                // error, self-corrects the next frame, but still logs).
+                if (typeof latest.d === 'string') setCrestD(latest.d);
+              }}
             />
           </svg>
         </div>
