@@ -3897,3 +3897,46 @@ Verified before merging: the preloader unmounts after roughly 2.5s and the
 site is clickable, both normally and with `prefers-reduced-motion: reduce`
 emulated (the app's `MotionConfig reducedMotion="user"` skips the slide
 for those visitors), with no page errors.
+
+## 82. Speed, SEO, accessibility, mobile QA, back button, and admin editing
+
+A day of no-input improvements, each verified in a real browser (Playwright,
+throttled mobile profiles where relevant) before shipping:
+
+- **Speed**: index.html loaded six Google Font families plus Material
+  Symbols but only Fraunces, Inter and Unica One render; the rest were
+  render-blocking delay. Unsplash images get a width-capped `srcset`
+  (`lib/responsiveImage.js`), and `handleImageError` drops `srcset` so the
+  fallback still works.
+- **Search & sharing**: branded 1200x630 `public/og-image.jpg`, canonical
+  URL, Organization JSON-LD, sitemap. Product pages got their own URL
+  (`/?product=<id>`) and a Share button. `middleware.js` (Vercel Routing
+  Middleware) serves link-preview bots each product's own title, price and
+  photo; everyone else gets the static site.
+- **Accessibility**: axe-core over every page in both themes → zero
+  violations. Prices use `terracota-deep` (#9a5e1a) in light mode (plain
+  terracota was ~2.8:1); `<main>` landmarks; underlined inline links.
+- **Mobile QA** (390px/360px sweep): Add to Cart was a 16px bar on phones
+  (`flex-1` in a `flex-col`), the chat launcher covered the cart's checkout
+  button and vanished into the footer, and many tap targets were 18-28px.
+  All fixed. Available Pieces is two per row on phones (7.3 → 2.2 screens
+  of scrolling).
+- **Loaders**: the pre-JS loader in index.html is now a copy of the wave
+  preloader's first frame, and views can hold the preloader until their
+  data is ready (`lib/preloaderGate.js`, capped at 4s) so it never fades
+  onto HomeView's own splash.
+- **Back button**: every view change pushes a history entry; popstate
+  restores the view and scroll position. HomeView's data is kept in
+  `lib/homeCache.js` so returning home is instant, no splash.
+- **"You may also like"** on product pages (`components/RelatedPieces.jsx`);
+  ProductDetailView is keyed by id so quantity doesn't carry between pieces.
+- **Admin**: photo upload (`components/ImagePicker.jsx`, resized to 1600px
+  JPEG in the browser), a description field, and Edit on every product.
+  **Needs `0016_product_images_storage.sql` run on the project** before
+  uploads work; until then the admin sees a plain message and can paste a
+  link.
+
+Still open: PayMongo checkout (`feature/paymongo-checkout`, waiting on test
+keys; it touches App.jsx's history effects and needs a re-sync before
+merging), the 0016 migration, and a personal admin account for the owner's
+developer.
