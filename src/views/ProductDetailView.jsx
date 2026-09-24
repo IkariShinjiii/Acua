@@ -4,6 +4,7 @@ import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck, AlertCircle } from '
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 import { useCart } from '../context/CartContext';
 
 // PostgREST's code for ".single() matched zero rows" — the one case that
@@ -131,6 +132,8 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
           >
             <img
               src={product.image}
+              srcSet={unsplashSrcSet(product.image)}
+              sizes="(min-width: 768px) 50vw, 100vw"
               alt={product.title}
               className="w-full h-full object-cover"
               fetchPriority="high"

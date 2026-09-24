@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check, AlertCircle } from 'lucide-react';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -384,6 +385,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     <img
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       src={piece.image}
+                      srcSet={unsplashSrcSet(piece.image)}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       alt={piece.title}
                       loading="lazy"
                       onError={(e) => handleImageError(e, piece.fallback)}
@@ -500,6 +503,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   <img
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 filter grayscale-[20%] group-hover:grayscale-0"
                     src={item.image}
+                    srcSet={unsplashSrcSet(item.image)}
+                    sizes="(min-width: 768px) 25vw, 50vw"
                     alt={item.alt}
                     loading="lazy"
                     onError={(e) => handleImageError(e, item.fallback)}

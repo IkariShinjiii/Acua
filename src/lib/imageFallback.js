@@ -4,6 +4,9 @@
 // real (404ing) URL and can retrigger onError in a loop.
 export function handleImageError(e, fallbackUrl) {
   if (fallbackUrl && e.currentTarget.src !== fallbackUrl) {
+    // A srcset takes precedence over src, so it has to go too or the
+    // browser keeps retrying the broken candidates and ignores the fallback.
+    e.currentTarget.removeAttribute('srcset');
     e.currentTarget.src = fallbackUrl;
   }
 }

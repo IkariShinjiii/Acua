@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { formatPeso, parsePesoToNumber } from '../lib/currency';
 import { supabase } from '../lib/supabaseClient';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 
 export default function CartDrawer({ open, onClose, onViewProduct }) {
   const { items, removeItem, setQuantity } = useCart();
@@ -143,7 +144,14 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                         }}
                         className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                       >
-                        <img src={product.image} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
+                        <img
+                          src={product.image}
+                          srcSet={unsplashSrcSet(product.image)}
+                          sizes="64px"
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       </button>
                       <div className="flex-1 min-w-0">
                         <button

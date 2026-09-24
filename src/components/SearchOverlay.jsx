@@ -4,6 +4,7 @@ import { X, Search, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export default function SearchOverlay({ open, onClose, onSelectProduct }) {
@@ -146,6 +147,8 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                   <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low">
                     <img
                       src={piece.image}
+                      srcSet={unsplashSrcSet(piece.image)}
+                      sizes="56px"
                       alt={piece.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
