@@ -7,4 +7,5 @@ export const homeCache = {
   pieces: null,
   archive: null,
   reel: null,
+  hero: null,
 };

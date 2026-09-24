@@ -26,12 +26,25 @@ const MIN_SPLASH_MS = 500;
 // existed before this splash did, rather than blocking indefinitely.
 const MAX_SPLASH_MS = 4000;
 
+// Matches the row seeded by 0017_hero_content.sql — used until that table's
+// fetch resolves (or if it ever fails), so the hero never has a loading
+// state of its own: it just silently upgrades in place, same as a
+// background refresh of pieces/archive already does.
+const DEFAULT_HERO = {
+  imageUrl:
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85',
+  heading: 'Naturally rooted, intentionally designed.',
+  subtext:
+    'Handcrafted accessories inspired by the tides — non-tarnish finishes, natural stones, and salvaged sea glass for coastal permanence.',
+};
+
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
   const [pieces, setPieces] = useState(homeCache.pieces);
   const [archiveItems, setArchiveItems] = useState(homeCache.archive);
+  const [hero, setHero] = useState(homeCache.hero ?? DEFAULT_HERO);
   // Returning to a homepage whose data is already cached: render it right
   // away and skip the splash entirely (see lib/homeCache).
   const [warmStart] = useState(
@@ -162,6 +175,24 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       });
   }, []);
 
+  // No loading/failed state of its own on purpose: `hero` already starts as
+  // either the cached or the hardcoded default, both of which are valid
+  // things to show, so a failed or slow fetch here just leaves whichever of
+  // those already showing instead of needing its own error UI.
+  const loadHero = useCallback(() => {
+    return supabase
+      .from('hero_content')
+      .select('image_url, heading, subtext')
+      .eq('id', 1)
+      .single()
+      .then(({ data, error }) => {
+        if (unmountedRef.current || error || !data) return;
+        homeCache.hero = { imageUrl: data.image_url, heading: data.heading, subtext: data.subtext };
+        setHero(homeCache.hero);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     // React 18 StrictMode deliberately mounts, cleans up, and re-mounts
     // every effect once in development to catch exactly this class of
@@ -172,10 +203,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
     unmountedRef.current = false;
     loadPieces({ background: homeCache.pieces !== null });
     loadArchive({ background: homeCache.archive !== null });
+    loadHero();
     return () => {
       unmountedRef.current = true;
     };
-  }, [loadPieces, loadArchive]);
+  }, [loadPieces, loadArchive, loadHero]);
 
   const handleAdd = (piece) => {
     addItem(piece);
@@ -236,10 +268,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
         <section className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-ink">
           <div
             className="absolute inset-0 bg-cover bg-center w-full h-full"
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85')",
-            }}
+            style={{ backgroundImage: `url('${hero.imageUrl}')` }}
           />
           {/* Warm Overlay Gradient — darkens the photo for white text, so it
               stays fixed-dark regardless of theme (bg-ink, not the
@@ -249,14 +278,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
 
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
             <h1 className="font-serif text-white text-[2.75rem] leading-[1.05] sm:text-6xl md:text-7xl tracking-tight max-w-3xl drop-shadow-[0_2px_20px_rgba(0,0,0,0.25)]">
-              Naturally rooted,
-              <br />
-              intentionally <span className="italic text-sunset">designed</span>.
+              {hero.heading}
             </h1>
 
             <p className="mt-7 max-w-md text-white/80 text-base sm:text-lg font-sans font-light drop-shadow-[0_1px_12px_rgba(0,0,0,0.3)]">
-              Handcrafted accessories inspired by the tides — non-tarnish finishes, natural
-              stones, and salvaged sea glass for coastal permanence.
+              {hero.subtext}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">

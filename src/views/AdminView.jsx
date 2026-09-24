@@ -15,6 +15,7 @@ import {
   LogOut,
   AlertCircle,
   Pencil,
+  Image,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -34,6 +35,7 @@ const TABS = [
   { id: 'orders', label: 'Order Fulfillment', icon: Package },
   { id: 'inventory', label: 'Inventory & Site Curation', icon: Gem },
   { id: 'archive', label: 'The Archive', icon: Archive },
+  { id: 'hero', label: 'Homepage Hero', icon: Image },
 ];
 
 function stageIndex(stages, id) {
@@ -971,6 +973,88 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
   );
 }
 
+function HeroCuration({ hero, onUpdated, showToast }) {
+  const [draft, setDraft] = useState({
+    image: hero.image_url,
+    heading: hero.heading,
+    subtext: hero.subtext,
+  });
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!draft.image || !draft.heading || !draft.subtext) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('hero_content')
+        .update({
+          image_url: draft.image,
+          heading: draft.heading,
+          subtext: draft.subtext,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
+      if (error) {
+        showToast(`Couldn't save the hero: ${error.message}`, 'error');
+        return;
+      }
+      showToast('Homepage hero updated.', 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't save the hero: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-on-surface-variant max-w-2xl">
+        The full-screen image and text at the very top of the homepage. Changes here go live for
+        every visitor as soon as you save.
+      </p>
+
+      <form
+        onSubmit={save}
+        className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 gap-4"
+      >
+        <ImagePicker
+          value={draft.image}
+          onChange={(url) => setDraft((d) => ({ ...d, image: url }))}
+          onUploadingChange={setUploadingImage}
+          required
+        />
+        <input
+          required
+          placeholder="Caption (headline) *"
+          aria-label="Hero caption"
+          value={draft.heading}
+          onChange={(e) => setDraft((d) => ({ ...d, heading: e.target.value }))}
+          className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+        />
+        <textarea
+          required
+          rows={3}
+          placeholder="Details (subtext below the caption) *"
+          aria-label="Hero details"
+          value={draft.subtext}
+          onChange={(e) => setDraft((d) => ({ ...d, subtext: e.target.value }))}
+          className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset resize-none"
+        />
+        <button
+          type="submit"
+          disabled={saving || uploadingImage}
+          className="justify-self-start px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+        >
+          {saving ? 'Saving…' : uploadingImage ? 'Waiting for photo…' : 'Save Hero'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Root                                                                  */
 /* ------------------------------------------------------------------ */
@@ -988,6 +1072,7 @@ export default function AdminView({ initialTab }) {
   const [orders, setOrders] = useState(null);
   const [pieces, setPieces] = useState(null);
   const [archiveItems, setArchiveItems] = useState(null);
+  const [hero, setHero] = useState(null);
   // Each of the four admin fetches used to treat a failure exactly like a
   // genuinely empty table — "0 briefs, 0 orders, 0 products, 0 archive
   // items" — which for the site owner checking their own store is a real
@@ -997,6 +1082,7 @@ export default function AdminView({ initialTab }) {
   const [ordersFailed, setOrdersFailed] = useState(false);
   const [piecesFailed, setPiecesFailed] = useState(false);
   const [archiveFailed, setArchiveFailed] = useState(false);
+  const [heroFailed, setHeroFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
   const { toast, showToast, dismissToast } = useToast();
@@ -1046,6 +1132,14 @@ export default function AdminView({ initialTab }) {
       if (cancelled) return;
       setArchiveFailed(Boolean(error));
       setArchiveItems(error || !data ? [] : data.map(mapArchiveRow));
+    });
+
+    withTimeout(
+      supabase.from('hero_content').select('image_url, heading, subtext').eq('id', 1).single()
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setHeroFailed(Boolean(error));
+      setHero(error || !data ? null : data);
     });
 
     return () => {
@@ -1141,6 +1235,16 @@ export default function AdminView({ initialTab }) {
             <AdminTabError label="archive items" onRetry={refresh} />
           ) : (
             <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} showToast={showToast} />
+          ))}
+        {activeTab === 'hero' &&
+          (hero === null ? (
+            heroFailed ? (
+              <AdminTabError label="the homepage hero" onRetry={refresh} />
+            ) : (
+              <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+            )
+          ) : (
+            <HeroCuration hero={hero} onUpdated={refresh} showToast={showToast} />
           ))}
       </div>
       <Toast toast={toast} onDismiss={dismissToast} />
