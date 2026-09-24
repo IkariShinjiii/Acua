@@ -236,6 +236,24 @@ function productIdFromUrl() {
   return new URLSearchParams(window.location.search).get('product');
 }
 
+// Scrolls back to where a Back/Forward entry was left, once the restored
+// view has rendered tall enough. Home is the slow case: it locks scrolling
+// under its own splash and fills in as its data arrives. Gives up after 3s
+// and scrolls as far as it can.
+function restoreScroll(y) {
+  const deadline = Date.now() + 3000;
+  const attempt = () => {
+    const locked = document.documentElement.style.overflow === 'hidden';
+    const reachable = document.documentElement.scrollHeight - window.innerHeight >= y;
+    if ((!locked && reachable) || Date.now() > deadline) {
+      window.scrollTo({ top: y, behavior: 'instant' });
+      return;
+    }
+    setTimeout(attempt, 50);
+  };
+  setTimeout(attempt, 0);
+}
+
 export default function App() {
   const [currentView, setCurrentView] = useState(() => (productIdFromUrl() ? 'product' : 'home'));
   // Set only via handleRequestSimilar below, so a plain nav click into the
@@ -272,7 +290,8 @@ export default function App() {
       description ? description.replace(/\+/g, ' ') : "Google sign-in didn't go through. Please try again.",
       'error'
     );
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    // Keeps the entry's in-app navigation state (see the history effects below).
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -292,21 +311,64 @@ export default function App() {
     document.title = DOCUMENT_TITLES[currentView] ?? DEFAULT_TITLE;
   }, [currentView, showingAdmin]);
 
-  // Keeps the address bar on /?product=<id> while a piece is open (so a
-  // copied URL is shareable) and back to / everywhere else. replaceState,
-  // not pushState: there's no router to answer the back button with.
+  // Browser history for in-app navigation. There's no router, so each view
+  // change pushes an entry carrying { acuaView, productId }, and the phone's
+  // Back/Forward (popstate) restore the view from it — before this, Back
+  // from any page left the site entirely. Leaving an entry records its
+  // scroll position so Back returns to the same spot. Only product pages
+  // change the visible URL (/?product=<id>, so a copied link is shareable);
+  // every other view stays on /.
+  const lastScrollYRef = useRef(0);
+  const historyInitializedRef = useRef(false);
+
   useEffect(() => {
+    window.history.scrollRestoration = 'manual';
+    // Read by the push below: by the time that effect runs, the new view
+    // has committed and the page may already have been clamped shorter.
+    const onScroll = () => {
+      lastScrollYRef.current = window.scrollY;
+    };
+    const onPopState = (e) => {
+      const fromUrl = productIdFromUrl();
+      const entry = e.state?.acuaView
+        ? e.state
+        : { acuaView: fromUrl ? 'product' : 'home', productId: fromUrl };
+      setCommissionPrefill(null);
+      setDashboardInitialTab(undefined);
+      setSelectedProductId(entry.productId ?? null);
+      setCurrentView(entry.acuaView);
+      restoreScroll(entry.scrollY ?? 0);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const productId = currentView === 'product' ? selectedProductId : null;
     const params = new URLSearchParams(window.location.search);
-    if (currentView === 'product' && selectedProductId) {
-      params.set('product', selectedProductId);
-    } else {
-      params.delete('product');
-    }
+    if (productId) params.set('product', productId);
+    else params.delete('product');
     const query = params.toString();
-    const next = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
-    if (next !== window.location.pathname + window.location.search + window.location.hash) {
-      window.history.replaceState(null, '', next);
+    const url = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
+    const entry = { acuaView: currentView, productId };
+
+    if (!historyInitializedRef.current) {
+      // Label the entry the visitor landed on rather than adding one.
+      historyInitializedRef.current = true;
+      window.history.replaceState(entry, '', url);
+      return;
     }
+    const current = window.history.state;
+    // Already on this entry: the change came from Back/Forward (or a
+    // StrictMode re-run), so there's nothing to push.
+    if (current?.acuaView === currentView && (current.productId ?? null) === productId) return;
+    window.history.replaceState({ ...current, scrollY: lastScrollYRef.current }, '');
+    window.history.pushState(entry, '', url);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentView, selectedProductId]);
 
   if (passwordRecovery) {

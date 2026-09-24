@@ -5,6 +5,7 @@ import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
 import { unsplashSrcSet } from '../lib/responsiveImage';
 import { holdPreloader } from '../lib/preloaderGate';
+import { homeCache } from '../lib/homeCache';
 import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -29,8 +30,13 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
-  const [pieces, setPieces] = useState(null);
-  const [archiveItems, setArchiveItems] = useState(null);
+  const [pieces, setPieces] = useState(homeCache.pieces);
+  const [archiveItems, setArchiveItems] = useState(homeCache.archive);
+  // Returning to a homepage whose data is already cached: render it right
+  // away and skip the splash entirely (see lib/homeCache).
+  const [warmStart] = useState(
+    () => homeCache.pieces !== null && homeCache.archive !== null && homeCache.reel !== null
+  );
   // A failed fetch and a genuinely empty catalog used to look identical —
   // both just left `pieces`/`archiveItems` as []. That meant an actual
   // Supabase outage or an expired API key would show visitors "no pieces
@@ -51,8 +57,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   // holds one unified splash over the whole view until all three of those
   // fetches (not just the two HomeView owns) have resolved, so there's
   // nothing left to pop in once it lifts.
-  const [reelReady, setReelReady] = useState(false);
-  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  const [reelReady, setReelReady] = useState(homeCache.reel !== null);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(warmStart);
   const [maxSplashElapsed, setMaxSplashElapsed] = useState(false);
   const contentReady = pieces !== null && archiveItems !== null && reelReady;
   const showSplash = !minSplashElapsed || (!contentReady && !maxSplashElapsed);
@@ -92,9 +98,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
     };
   }, [showSplash]);
 
-  const loadPieces = useCallback(() => {
-    setPieces(null);
-    setPiecesFailed(false);
+  // { background: true } refreshes cached data in place: no loading state,
+  // and a failed refresh keeps showing what's cached instead of an error.
+  // (The Try Again buttons call these with a click event, which never has
+  // background === true, so they always do a full visible reload.)
+  const loadPieces = useCallback((opts) => {
+    const background = opts?.background === true;
+    if (!background) {
+      setPieces(null);
+      setPiecesFailed(false);
+    }
     return supabase
       .from('products')
       .select('*')
@@ -102,26 +115,31 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       .then(({ data, error }) => {
         if (unmountedRef.current) return;
         if (error || !data) {
+          if (background) return;
           setPiecesFailed(true);
           setPieces([]);
           return;
         }
-        setPieces(data.map(mapProductRow));
+        homeCache.pieces = data.map(mapProductRow);
+        setPieces(homeCache.pieces);
       })
       .catch(() => {
         // A genuine network failure (not a resolved { error }) rejects
         // instead of resolving — without this, it would otherwise leave
         // pieces stuck on "Loading pieces…" forever rather than showing
         // the same error state as a resolved { error } does.
-        if (unmountedRef.current) return;
+        if (unmountedRef.current || background) return;
         setPiecesFailed(true);
         setPieces([]);
       });
   }, []);
 
-  const loadArchive = useCallback(() => {
-    setArchiveItems(null);
-    setArchiveFailed(false);
+  const loadArchive = useCallback((opts) => {
+    const background = opts?.background === true;
+    if (!background) {
+      setArchiveItems(null);
+      setArchiveFailed(false);
+    }
     return supabase
       .from('archive_items')
       .select('*')
@@ -129,14 +147,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       .then(({ data, error }) => {
         if (unmountedRef.current) return;
         if (error || !data) {
+          if (background) return;
           setArchiveFailed(true);
           setArchiveItems([]);
           return;
         }
-        setArchiveItems(data.map(mapArchiveRow));
+        homeCache.archive = data.map(mapArchiveRow);
+        setArchiveItems(homeCache.archive);
       })
       .catch(() => {
-        if (unmountedRef.current) return;
+        if (unmountedRef.current || background) return;
         setArchiveFailed(true);
         setArchiveItems([]);
       });
@@ -150,8 +170,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
     // silently discarding every fetch's result for the rest of the
     // component's life.
     unmountedRef.current = false;
-    loadPieces();
-    loadArchive();
+    loadPieces({ background: homeCache.pieces !== null });
+    loadArchive({ background: homeCache.archive !== null });
     return () => {
       unmountedRef.current = true;
     };
