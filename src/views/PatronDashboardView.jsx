@@ -161,7 +161,7 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   ];
 
   return (
-    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
+    <main className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -315,6 +315,6 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

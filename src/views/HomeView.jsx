@@ -417,7 +417,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     </div>
 
                     <div className="flex justify-between items-center pt-3 border-t border-surface-container">
-                      <span className="font-sans text-base text-terracota font-semibold">
+                      <span className="font-sans text-base text-terracota-deep dark:text-terracota font-semibold">
                         {piece.price}
                       </span>
                       {piece.soldOut ? (

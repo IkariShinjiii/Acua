@@ -63,7 +63,7 @@ export default function FAQView() {
           <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed font-sans">
             Answers about our pieces, custom commissions, and ordering. Can't find what you're
             looking for? Email us at{' '}
-            <a href="mailto:acuavibe@gmail.com" className="text-accent hover:text-terracota transition-colors">
+            <a href="mailto:acuavibe@gmail.com" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
               acuavibe@gmail.com
             </a>
             .

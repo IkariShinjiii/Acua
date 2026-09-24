@@ -958,7 +958,7 @@ export default function AdminView({ initialTab }) {
   const soldOutCount = piecesFailed ? null : pieces?.filter((p) => p.soldOut).length ?? 0;
 
   return (
-    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
+    <main className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-8">
           <div className="flex items-center gap-3">
@@ -1040,6 +1040,6 @@ export default function AdminView({ initialTab }) {
           ))}
       </div>
       <Toast toast={toast} onDismiss={dismissToast} />
-    </div>
+    </main>
   );
 }

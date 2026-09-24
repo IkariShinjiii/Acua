@@ -168,7 +168,7 @@ export default function CartDrawer({ open, onClose, onViewProduct }) {
                             <AlertCircle className="w-3 h-3 flex-shrink-0" /> No longer available
                           </p>
                         ) : (
-                          <p className="text-xs text-terracota font-semibold mt-0.5">{product.price}</p>
+                          <p className="text-xs text-terracota-deep dark:text-terracota font-semibold mt-0.5">{product.price}</p>
                         )}
                         {!isSoldOut && (
                           <div className="flex items-center gap-2 mt-2">

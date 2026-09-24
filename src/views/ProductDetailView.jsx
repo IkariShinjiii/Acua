@@ -133,7 +133,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
   };
 
   return (
-    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
+    <main className="min-h-screen bg-sand text-on-surface font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <button
           onClick={() => {
@@ -177,7 +177,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             <h1 className="font-serif text-3xl sm:text-4xl text-on-surface leading-tight">
               {product.title}
             </h1>
-            <p className="text-2xl font-semibold text-terracota mt-4">{product.price}</p>
+            <p className="text-2xl font-semibold text-terracota-deep dark:text-terracota mt-4">{product.price}</p>
             {product.isOneOfOne && !product.soldOut && (
               <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent bg-chile-rojo/10 rounded-full px-3 py-1 mt-3">
                 One of one — once it's gone, it's gone
@@ -264,6 +264,6 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

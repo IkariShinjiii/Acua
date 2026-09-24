@@ -159,7 +159,7 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                     <p className="text-sm font-medium text-on-surface truncate">{piece.title}</p>
                     <p className="text-xs text-on-surface-variant">{piece.category} • {piece.material}</p>
                   </div>
-                  <span className="text-sm font-semibold text-terracota flex-shrink-0">
+                  <span className="text-sm font-semibold text-terracota-deep dark:text-terracota flex-shrink-0">
                     {piece.price}
                   </span>
                 </button>

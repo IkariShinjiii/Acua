@@ -193,7 +193,7 @@ export default function ReviewReel({ onSelectProduct, onLoaded }) {
                   {item.material}
                 </p>
               </div>
-              <span className="font-sans text-base text-terracota font-semibold">
+              <span className="font-sans text-base text-terracota-deep dark:text-terracota font-semibold">
                 {item.price}
               </span>
             </div>
