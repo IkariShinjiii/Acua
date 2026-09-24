@@ -3,39 +3,13 @@ import { motion } from 'framer-motion';
 import logoMarkOlive from '../assets/logo-mark-olive.png';
 
 // EXPERIMENTAL — built on its own branch for the owner to look at before
-// this goes anywhere near main. Water rises from the top of the screen
-// and grows until it engulfs the whole viewport — including the logo,
-// which stays faintly visible through the water's own translucency
-// rather than being hidden once covered. The teal (per a reference the
-// owner shared) is scoped to this file alone via arbitrary Tailwind/
-// inline values, not added to the shared palette — nothing else on the
-// site uses blue/teal, and this is still an experiment, not a decided
-// brand addition. An earlier pass also layered in a lighter blue-gray
-// "peeking above the crest" shape for extra depth, but it read as a
-// stray pale artifact sitting awkwardly between the solid body and the
-// crest rather than adding anything — removed, leaving just the one
-// teal crest plus its foam highlight.
-//
-// The crest shape went through several real revisions: a first pass with
-// small, evenly-spaced humps read as a generic "wavy line," not the
-// reference's few, large, irregular rounded mounds with dramatic height
-// variation — redrawn with a taller canvas and fewer, bigger curves so
-// the silhouette itself reads as water rather than a repeating pattern.
-// The flat body above the crest gained a top-to-bottom gradient instead
-// of one flat color, for some actual depth — but giving the crest's OWN
-// fill a second, independent copy of that same gradient (restarting at
-// the light end right where the first one had already reached the dark
-// end) created a hard, visible seam exactly at the boundary between the
-// two, which is what actually read as "a flat rectangle with a wave
-// doodle stuck below it." The crest now picks up in solid, matching
-// TEAL_DEEP instead — a seamless continuation, not a second gradient.
-//
-// Earlier passes also had the crest just translating upward as a static
-// shape, which read as a waterfall filling a glass rather than surf
-// rolling onto a shoreline. The crest morphs between two mound layouts on
-// a loop (Framer Motion animating between two `d` path strings with the
-// same command structure) while also rising, and a stroked highlight
-// riding the same curve as the teal crest reads as foam.
+// this goes anywhere near main. Opaque teal water comes down from the top
+// of the screen in advance/retreat/advance surges until it covers the whole
+// viewport, hiding the logo as it passes over. The water's leading (bottom)
+// edge is an irregular, morphing wave traced by a translucent foam line;
+// below that line is open sand. The teal is scoped to this file rather than
+// the shared palette — nothing else on the site uses it, and this is still
+// an experiment, not a decided brand addition.
 //
 // The fade-out still waits on *real* readiness — a minimum display time
 // (so a fast load doesn't just flash once) AND the window 'load' event,
@@ -72,7 +46,10 @@ const TEAL_CREST_A =
 const TEAL_CREST_B =
   'M0,110 C220,220 380,25 640,150 C860,230 1000,15 1240,140 C1340,190 1400,60 1440,110';
 
-const closeBelow = (d) => `${d} L1440,240 L0,240 Z`;
+// The water comes down from the top, so the crest is its *bottom* edge —
+// the fill closes upward to meet the body above, and everything below the
+// curve stays open sand.
+const closeAbove = (d) => `${d} L1440,0 L0,0 Z`;
 
 // Below the crest, the water was one flat gradient rectangle — accurate
 // depth-wise, but the sheer size of that plain field next to the one
@@ -103,9 +80,17 @@ export default function Preloader() {
   // animatable property — the container below is a fixed full-screen
   // height and instead slides fully into place from above.
   const [viewportHeight] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
+  const [crestHeight] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth >= 640 ? 230 : 170
+  );
   const [crestD, setCrestD] = useState(TEAL_CREST_A);
+  // The panel is one crest-height taller than the screen so that at full
+  // coverage the solid body fills the viewport and the wavy edge (with the
+  // open sand beneath it) sits just past the bottom — otherwise a strip of
+  // sand would still show under the last wave.
+  const panelHeight = viewportHeight + crestHeight;
   const SURGE_PROGRESS = [0, 0.34, 0.24, 0.6, 0.46, 0.85, 0.68, 1];
-  const yKeyframes = SURGE_PROGRESS.map((p) => -(1 - p) * viewportHeight);
+  const yKeyframes = SURGE_PROGRESS.map((p) => -(1 - p) * panelHeight);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,9 +131,8 @@ export default function Preloader() {
           page backdrop. */}
       <div className="absolute inset-0" style={{ background: SAND_BEIGE }} />
 
-      {/* The logo sits BELOW the water fill in stacking order, so the
-          fill's own translucency is what dims it once the water passes
-          over — not hidden, just faint underneath. */}
+      {/* The logo sits BELOW the water in stacking order, and the water is
+          opaque, so it disappears once the wave passes over it. */}
       <div className="absolute inset-0 flex items-center justify-center">
         <img src={logoMarkOlive} alt="" className="w-14 h-14 sm:w-16 sm:h-16" />
       </div>
@@ -162,8 +146,8 @@ export default function Preloader() {
           still net-progressing to full coverage by the end. */}
       <motion.div
         className="absolute inset-x-0 top-0 flex flex-col overflow-hidden"
-        style={{ height: viewportHeight }}
-        initial={{ y: -viewportHeight }}
+        style={{ height: panelHeight }}
+        initial={{ y: -panelHeight }}
         animate={{ y: yKeyframes }}
         transition={{
           duration: FILL_DURATION_S,
@@ -172,15 +156,12 @@ export default function Preloader() {
         }}
         onAnimationComplete={() => setFilled(true)}
       >
-        {/* Same opacity as the wave-zone below (0.85, not a mismatched
-            0.85/0.88 split), and the wave-zone's own teal fill picks up
-            in solid TEAL_DEEP exactly where this gradient ends — a
-            separate gradient restarting at TEAL_LIGHT right at that
-            boundary was the real cause of the hard "flat edge" seam,
-            not the crest shape itself. */}
+        {/* The crest below picks up in solid TEAL_DEEP exactly where this
+            gradient ends — a second gradient restarting at TEAL_LIGHT at
+            that boundary was the cause of an earlier hard seam. */}
         <div
           className="relative flex-1 overflow-hidden"
-          style={{ background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)`, opacity: 0.85 }}
+          style={{ background: `linear-gradient(180deg, ${TEAL_LIGHT} 0%, ${TEAL_DEEP} 100%)` }}
         >
           <svg
             viewBox="0 0 1440 50"
@@ -219,7 +200,10 @@ export default function Preloader() {
             />
           </svg>
         </div>
-        <div className="relative w-full h-[170px] sm:h-[230px] flex-shrink-0" style={{ opacity: 0.85 }}>
+        {/* Overlaps the body by 2px: two separately-rasterized boxes left a
+            sub-pixel hairline at their shared edge. Both are TEAL_DEEP
+            there, so the overlap is invisible. */}
+        <div className="relative w-full flex-shrink-0" style={{ height: crestHeight, marginTop: -2 }}>
           <svg
             viewBox="0 0 1440 240"
             preserveAspectRatio="none"
@@ -236,7 +220,7 @@ export default function Preloader() {
                 own at all -- it just renders whatever curve the foam
                 path (the single source of truth) reports as its live,
                 in-progress `d` on every frame, via `onUpdate` below. */}
-            <path d={closeBelow(crestD)} fill={TEAL_DEEP} />
+            <path d={closeAbove(crestD)} fill={TEAL_DEEP} />
             {/* Foam — an open (unclosed) stroke tracing the exact same
                 curve as the teal crest above, so the highlight always
                 rides right at the waterline rather than needing its own
