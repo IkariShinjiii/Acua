@@ -230,12 +230,18 @@ function ResetPasswordGate() {
  * Supports distinct view architecture (AppView, ProductDetailView, CommissionView).
  * Currently rendering Layout 3 (CommissionView) as the initial rectification milestone.
  */
+// A shared product link (/?product=<id>, from the product page's Share
+// button) opens straight to that piece.
+function productIdFromUrl() {
+  return new URLSearchParams(window.location.search).get('product');
+}
+
 export default function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'commission' | 'story'
+  const [currentView, setCurrentView] = useState(() => (productIdFromUrl() ? 'product' : 'home'));
   // Set only via handleRequestSimilar below, so a plain nav click into the
   // Commission view never carries over a stale "inspired by" reference.
   const [commissionPrefill, setCommissionPrefill] = useState(null);
-  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(productIdFromUrl);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -285,6 +291,23 @@ export default function App() {
     }
     document.title = DOCUMENT_TITLES[currentView] ?? DEFAULT_TITLE;
   }, [currentView, showingAdmin]);
+
+  // Keeps the address bar on /?product=<id> while a piece is open (so a
+  // copied URL is shareable) and back to / everywhere else. replaceState,
+  // not pushState: there's no router to answer the back button with.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (currentView === 'product' && selectedProductId) {
+      params.set('product', selectedProductId);
+    } else {
+      params.delete('product');
+    }
+    const query = params.toString();
+    const next = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
+    if (next !== window.location.pathname + window.location.search + window.location.hash) {
+      window.history.replaceState(null, '', next);
+    }
+  }, [currentView, selectedProductId]);
 
   if (passwordRecovery) {
     return <ResetPasswordGate />;

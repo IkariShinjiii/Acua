@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck, AlertCircle, Share2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
@@ -17,6 +17,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [product, setProduct] = useState(undefined); // undefined = loading, null = not found
   const [loadFailed, setLoadFailed] = useState(false);
   // Bumped on every load attempt (a productId change or a manual "Try
@@ -108,6 +109,27 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
     for (let i = 0; i < quantity; i += 1) addItem(product);
     setAdded(true);
     setTimeout(() => setAdded(false), 1600);
+  };
+
+  // Phones get the native share sheet (Messenger, IG, etc.); anywhere
+  // without it, the link is copied instead.
+  const handleShare = async () => {
+    const url = `${window.location.origin}/?product=${product.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${product.title} | ACUA`, url });
+      } catch {
+        // Dismissing the share sheet rejects too; nothing to do either way.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      window.prompt('Copy this link:', url);
+    }
   };
 
   return (
@@ -220,6 +242,13 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                   </button>
                 </div>
               )}
+              <button
+                onClick={handleShare}
+                className="mt-5 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer rounded-sm py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+              >
+                {linkCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                <span aria-live="polite">{linkCopied ? 'Link copied' : 'Share this piece'}</span>
+              </button>
             </div>
 
             <div className="mt-8 pt-6 border-t border-outline-variant/30 space-y-3">
