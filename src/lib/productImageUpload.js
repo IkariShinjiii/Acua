@@ -37,6 +37,13 @@ export async function uploadProductImage(file) {
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000' });
-  if (error) throw new Error(error.message);
+  if (error) {
+    // The product-images bucket comes from 0016_product_images_storage.sql;
+    // until that's been run on the project, say so instead of "Bucket not found".
+    if (/bucket not found/i.test(error.message)) {
+      throw new Error("Photo uploads aren't set up yet. Paste an image link below for now.");
+    }
+    throw new Error(error.message);
+  }
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
