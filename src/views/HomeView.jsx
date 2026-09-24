@@ -378,8 +378,9 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </p>
           )}
 
-          {/* 3-Column Bento Cloud Product Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Product grid: two per row on phones (one per row meant a full
+              screen of scrolling per piece), three on large screens. */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 md:gap-8">
             <AnimatePresence mode="popLayout">
               {filteredPieces.map((piece) => (
                 <motion.div
@@ -389,7 +390,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35 }}
-                  className="group relative cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
+                  className="group relative cursor-pointer rounded-[20px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-3 sm:p-6"
                 >
                   {/* A card that's itself a button, wrapping the real Add to
                       Cart/Request Similar buttons, is an ARIA anti-pattern —
@@ -406,16 +407,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     type="button"
                     onClick={() => onViewProduct?.(piece.id)}
                     aria-label={`View ${piece.title}`}
-                    className="absolute inset-0 z-0 rounded-[24px] sm:rounded-[32px] border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+                    className="absolute inset-0 z-0 rounded-[20px] sm:rounded-[32px] border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
                   />
 
                   {/* Square Aspect Ratio Product Thumbnail */}
-                  <div className="relative z-10 pointer-events-none w-full aspect-square rounded-2xl overflow-hidden bg-surface-container-low mb-5">
+                  <div className="relative z-10 pointer-events-none w-full aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-surface-container-low mb-3 sm:mb-5">
                     <img
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       src={piece.image}
                       srcSet={unsplashSrcSet(piece.image)}
-                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 33vw, 50vw"
                       alt={piece.title}
                       loading="lazy"
                       onError={(e) => handleImageError(e, piece.fallback)}
@@ -428,7 +429,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       </div>
                     )}
                     {piece.isOneOfOne && !piece.soldOut && (
-                      <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                      <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-sm">
                         1-of-1
                       </span>
                     )}
@@ -437,16 +438,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   {/* Card Description & Action Row */}
                   <div className="relative z-10 pointer-events-none flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="font-sans text-base sm:text-lg text-on-surface font-medium mb-1.5 group-hover:text-accent transition-colors">
+                      <h3 className="font-sans text-sm sm:text-lg text-on-surface font-medium mb-2 sm:mb-1.5 leading-snug line-clamp-2 group-hover:text-accent transition-colors">
                         {piece.title}
                       </h3>
-                      <p className="font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
+                      <p className="hidden sm:block font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
                         {piece.description}
                       </p>
                     </div>
 
-                    <div className="flex justify-between items-center pt-3 border-t border-surface-container">
-                      <span className="font-sans text-base text-terracota-deep dark:text-terracota font-semibold">
+                    <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-1 pt-2 sm:pt-3 border-t border-surface-container">
+                      <span className="font-sans text-sm sm:text-base text-terracota-deep dark:text-terracota font-semibold">
                         {piece.price}
                       </span>
                       {piece.soldOut ? (
