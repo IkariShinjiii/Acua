@@ -4141,3 +4141,54 @@ real product page and confirmed the JSON-LD parses and matches
 (`"price":"9800.00"`, `availability: InStock`); opened the one seeded
 sold-out product and confirmed its JSON-LD correctly reports
 `OutOfStock` instead. Zero new console errors in either case.
+
+## 86. Admin can manage the Custom Commission form's categories and materials
+
+Requested directly by the owner: the accessory categories ("Necklace /
+Choker", etc.) and material options on the Custom Commission form were
+hardcoded in `src/data/commissionOptions.js` — changing either meant a
+code deploy.
+
+Added two admin-editable tables, `commission_categories` and
+`commission_materials` (`0019_commission_options.sql`; public read,
+admin-only write, the same `private.is_admin()` RLS shape as every other
+admin-writable table), seeded with exactly what was already hardcoded so
+the live form doesn't change until an admin actually edits something. A
+category has no separate id — its label is its own primary key, so
+"renaming" one is really delete-and-add, which the admin tab's
+add/remove-only UI matches honestly rather than pretending to support an
+edit that isn't really safe. A material keeps a stable, slugified id
+generated from its label on add (e.g. "non-tarnish-gold-tone") precisely
+so *its* label/note CAN be edited in place afterward without consequence —
+`commission_briefs.material`/`archive_items.material` reference the id,
+never the label, so relabeling an existing material is always safe; a
+delete of one an existing request already used is survivable too, via
+CommissionView's existing "unknown material id" fallback from §6.5 (falls
+back to the default material and keeps the real value in the narrative
+text instead of leaving the form looking broken).
+
+A new **Commission Options** tab in AdminView handles both: category
+chips with a remove button plus an add-new input, and material cards
+(label + note) with inline edit and remove, plus an add-new form.
+`CommissionView`, `PatronDashboardView`, and AdminView's own
+`ArchiveCuration`/`CommissionPipeline` all fetch these two tables now
+(via the new shared `lib/commissionOptionsFetch.js`) instead of importing
+the static arrays — each still starts from those same hardcoded values as
+an instant-render fallback, then swaps in the real lists once the fetch
+resolves, the same "default now, upgrade once loaded" shape §85's hero
+editor already established.
+
+Verified live against the real project, not just by inspection: confirmed
+anon can read both tables but a real write is genuinely blocked by RLS
+(an anon `DELETE` returns `204` either way in PostgREST, so the row's
+continued existence was checked directly rather than trusting the status
+code); added a real test category and material via SQL — content-
+identical to what the admin UI itself sends — loaded the live production
+Commission form and confirmed both appear, render correctly (note
+included), and are genuinely selectable, not just displayed; removed them
+and confirmed they're gone on reload while the real seeded options stay
+untouched; re-ran the existing "Request Similar" archive-prefill flow
+end to end to confirm it still resolves a material id correctly against
+the new DB-backed list instead of the old static one. Zero console errors
+throughout. Test rows deleted; both tables back to the original 3
+categories / 3 materials afterward.
