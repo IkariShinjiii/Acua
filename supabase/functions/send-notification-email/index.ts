@@ -116,6 +116,12 @@ Deno.serve(async (req) => {
       );
     } catch (err) {
       console.error("send-notification-email (new_brief) failed:", err);
+      // The claim above already set admin_notified_at, but the email never
+      // actually went out -- undo the claim so a later retry (once
+      // whatever broke the send is fixed) can still succeed, instead of
+      // this brief being silently marked "notified" forever over a send
+      // that never happened.
+      await serviceClient.from("commission_briefs").update({ admin_notified_at: null }).eq("id", briefId);
       return jsonResponse({ sent: false, error: "Email failed to send." }, 502);
     }
     return jsonResponse({ sent: true });
