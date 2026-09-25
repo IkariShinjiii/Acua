@@ -4027,3 +4027,63 @@ background refresh. Verified live against the real project: the homepage
 renders the DB row's actual content, and a direct anonymous REST call
 confirmed RLS genuinely blocks a non-admin write (0 rows affected, heading
 unchanged) rather than trusting the policy by inspection alone.
+
+## 84. Email notifications: new brief → admin, quote sent → patron
+
+Asked to find standalone work; surveyed the app for real gaps before
+picking one rather than guessing. Confirmed by grep, not assumption:
+`ReviewReel` (despite its name) is just the "New Release" product
+marquee — there's no actual customer-review/testimonial feature anywhere;
+no wishlist/favorites exists; and, the one picked, **no transactional
+email exists in the codebase at all** — a new commission brief or a quote
+sent only ever showed up if someone happened to check the right
+dashboard.
+
+Added one edge function, `send-notification-email` (Resend), covering the
+two events that are actually reachable in production today:
+
+- **New brief → admin.** Fires from `CommissionView` right after a
+  successful insert. Guarded server-side by a new `admin_notified_at`
+  column on `commission_briefs`, claimed atomically (`UPDATE ... WHERE
+  admin_notified_at IS NULL`) — the same shape as
+  `claim_product_if_available` (§5.2) — so replaying the call for the
+  same brief can never double-email the admin.
+- **Quote sent → patron.** Fires from `AdminView`'s "Send Quote" action,
+  but only once the status update itself actually succeeds — `advance()`
+  (the shared helper every pipeline action calls) now returns whether it
+  did, since a failed DB update was otherwise still going to fire the
+  email. The function verifies the caller is a real admin via their own
+  session plus the existing "view own profile" RLS policy, not just that
+  a JWT was present at all (`verify_jwt: true` alone only proves *some*
+  valid token, not that it belongs to an admin).
+
+Both are deliberately best-effort on top of already-durable writes: a
+failed brief insert or status update still shows its own real error same
+as before, and a failed *notification* never blocks or reverts either
+one — the brief/status change already succeeded — it's just an extra
+toast on the admin side (quote path), and a plain `console.error` on the
+anonymous new-brief path (nothing meaningful to show a patron who never
+sees this call at all).
+
+**Order notifications (new order, shipped) aren't wired.** Checkout isn't
+live on main (`feature/paymongo-checkout` is still unmerged, §83), so
+there's no real path that creates an `orders` row for one to hang off
+yet — building that now would be against dead code. Add it the same way
+once checkout ships.
+
+Deployed and verified live against the real project: submitted a real
+test brief through a production build, confirmed the expected "not set
+up yet" 503 (no `RESEND_API_KEY` configured yet), confirmed the brief
+still saved correctly regardless and `admin_notified_at` stayed `null`
+(no false claim on a send that never actually attempted, since the
+missing-key check happens before the DB claim) — then deleted the test
+brief.
+
+**Needs one manual step before emails actually go out**: a Resend account
++ API key, set as the `RESEND_API_KEY` project secret (Supabase Dashboard
+→ Edge Functions → Manage secrets — no MCP tool can write a secret, and
+Claude Code's own auto-mode safety layer blocks that kind of write
+outright regardless). Resend's shared test sender works with zero
+DNS setup but only delivers to the email the Resend account itself was
+created with; verifying a real sending domain (Resend → Domains) and
+setting `RESEND_FROM_EMAIL` lifts that limit to real recipients.
