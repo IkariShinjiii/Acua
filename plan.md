@@ -4192,3 +4192,82 @@ end to end to confirm it still resolves a material id correctly against
 the new DB-backed list instead of the old static one. Zero console errors
 throughout. Test rows deleted; both tables back to the original 3
 categories / 3 materials afterward.
+
+## 87. Refunds: patron request flow + admin approve/reject/process
+
+The client shared an outside "ACUA Enhancement Plan" document (17 phases,
+generic e-commerce/webhook-hardening advice) and asked to work through it.
+Cross-checked every item against the real, live system before acting on
+any of it, rather than assuming it was accurate:
+
+- **Several items described a different business entirely** — commission
+  tiers priced in USD ("Icon $50", "Character Sheet $150") and "PHP
+  100–800 products" describe an illustration-commission marketplace, not
+  ACUA (real commissions run ₱22,000–₱168,000+; the client separately
+  confirmed the live site's own placeholder prices are also not real —
+  ACUA's actual products are priced ₱100–800). Multi-artist payment
+  splits / paying out co-artists don't apply either — ACUA is one owner.
+- **Several "problems" the doc named are already solved**, just
+  differently than it assumed: `paymongo-webhook` already does real
+  HMAC-SHA256 signature verification (item 14's biggest ask); its
+  handlers only ever set absolute state (never increment), so a PayMongo
+  retry replaying the same event is already a harmless no-op without a
+  dedup table (item 2); the 1-of-1 double-sale protection is a
+  deliberate first-payment-wins design (§5.2), not an oversight the
+  doc's proposed 10-minute reservation lock should reverse.
+- **Two phases were flagged premature**: payment-failure recovery and an
+  admin KPI dashboard both explicitly depend on PayMongo actually being
+  live and real transaction volume existing — building either now would
+  be against dead code or fake seed-data numbers.
+- **Shipping/tracking remains blocked** on the client confirming which
+  courier(s) ACUA ships with.
+
+The one phase that was both real and actually buildable *now*:
+**refunds**. Nothing tracked a refund request anywhere before this —
+checkout and commission payments are both still fully manual (a QR code
+sent directly), so a refund meant handling it entirely outside the app
+with no system record at all.
+
+Added a `refunds` table (`0020_refunds.sql`): `order_id` XOR
+`commission_brief_id`, `reason`, `status`
+(pending/approved/rejected/processed), `admin_notes`, `amount_cents` —
+public-insert-with-ownership-check (a patron can only file a refund
+against an order or commission that's actually theirs, verified server-
+side, not trusted from the client), admin-only update, the same shape as
+every other patron-writable table in this schema. The patron dashboard
+gained a "Request a Refund" control on each order/commission card;
+AdminView gained a new Refunds tab to approve (sets the amount),
+decline (with a note the patron sees), or mark one refunded once the
+money's actually been sent back by hand.
+
+Deliberately smaller than the original doc's version: no percentage-
+based partial refunds, no automated payment reversal (there's nothing to
+reverse yet), no multi-party splits — a tracked request/approval
+workflow for an already-real process (the Terms of Service's 1-week
+return window), not a payment-processor integration ACUA doesn't have
+yet.
+
+**Verified without login credentials for either a patron or admin
+account** (the standing limitation from earlier tonight — password
+resets are blocked by auto-mode's secret-store-write guard): simulated
+the RLS policies directly instead, with real role/JWT-claim substitution
+in SQL. Created a real test order and commission brief owned by a real
+patron account, then confirmed that patron's own INSERT against their
+own order succeeds (status lands `pending`) while an INSERT against an
+order that isn't theirs is genuinely rejected (`42501`, row-level
+security violation) — not just trusted by inspection. Confirmed the
+three new foreign keys (`order_id`/`commission_brief_id`/`user_id`)
+exist, so AdminView's embedded query can actually resolve them, matching
+the exact embed pattern already proven working for `orders`' own
+product/patron joins. Build and lint clean; loaded the live production
+site through to the auth gate and confirmed zero console errors —
+proof both new components load without a runtime error before auth even
+applies, the closest thing to a live check achievable without real
+credentials. Test order and brief deleted afterward; `refunds` confirmed
+empty.
+
+Two docs came out of this session, both created and kept up to date
+throughout: **ACUA — Status Brief** (client-facing, for the Wednesday
+meeting) and **ACUA — Engineering Backlog** (the trimmed-to-reality
+version of the outside doc, in the client's own requested checklist
+format, with a table explaining what was cut and why).
