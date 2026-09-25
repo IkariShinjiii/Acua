@@ -1,4 +1,10 @@
-// Selectable options for the Custom Commission request form.
+// Fallback defaults for the Custom Commission request form's accessory
+// categories and material options -- the actual, admin-editable lists now
+// live in the commission_categories/commission_materials tables
+// (0019_commission_options.sql, seeded with these exact same values) and
+// are fetched via lib/commissionOptionsFetch.js. These arrays are what
+// every consuming view renders with before that fetch resolves (or if it
+// ever fails), so the form is never left with nothing to show.
 export const JEWELRY_CATEGORIES = [
   'Necklace / Choker',
   'Statement Cuff',

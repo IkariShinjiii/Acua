@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { MATERIAL_OPTIONS } from '../data/commissionOptions';
+import { fetchCommissionOptions } from '../lib/commissionOptionsFetch';
 import { parseDeepLinkTab } from '../lib/dashboardTabs';
 
 function stageIndex(stages, id) {
@@ -81,6 +82,20 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   }, [initialTab]);
   const [orders, setOrders] = useState(null);
   const [briefs, setBriefs] = useState(null);
+  // Admin-editable (see AdminView's Commission Options tab); starts from
+  // the hardcoded defaults so a brief's material label renders instantly,
+  // same fallback approach as CommissionView's own copy of this fetch.
+  const [materials, setMaterials] = useState(MATERIAL_OPTIONS);
+  useEffect(() => {
+    let cancelled = false;
+    fetchCommissionOptions().then((result) => {
+      if (cancelled || !result) return;
+      setMaterials(result.materials);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // A failed fetch used to look identical to "you genuinely have none of
   // these" — both just left orders/briefs as []. For a patron checking on
   // something they actually paid for, that's a real trust problem: a
@@ -294,7 +309,7 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
                     <div>
                       <h3 className="font-serif text-lg text-on-surface">{brief.category}</h3>
                       <p className="text-xs text-on-surface-variant mt-0.5">
-                        {MATERIAL_OPTIONS.find((m) => m.id === brief.material)?.label ?? brief.material} •
+                        {materials.find((m) => m.id === brief.material)?.label ?? brief.material} •
                         Submitted {new Date(brief.created_at).toLocaleDateString()}
                         {brief.quote_price_cents &&
                           ` • Quote: ₱${(brief.quote_price_cents / 100).toLocaleString()}`}

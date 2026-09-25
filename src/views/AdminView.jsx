@@ -16,6 +16,8 @@ import {
   AlertCircle,
   Pencil,
   Image,
+  Tag,
+  X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -28,7 +30,6 @@ import { parseDeepLinkTab } from '../lib/dashboardTabs';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { FILTER_TABS } from '../data/products';
-import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS } from '../data/commissionOptions';
 
 const TABS = [
   { id: 'commissions', label: 'Commission Pipeline', icon: Hammer },
@@ -36,6 +37,7 @@ const TABS = [
   { id: 'inventory', label: 'Inventory & Site Curation', icon: Gem },
   { id: 'archive', label: 'The Archive', icon: Archive },
   { id: 'hero', label: 'Homepage Hero', icon: Image },
+  { id: 'commissionOptions', label: 'Commission Options', icon: Tag },
 ];
 
 function stageIndex(stages, id) {
@@ -118,7 +120,7 @@ function AdminTabError({ label, onRetry }) {
 /* ------------------------------------------------------------------ */
 /* Commission Pipeline                                                  */
 /* ------------------------------------------------------------------ */
-function CommissionPipeline({ briefs, onUpdated, showToast }) {
+function CommissionPipeline({ briefs, materials, onUpdated, showToast }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [quoteDrafts, setQuoteDrafts] = useState({});
   const [saving, setSaving] = useState(null);
@@ -246,7 +248,7 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
                   </div>
                   <p className="text-xs text-on-surface-variant mt-1">
                     {brief.email} • {brief.category} •{' '}
-                    {MATERIAL_OPTIONS.find((m) => m.id === brief.material)?.label ?? brief.material}
+                    {materials.find((m) => m.id === brief.material)?.label ?? brief.material}
                   </p>
                   {brief.narrative && (
                     <p className="text-sm text-on-surface/80 mt-3 leading-relaxed max-w-2xl">
@@ -785,12 +787,12 @@ function InventoryCuration({ pieces, onUpdated, showToast }) {
 /* ------------------------------------------------------------------ */
 /* The Archive                                                          */
 /* ------------------------------------------------------------------ */
-function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
+function ArchiveCuration({ archiveItems, categories, materials, onUpdated, showToast }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [draft, setDraft] = useState({
     title: '',
-    category: JEWELRY_CATEGORIES[0],
-    material: MATERIAL_OPTIONS[0].id,
+    category: categories[0],
+    material: materials[0].id,
     image: '',
     alt: '',
   });
@@ -824,7 +826,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
         return;
       }
       showToast(`"${draft.title}" added to The Archive.`, 'success');
-      setDraft({ title: '', category: JEWELRY_CATEGORIES[0], material: MATERIAL_OPTIONS[0].id, image: '', alt: '' });
+      setDraft({ title: '', category: categories[0], material: materials[0].id, image: '', alt: '' });
       setShowAddForm(false);
       onUpdated();
     } catch (err) {
@@ -895,7 +897,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
               aria-label="Category"
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
             >
-              {JEWELRY_CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -907,7 +909,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
               aria-label="Material"
               className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset sm:col-span-2"
             >
-              {MATERIAL_OPTIONS.map((m) => (
+              {materials.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.label}
                 </option>
@@ -949,7 +951,7 @@ function ArchiveCuration({ archiveItems, onUpdated, showToast }) {
             <div className="p-4 space-y-2">
               <p className="font-sans text-sm font-medium text-on-surface">{item.title}</p>
               <p className="text-xs text-on-surface-variant">
-                {item.category} • {MATERIAL_OPTIONS.find((m) => m.id === item.material)?.label ?? item.material}
+                {item.category} • {materials.find((m) => m.id === item.material)?.label ?? item.material}
               </p>
               <button
                 onClick={() => setPendingRemoval(item)}
@@ -1067,6 +1069,297 @@ function HeroCuration({ hero, onUpdated, showToast }) {
   );
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Categories are just a list of labels (no separate id -- the label IS
+// the row's identity, `commission_categories.label` is its primary key),
+// so there's no safe way to "rename" one in place; add/remove is the
+// whole surface. Materials keep a stable id (auto-generated from the
+// label on add, e.g. "non-tarnish-gold-tone") precisely so relabeling an
+// EXISTING one is safe -- commission_briefs/archive_items reference the
+// id, never the label, so editing a material's label/note here can never
+// orphan a past request the way changing its id would.
+function CommissionOptionsCuration({ categories, materials, onUpdated, showToast }) {
+  const [newCategory, setNewCategory] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newMaterial, setNewMaterial] = useState({ label: '', note: '' });
+  const [addingMaterial, setAddingMaterial] = useState(false);
+  const [editingMaterialId, setEditingMaterialId] = useState(null);
+  const [editDraft, setEditDraft] = useState({ label: '', note: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  // { type: 'category' | 'material', id, label } awaiting confirm, or null.
+  const [pendingRemoval, setPendingRemoval] = useState(null);
+
+  const addCategory = async (e) => {
+    e.preventDefault();
+    const label = newCategory.trim();
+    if (!label) return;
+    if (categories.includes(label)) {
+      showToast('That category already exists.', 'error');
+      return;
+    }
+    setAddingCategory(true);
+    try {
+      const { error } = await supabase
+        .from('commission_categories')
+        .insert({ label, sort_order: categories.length });
+      if (error) {
+        showToast(`Couldn't add that category: ${error.message}`, 'error');
+        return;
+      }
+      showToast(`"${label}" added.`, 'success');
+      setNewCategory('');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't add that category: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
+  const addMaterial = async (e) => {
+    e.preventDefault();
+    const label = newMaterial.label.trim();
+    if (!label) return;
+    const id = slugify(label);
+    if (!id) {
+      showToast("That name needs at least one letter or number.", 'error');
+      return;
+    }
+    if (materials.some((m) => m.id === id)) {
+      showToast('A material with that name already exists.', 'error');
+      return;
+    }
+    setAddingMaterial(true);
+    try {
+      const { error } = await supabase
+        .from('commission_materials')
+        .insert({ id, label, note: newMaterial.note.trim() || null, sort_order: materials.length });
+      if (error) {
+        showToast(`Couldn't add that material: ${error.message}`, 'error');
+        return;
+      }
+      showToast(`"${label}" added.`, 'success');
+      setNewMaterial({ label: '', note: '' });
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't add that material: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setAddingMaterial(false);
+    }
+  };
+
+  const saveMaterialEdit = async (material) => {
+    const label = editDraft.label.trim();
+    if (!label) return;
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from('commission_materials')
+        .update({ label, note: editDraft.note.trim() || null })
+        .eq('id', material.id);
+      if (error) {
+        showToast(`Couldn't save that material: ${error.message}`, 'error');
+        return;
+      }
+      showToast('Material updated.', 'success');
+      setEditingMaterialId(null);
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't save that material: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const confirmRemoval = async () => {
+    const target = pendingRemoval;
+    if (!target) return;
+    setPendingRemoval(null);
+    try {
+      const { error } = await supabase
+        .from(target.type === 'category' ? 'commission_categories' : 'commission_materials')
+        .delete()
+        .eq(target.type === 'category' ? 'label' : 'id', target.id);
+      if (error) {
+        showToast(`Couldn't remove "${target.label}": ${error.message}`, 'error');
+        return;
+      }
+      showToast(`"${target.label}" removed.`, 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't remove "${target.label}": ${err?.message || 'check your connection and try again.'}`, 'error');
+    }
+  };
+
+  return (
+    <div className="space-y-10">
+      <p className="text-xs text-on-surface-variant max-w-2xl">
+        The accessory categories and material options shown on the Custom Commission form. Changes
+        here go live on the public form immediately. A request someone already submitted keeps
+        showing what they originally selected, even after an option here is renamed or removed.
+      </p>
+
+      <div className="space-y-4">
+        <h3 className="font-serif text-lg text-on-surface">Accessory Categories</h3>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((label) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 pl-4 pr-2 py-2 rounded-full bg-surface-elevated shadow-cloud-sm text-sm text-on-surface"
+            >
+              {label}
+              <button
+                onClick={() => setPendingRemoval({ type: 'category', id: label, label })}
+                aria-label={`Remove category ${label}`}
+                className="p-1 rounded-full hover:bg-chile-rojo/10 hover:text-accent transition-colors border-none bg-transparent cursor-pointer text-on-surface-variant focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          {categories.length === 0 && (
+            <p className="text-sm text-on-surface-variant">No categories yet — add one below.</p>
+          )}
+        </div>
+        <form onSubmit={addCategory} className="flex gap-2 max-w-sm">
+          <input
+            placeholder="New category name"
+            aria-label="New category name"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            className="flex-1 rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+          />
+          <button
+            type="submit"
+            disabled={addingCategory || !newCategory.trim()}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          >
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </form>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="font-serif text-lg text-on-surface">Materials</h3>
+        <div className="space-y-3">
+          {materials.map((material) =>
+            editingMaterialId === material.id ? (
+              <div key={material.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-4 space-y-2">
+                <input
+                  value={editDraft.label}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, label: e.target.value }))}
+                  aria-label="Material name"
+                  className="w-full rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+                />
+                <input
+                  value={editDraft.note}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, note: e.target.value }))}
+                  placeholder="Note (optional)"
+                  aria-label="Material note"
+                  className="w-full rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => saveMaterialEdit(material)}
+                    disabled={savingEdit || !editDraft.label.trim()}
+                    className="px-4 py-2 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    {savingEdit ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingMaterialId(null)}
+                    className="px-4 py-2 rounded-full bg-surface-container text-on-surface text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                key={material.id}
+                className="flex items-start justify-between gap-3 bg-surface-elevated rounded-2xl shadow-cloud-sm p-4"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-on-surface">{material.label}</p>
+                  {material.note && <p className="text-xs text-on-surface-variant mt-0.5">{material.note}</p>}
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setEditingMaterialId(material.id);
+                      setEditDraft({ label: material.label, note: material.note ?? '' });
+                    }}
+                    aria-label={`Edit ${material.label}`}
+                    className="p-2 rounded-full bg-surface-container text-on-surface border-none cursor-pointer hover:bg-surface-container-high transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setPendingRemoval({ type: 'material', id: material.id, label: material.label })}
+                    aria-label={`Remove ${material.label}`}
+                    className="p-2 rounded-full bg-surface-container text-accent border-none cursor-pointer hover:bg-chile-rojo hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+          {materials.length === 0 && (
+            <p className="text-sm text-on-surface-variant">No materials yet — add one below.</p>
+          )}
+        </div>
+        <form
+          onSubmit={addMaterial}
+          className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-4 grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          <input
+            placeholder="Material name *"
+            aria-label="New material name"
+            value={newMaterial.label}
+            onChange={(e) => setNewMaterial((m) => ({ ...m, label: e.target.value }))}
+            className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+          />
+          <input
+            placeholder="Note (optional)"
+            aria-label="New material note"
+            value={newMaterial.note}
+            onChange={(e) => setNewMaterial((m) => ({ ...m, note: e.target.value }))}
+            className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+          />
+          <button
+            type="submit"
+            disabled={addingMaterial || !newMaterial.label.trim()}
+            className="sm:col-span-2 justify-self-start inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-ink text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          >
+            <Plus className="w-4 h-4" /> Add Material
+          </button>
+        </form>
+      </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingRemoval)}
+        title={pendingRemoval?.type === 'category' ? 'Remove this category?' : 'Remove this material?'}
+        message={
+          pendingRemoval
+            ? `Remove "${pendingRemoval.label}"? It'll no longer appear on the Custom Commission form. Requests already submitted keep showing what they originally selected.`
+            : ''
+        }
+        confirmLabel="Remove"
+        onConfirm={confirmRemoval}
+        onCancel={() => setPendingRemoval(null)}
+      />
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Root                                                                  */
 /* ------------------------------------------------------------------ */
@@ -1085,6 +1378,8 @@ export default function AdminView({ initialTab }) {
   const [pieces, setPieces] = useState(null);
   const [archiveItems, setArchiveItems] = useState(null);
   const [hero, setHero] = useState(null);
+  const [categories, setCategories] = useState(null);
+  const [materials, setMaterials] = useState(null);
   // Each of the four admin fetches used to treat a failure exactly like a
   // genuinely empty table — "0 briefs, 0 orders, 0 products, 0 archive
   // items" — which for the site owner checking their own store is a real
@@ -1095,6 +1390,8 @@ export default function AdminView({ initialTab }) {
   const [piecesFailed, setPiecesFailed] = useState(false);
   const [archiveFailed, setArchiveFailed] = useState(false);
   const [heroFailed, setHeroFailed] = useState(false);
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  const [materialsFailed, setMaterialsFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
   const { toast, showToast, dismissToast } = useToast();
@@ -1152,6 +1449,22 @@ export default function AdminView({ initialTab }) {
       if (cancelled) return;
       setHeroFailed(Boolean(error));
       setHero(error || !data ? null : data);
+    });
+
+    withTimeout(
+      supabase.from('commission_categories').select('label').order('sort_order', { ascending: true })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setCategoriesFailed(Boolean(error));
+      setCategories(error || !data ? [] : data.map((row) => row.label));
+    });
+
+    withTimeout(
+      supabase.from('commission_materials').select('id, label, note').order('sort_order', { ascending: true })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setMaterialsFailed(Boolean(error));
+      setMaterials(error || !data ? [] : data);
     });
 
     return () => {
@@ -1222,7 +1535,7 @@ export default function AdminView({ initialTab }) {
           ) : briefsFailed ? (
             <AdminTabError label="commission briefs" onRetry={refresh} />
           ) : (
-            <CommissionPipeline briefs={briefs} onUpdated={refresh} showToast={showToast} />
+            <CommissionPipeline briefs={briefs} materials={materials ?? []} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'orders' &&
           (orders === null ? (
@@ -1241,12 +1554,23 @@ export default function AdminView({ initialTab }) {
             <InventoryCuration pieces={pieces} onUpdated={refresh} showToast={showToast} />
           ))}
         {activeTab === 'archive' &&
-          (archiveItems === null ? (
+          (archiveItems === null || categories === null || materials === null ? (
             <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
-          ) : archiveFailed ? (
+          ) : archiveFailed || categoriesFailed || materialsFailed ? (
             <AdminTabError label="archive items" onRetry={refresh} />
+          ) : categories.length === 0 || materials.length === 0 ? (
+            <p className="text-center text-sm text-on-surface-variant py-16">
+              Add at least one category and material in the Commission Options tab before adding an
+              Archive piece.
+            </p>
           ) : (
-            <ArchiveCuration archiveItems={archiveItems} onUpdated={refresh} showToast={showToast} />
+            <ArchiveCuration
+              archiveItems={archiveItems}
+              categories={categories}
+              materials={materials}
+              onUpdated={refresh}
+              showToast={showToast}
+            />
           ))}
         {activeTab === 'hero' &&
           (hero === null ? (
@@ -1257,6 +1581,19 @@ export default function AdminView({ initialTab }) {
             )
           ) : (
             <HeroCuration hero={hero} onUpdated={refresh} showToast={showToast} />
+          ))}
+        {activeTab === 'commissionOptions' &&
+          (categories === null || materials === null ? (
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : categoriesFailed || materialsFailed ? (
+            <AdminTabError label="commission options" onRetry={refresh} />
+          ) : (
+            <CommissionOptionsCuration
+              categories={categories}
+              materials={materials}
+              onUpdated={refresh}
+              showToast={showToast}
+            />
           ))}
       </div>
       <Toast toast={toast} onDismiss={dismissToast} />
