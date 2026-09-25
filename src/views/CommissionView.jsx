@@ -266,6 +266,13 @@ export default function CommissionView({ prefill }) {
         return;
       }
 
+      // Best-effort: the brief is already durably saved above regardless of
+      // whether this succeeds, so a slow or failed email notification
+      // should never hold up the confirmation screen or be treated as the
+      // submission itself failing.
+      supabase.functions.invoke('send-notification-email', { body: { type: 'new_brief', briefId } })
+        .catch((err) => console.error('send-notification-email (new_brief) failed:', err));
+
       // Successfully uploaded to storage now, so the local blob previews
       // are no longer needed — reclaim their memory instead of waiting for
       // an unmount that might not happen for a while in an SPA session.

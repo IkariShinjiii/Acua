@@ -173,20 +173,32 @@ function CommissionPipeline({ briefs, onUpdated, showToast }) {
       if (error) {
         showToast(`Couldn't update that brief: ${error.message}`, 'error');
         setSaving(null); // failure: no refetch is coming to clear this otherwise
-        return;
+        return false;
       }
       if (successMessage) showToast(successMessage, 'success');
       onUpdated(); // saving clears once the refetch it triggers actually lands (see effect above)
+      return true;
     } catch (err) {
       showToast(`Couldn't update that brief: ${err?.message || 'check your connection and try again.'}`, 'error');
       setSaving(null);
+      return false;
     }
   };
 
-  const sendQuote = (brief) => {
+  const sendQuote = async (brief) => {
     const raw = quoteDrafts[brief.id] ?? '';
     const cents = Math.round(parsePesoToNumber(raw) * 100);
-    advance(brief.id, 'quote_sent', { quote_price_cents: cents || null }, 'Quote sent.');
+    const updated = await advance(brief.id, 'quote_sent', { quote_price_cents: cents || null }, 'Quote sent.');
+    if (!updated) return; // advance() already showed its own error toast
+    // The status update above is what actually matters to the pipeline —
+    // this is a best-effort notification on top of it, so a failure here
+    // gets its own toast rather than reverting or blocking the advance.
+    const { data, error } = await supabase.functions.invoke('send-notification-email', {
+      body: { type: 'quote_sent', briefId: brief.id },
+    });
+    if (error || data?.sent === false) {
+      showToast("Quote saved, but the patron's email couldn't be sent — let them know directly.", 'error');
+    }
   };
 
   const visible =
