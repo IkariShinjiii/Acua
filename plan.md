@@ -4087,3 +4087,20 @@ outright regardless). Resend's shared test sender works with zero
 DNS setup but only delivers to the email the Resend account itself was
 created with; verifying a real sending domain (Resend → Domains) and
 setting `RESEND_FROM_EMAIL` lifts that limit to real recipients.
+
+**Follow-up once `RESEND_API_KEY` was actually set**: verified live end to
+end rather than just trusting the secret was there — confirmed the 503
+was gone, then triggered a real send against a real test brief. That
+surfaced Resend's test-mode restriction exactly as expected (only
+delivers to the account's own signup address until a domain is
+verified), and, more importantly, a real bug it exposed: the
+`admin_notified_at` claim fired *before* the Resend call, so a failed
+send still permanently marked the brief "notified" — it would never get
+its email even after Resend was properly configured, since the
+idempotency guard already believed it had fired. Fixed by rolling the
+claim back to `null` on a failed send; verified by re-triggering the same
+still-failing send and confirming the brief came back eligible for retry
+instead of stuck. `ADMIN_NOTIFICATION_EMAIL` currently defaults to
+`acuavibe@gmail.com`, which won't receive anything until the Resend
+domain is verified — worth pointing it at a deliverable address in the
+meantime if testing before that's done.
