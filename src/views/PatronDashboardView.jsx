@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle } from 'lucide-react';
+import { Package, Hammer, ShoppingBag, ArrowRight, LogOut, AlertCircle, Undo2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
@@ -67,6 +67,89 @@ function StageTracker({ stages, currentId }) {
   );
 }
 
+const REFUND_STATUS_LABELS = {
+  pending: 'Refund requested',
+  approved: 'Refund approved — processing',
+  rejected: 'Refund declined',
+  processed: 'Refunded',
+};
+
+// Shown on an order or commission card: either the existing refund's
+// status (a request only ever exists once — no way to file a second one
+// once there's already a pending/resolved row for the same target), or a
+// small toggle-open request form.
+function RefundControl({ refund, onSubmit }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  if (refund) {
+    return (
+      <div className="mt-3 flex items-start gap-2">
+        <StatusBadge label={REFUND_STATUS_LABELS[refund.status] ?? refund.status} done={refund.status === 'processed'} />
+        {refund.status === 'rejected' && refund.admin_notes && (
+          <p className="text-xs text-on-surface-variant">{refund.admin_notes}</p>
+        )}
+      </div>
+    );
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!reason.trim()) return;
+    setSubmitting(true);
+    setError('');
+    const ok = await onSubmit(reason.trim());
+    setSubmitting(false);
+    if (ok) {
+      setOpen(false);
+      setReason('');
+    } else {
+      setError("Couldn't send that request — check your connection and try again.");
+    }
+  };
+
+  return open ? (
+    <form onSubmit={submit} className="mt-3 space-y-2">
+      <textarea
+        required
+        rows={2}
+        autoFocus
+        placeholder="Why are you requesting a refund?"
+        aria-label="Refund reason"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        className="w-full rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset resize-none"
+      />
+      {error && <p className="text-xs text-accent">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting || !reason.trim()}
+          className="px-4 py-2 rounded-full bg-chile-rojo text-white text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+        >
+          {submitting ? 'Sending…' : 'Send Request'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="px-4 py-2 rounded-full bg-surface-container text-on-surface text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  ) : (
+    <button
+      onClick={() => setOpen(true)}
+      className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors py-2 -my-2 border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+    >
+      <Undo2 className="w-3.5 h-3.5" /> Request a Refund
+    </button>
+  );
+}
+
 export default function PatronDashboardView({ setCurrentView, initialTab }) {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState(parseDeepLinkTab(initialTab) ?? 'orders');
@@ -82,6 +165,7 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
   }, [initialTab]);
   const [orders, setOrders] = useState(null);
   const [briefs, setBriefs] = useState(null);
+  const [refunds, setRefunds] = useState(null);
   // Admin-editable (see AdminView's Commission Options tab); starts from
   // the hardcoded defaults so a brief's material label renders instantly,
   // same fallback approach as CommissionView's own copy of this fetch.
@@ -165,10 +249,41 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
       });
   }, [user]);
 
+  // Failures here are silent (no error banner of its own) -- a refund
+  // request/status is secondary to the order or commission it's attached
+  // to, and every order/commission card already tolerates `refunds` being
+  // null (RefundControl just doesn't render until it resolves) rather
+  // than needing a dedicated failure state for a non-critical fetch.
+  const loadRefunds = useCallback(() => {
+    if (!user) return;
+    supabase
+      .from('refunds')
+      .select('id, order_id, commission_brief_id, status, admin_notes')
+      .eq('user_id', user.id)
+      .then(({ data }) => setRefunds(data ?? []))
+      .catch(() => setRefunds([]));
+  }, [user]);
+
   useEffect(() => {
     loadOrders();
     loadBriefs();
-  }, [loadOrders, loadBriefs]);
+    loadRefunds();
+  }, [loadOrders, loadBriefs, loadRefunds]);
+
+  const refundFor = (orderId, commissionBriefId) =>
+    refunds?.find((r) => (orderId ? r.order_id === orderId : r.commission_brief_id === commissionBriefId));
+
+  const requestRefund = async (reason, { orderId, commissionBriefId }) => {
+    const { error } = await supabase.from('refunds').insert({
+      order_id: orderId ?? null,
+      commission_brief_id: commissionBriefId ?? null,
+      user_id: user.id,
+      reason,
+    });
+    if (error) return false;
+    loadRefunds();
+    return true;
+  };
 
   const tabs = [
     { id: 'orders', label: 'Active Purchases', icon: Package },
@@ -268,6 +383,10 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
                     />
                   </div>
                   <StageTracker stages={ORDER_STAGES} currentId={order.status} />
+                  <RefundControl
+                    refund={refundFor(order.id, null)}
+                    onSubmit={(reason) => requestRefund(reason, { orderId: order.id })}
+                  />
                 </div>
               );
             })}
@@ -324,6 +443,10 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
                     <p className="text-sm text-on-surface/80 mt-3 leading-relaxed">{brief.narrative}</p>
                   )}
                   <StageTracker stages={COMMISSION_STAGES} currentId={brief.status} />
+                  <RefundControl
+                    refund={refundFor(null, brief.id)}
+                    onSubmit={(reason) => requestRefund(reason, { commissionBriefId: brief.id })}
+                  />
                 </div>
               );
             })}

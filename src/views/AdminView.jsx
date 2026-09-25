@@ -18,6 +18,7 @@ import {
   Image,
   Tag,
   X,
+  Undo2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -38,6 +39,7 @@ const TABS = [
   { id: 'archive', label: 'The Archive', icon: Archive },
   { id: 'hero', label: 'Homepage Hero', icon: Image },
   { id: 'commissionOptions', label: 'Commission Options', icon: Tag },
+  { id: 'refunds', label: 'Refunds', icon: Undo2 },
 ];
 
 function stageIndex(stages, id) {
@@ -1360,6 +1362,263 @@ function CommissionOptionsCuration({ categories, materials, onUpdated, showToast
   );
 }
 
+const REFUND_STATUS_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'pending', label: 'Pending' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'processed', label: 'Processed' },
+  { id: 'rejected', label: 'Rejected' },
+];
+
+// Checkout and commission payments are both still fully manual (a QR code
+// sent directly -- see plan.md), so "processing" a refund here means the
+// admin sends the money back by hand outside this app; this tab is the
+// tracked request/approve/reject/mark-refunded record of that, not an
+// automated payment reversal.
+function RefundsCuration({ refunds, onUpdated, showToast }) {
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [actioning, setActioning] = useState(null); // { id, mode: 'approve' | 'reject' } | null
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const startApprove = (refund) => {
+    setActioning({ id: refund.id, mode: 'approve' });
+    const suggested = (refund.order?.total_cents ?? refund.commission_brief?.quote_price_cents ?? 0) / 100;
+    setAmount(suggested ? String(suggested) : '');
+    setNote('');
+  };
+
+  const startReject = (refund) => {
+    setActioning({ id: refund.id, mode: 'reject' });
+    setNote('');
+  };
+
+  const submitApprove = async (refund) => {
+    const cents = Math.round(parsePesoToNumber(amount) * 100);
+    if (!cents) {
+      showToast('Enter a refund amount first.', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('refunds')
+        .update({ status: 'approved', amount_cents: cents, admin_notes: note.trim() || null })
+        .eq('id', refund.id);
+      if (error) {
+        showToast(`Couldn't approve that refund: ${error.message}`, 'error');
+        return;
+      }
+      showToast('Refund approved.', 'success');
+      setActioning(null);
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't approve that refund: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitReject = async (refund) => {
+    if (!note.trim()) {
+      showToast('Add a short note explaining why, so the patron sees it.', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('refunds')
+        .update({ status: 'rejected', admin_notes: note.trim(), processed_at: new Date().toISOString() })
+        .eq('id', refund.id);
+      if (error) {
+        showToast(`Couldn't decline that refund: ${error.message}`, 'error');
+        return;
+      }
+      showToast('Refund declined.', 'success');
+      setActioning(null);
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't decline that refund: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const markRefunded = async (refund) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('refunds')
+        .update({ status: 'processed', processed_at: new Date().toISOString() })
+        .eq('id', refund.id);
+      if (error) {
+        showToast(`Couldn't mark that refund processed: ${error.message}`, 'error');
+        return;
+      }
+      showToast('Marked as refunded.', 'success');
+      onUpdated();
+    } catch (err) {
+      showToast(`Couldn't mark that refund processed: ${err?.message || 'check your connection and try again.'}`, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const visible = statusFilter === 'all' ? refunds : refunds.filter((r) => r.status === statusFilter);
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-on-surface-variant max-w-2xl">
+        Refund requests against orders and commissions. Checkout and commission payments are still
+        collected manually (GCash/bank transfer), so approving one here doesn't move any money by
+        itself — send it back the same way you were paid, then mark it refunded.
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {REFUND_STATUS_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setStatusFilter(f.id)}
+            className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider border-none cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
+              statusFilter === f.id
+                ? 'bg-chile-rojo text-white'
+                : 'bg-surface-elevated text-on-surface hover:bg-surface-container shadow-cloud-sm'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        {visible.map((refund) => {
+          const target = refund.order
+            ? { label: refund.order.product?.title ?? 'Order', sub: `₱${(refund.order.total_cents / 100).toLocaleString()}` }
+            : { label: refund.commission_brief?.category ?? 'Commission', sub: refund.commission_brief?.full_name };
+          return (
+            <div key={refund.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 space-y-3">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-sm font-medium text-on-surface">{target.label}</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    {target.sub} • {refund.patron?.full_name ?? refund.patron?.email ?? 'Patron'} •{' '}
+                    {new Date(refund.created_at).toLocaleDateString()}
+                    {refund.amount_cents != null && ` • ₱${(refund.amount_cents / 100).toLocaleString()}`}
+                  </p>
+                </div>
+                <StatusBadge
+                  label={refund.status}
+                  tone={refund.status === 'processed' ? 'done' : refund.status === 'rejected' ? 'neutral' : 'active'}
+                />
+              </div>
+              <p className="text-sm text-on-surface/80">{refund.reason}</p>
+              {refund.admin_notes && (
+                <p className="text-xs text-on-surface-variant">Note to patron: {refund.admin_notes}</p>
+              )}
+
+              {refund.status === 'pending' && actioning?.id !== refund.id && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => startApprove(refund)}
+                    className="px-4 py-2 rounded-full bg-chile-rojo text-white text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => startReject(refund)}
+                    className="px-4 py-2 rounded-full bg-surface-container text-accent text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-chile-rojo hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
+
+              {actioning?.id === refund.id && actioning.mode === 'approve' && (
+                <div className="space-y-2 pt-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Refund amount (₱)"
+                    aria-label="Refund amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full sm:w-48 rounded-xl bg-surface-container-low px-3.5 py-2 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+                  />
+                  <input
+                    placeholder="Note to patron (optional)"
+                    aria-label="Note to patron"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full rounded-xl bg-surface-container-low px-3.5 py-2 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => submitApprove(refund)}
+                      disabled={saving}
+                      className="px-4 py-2 rounded-full bg-chile-rojo text-white text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                    >
+                      {saving ? 'Saving…' : 'Confirm Approval'}
+                    </button>
+                    <button
+                      onClick={() => setActioning(null)}
+                      className="px-4 py-2 rounded-full bg-surface-container text-on-surface text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {actioning?.id === refund.id && actioning.mode === 'reject' && (
+                <div className="space-y-2 pt-1">
+                  <input
+                    placeholder="Reason the patron will see *"
+                    aria-label="Decline reason"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full rounded-xl bg-surface-container-low px-3.5 py-2 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => submitReject(refund)}
+                      disabled={saving}
+                      className="px-4 py-2 rounded-full bg-chile-rojo text-white text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                    >
+                      {saving ? 'Saving…' : 'Confirm Decline'}
+                    </button>
+                    <button
+                      onClick={() => setActioning(null)}
+                      className="px-4 py-2 rounded-full bg-surface-container text-on-surface text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {refund.status === 'approved' && (
+                <button
+                  onClick={() => markRefunded(refund)}
+                  disabled={saving}
+                  className="px-4 py-2 rounded-full bg-ink text-white text-[11px] font-semibold uppercase tracking-wider border-none cursor-pointer hover:opacity-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                >
+                  {saving ? 'Saving…' : 'Mark as Refunded'}
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {visible.length === 0 && (
+          <p className="text-center text-sm text-on-surface-variant py-12">
+            No {statusFilter === 'all' ? '' : `${statusFilter} `}refunds.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Root                                                                  */
 /* ------------------------------------------------------------------ */
@@ -1380,6 +1639,7 @@ export default function AdminView({ initialTab }) {
   const [hero, setHero] = useState(null);
   const [categories, setCategories] = useState(null);
   const [materials, setMaterials] = useState(null);
+  const [refunds, setRefunds] = useState(null);
   // Each of the four admin fetches used to treat a failure exactly like a
   // genuinely empty table — "0 briefs, 0 orders, 0 products, 0 archive
   // items" — which for the site owner checking their own store is a real
@@ -1392,6 +1652,7 @@ export default function AdminView({ initialTab }) {
   const [heroFailed, setHeroFailed] = useState(false);
   const [categoriesFailed, setCategoriesFailed] = useState(false);
   const [materialsFailed, setMaterialsFailed] = useState(false);
+  const [refundsFailed, setRefundsFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
   const { toast, showToast, dismissToast } = useToast();
@@ -1465,6 +1726,19 @@ export default function AdminView({ initialTab }) {
       if (cancelled) return;
       setMaterialsFailed(Boolean(error));
       setMaterials(error || !data ? [] : data);
+    });
+
+    withTimeout(
+      supabase
+        .from('refunds')
+        .select(
+          '*, order:orders(id, total_cents, product:products(title)), commission_brief:commission_briefs(id, full_name, category, quote_price_cents), patron:profiles(full_name, email)'
+        )
+        .order('created_at', { ascending: false })
+    ).then(({ data, error }) => {
+      if (cancelled) return;
+      setRefundsFailed(Boolean(error));
+      setRefunds(error || !data ? [] : data);
     });
 
     return () => {
@@ -1594,6 +1868,14 @@ export default function AdminView({ initialTab }) {
               onUpdated={refresh}
               showToast={showToast}
             />
+          ))}
+        {activeTab === 'refunds' &&
+          (refunds === null ? (
+            <p className="text-center text-sm text-on-surface-variant py-16">Loading…</p>
+          ) : refundsFailed ? (
+            <AdminTabError label="refunds" onRetry={refresh} />
+          ) : (
+            <RefundsCuration refunds={refunds} onUpdated={refresh} showToast={showToast} />
           ))}
       </div>
       <Toast toast={toast} onDismiss={dismissToast} />
