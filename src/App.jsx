@@ -439,6 +439,7 @@ export default function App() {
         open={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectProduct={handleViewProduct}
+        onRequestSimilar={handleRequestSimilar}
       />
       <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <Toast toast={toast} onDismiss={dismissToast} />

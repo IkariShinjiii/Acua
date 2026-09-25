@@ -133,8 +133,35 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
     }
   };
 
+  // Product rich-result markup (Google Search / Shopping) — the site-wide
+  // Organization schema in index.html says nothing about individual
+  // pieces, so nothing here ever qualified for a price/availability rich
+  // result. `<` is escaped defensively since this is admin-entered content
+  // (title/description) landing inside a <script> tag, however unlikely a
+  // literal "</script>" in there actually is.
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || undefined,
+    image: product.image,
+    category: product.category,
+    material: product.material,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'PHP',
+      price: (product.priceCents / 100).toFixed(2),
+      availability: `https://schema.org/${product.soldOut ? 'OutOfStock' : 'InStock'}`,
+      url: `${window.location.origin}/?product=${product.id}`,
+    },
+  };
+
   return (
     <main className="min-h-screen bg-sand text-on-surface font-sans antialiased">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd).replace(/</g, '\\u003c') }}
+      />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <button
           onClick={() => {
