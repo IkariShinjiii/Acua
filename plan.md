@@ -4104,3 +4104,40 @@ instead of stuck. `ADMIN_NOTIFICATION_EMAIL` currently defaults to
 `acuavibe@gmail.com`, which won't receive anything until the Resend
 domain is verified — worth pointing it at a deliverable address in the
 meantime if testing before that's done.
+
+## 85. Search now covers The Archive, and product pages get Product JSON-LD
+
+Continued the same night's standalone-work audit. Checked, rather than
+guessed, three candidate gaps: whether `SearchOverlay` covers The Archive
+(it didn't), whether product pages carry any structured data beyond the
+site-wide Organization schema (they didn't), and whether order tracking
+numbers are clickable courier links (they're plain text, and there's no
+courier field stored anywhere to build a real link from — that one needs
+the owner's input on which courier(s) are actually used, not code, so it
+was left alone).
+
+**Search**: `SearchOverlay` fetches `archive_items` alongside `products`
+now, tags each result by type, and an archive result triggers the same
+`onRequestSimilar` flow (`source: 'archive'`) the Archive section itself
+already uses — clicking it opens a correctly pre-filled Commission form
+instead of trying to open a product page that doesn't exist for a piece
+that was never purchasable. Product results are unaffected (still open
+the product page, still show price).
+
+**Product JSON-LD**: `ProductDetailView` now renders a per-product
+`schema.org/Product` block (name, description, image, category,
+material, and an `Offer` with price/currency/availability/url) alongside
+the page, so an individual piece can actually qualify for a price/
+availability rich result in Google Search rather than only the generic
+Organization card. `mapProductRow` gained a raw `priceCents` field next
+to the already-formatted price string, since JSON-LD needs a bare numeric
+price ("9800.00"), not "₱9,800".
+
+Verified live against a production build: searched an archive-only term
+("Sea Glass"), confirmed both a product result (with price) and an
+archive result (labeled "1-of-1 · Archive") appear together, and clicking
+the archive one lands on a correctly pre-filled Commission form. Opened a
+real product page and confirmed the JSON-LD parses and matches
+(`"price":"9800.00"`, `availability: InStock`); opened the one seeded
+sold-out product and confirmed its JSON-LD correctly reports
+`OutOfStock` instead. Zero new console errors in either case.
