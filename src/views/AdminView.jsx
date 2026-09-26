@@ -1631,6 +1631,25 @@ export default function AdminView({ initialTab }) {
   useEffect(() => {
     setActiveTab(parseDeepLinkTab(initialTab) ?? 'commissions');
   }, [initialTab]);
+  const tabScrollRef = useRef(null);
+  // Whether the tab strip is scrolled away from either edge -- drives the
+  // fade overlays below. Without these, a tab bar wider than its viewport
+  // (7 tabs at tablet/mobile widths) just clips mid-label with nothing to
+  // show it's scrollable, which is exactly the "cut off" look reported.
+  const [tabScroll, setTabScroll] = useState({ left: false, right: false });
+  const updateTabScroll = () => {
+    const el = tabScrollRef.current;
+    if (!el) return;
+    setTabScroll({
+      left: el.scrollLeft > 2,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
+    });
+  };
+  useEffect(() => {
+    updateTabScroll();
+    window.addEventListener('resize', updateTabScroll);
+    return () => window.removeEventListener('resize', updateTabScroll);
+  }, []);
   const [briefs, setBriefs] = useState(null);
   const [orders, setOrders] = useState(null);
   const [pieces, setPieces] = useState(null);
@@ -1782,15 +1801,22 @@ export default function AdminView({ initialTab }) {
           <StatCard icon={Gem} label="Pieces Marked Sold Out" value={soldOutCount} />
         </div>
 
-        <div className="mb-8 border-b border-outline-variant/30">
-          <div className="flex gap-1 overflow-x-auto scrollbar-none -mb-px">
+        <div className="relative mb-8 border-b border-outline-variant/30">
+          <div
+            ref={tabScrollRef}
+            onScroll={updateTabScroll}
+            className="flex gap-1 overflow-x-auto scrollbar-none -mb-px"
+          >
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={(e) => {
+                    setActiveTab(tab.id);
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+                  }}
                   aria-current={isActive ? 'page' : undefined}
                   className={`relative flex-shrink-0 inline-flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                     isActive ? 'text-accent' : 'text-on-surface-variant hover:text-on-surface'
@@ -1809,6 +1835,18 @@ export default function AdminView({ initialTab }) {
               );
             })}
           </div>
+          {tabScroll.left && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 bottom-px w-10 bg-gradient-to-r from-sand to-transparent"
+            />
+          )}
+          {tabScroll.right && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute right-0 top-0 bottom-px w-10 bg-gradient-to-l from-sand to-transparent"
+            />
+          )}
         </div>
 
         {activeTab === 'commissions' &&

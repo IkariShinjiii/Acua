@@ -4339,3 +4339,35 @@ desktop shows all 7 tabs in one clean row with the underline correctly
 under the active tab; mobile confirms the horizontal-scroll behavior
 works as intended rather than silently clipping. Build and lint clean
 (only pre-existing warnings). Test artifacts deleted afterward.
+
+## 90. Fixed §89's tab bar: clipped-looking alignment at narrower widths
+
+User reported (with a screenshot) that §89's new tab bar looked broken
+at their actual window width: the active tab's label ("Commission
+Options") was cut off mid-word with no ellipsis or fade, and "Refunds"
+was missing from view entirely, with nothing on screen suggesting the
+strip was scrollable. Reproduced exactly by rendering the real markup
+against the built CSS at the same ~1146px width with the icons included
+(an earlier icon-less check of mine had missed this, since the icons'
+width is what pushes 7 tabs past the fold at that width) — confirmed
+the hard clip.
+
+Root cause: `overflow-x-auto` genuinely was scrollable, but a scrollable
+region with no visual affordance just looks cut off/misaligned, not
+"scroll me." Fixed with the standard pattern: an edge-fade overlay
+(`bg-gradient-to-l/r from-sand to-transparent`) that appears on
+whichever side still has hidden content, computed from `scrollLeft` /
+`scrollWidth` / `clientWidth` on mount, on resize, and on scroll, so the
+last visible label now fades into the background instead of stopping
+abruptly. Also made clicking a tab call `scrollIntoView` on itself, so
+selecting a tab near the edge (like Commission Options in the report)
+scrolls it fully into view instead of leaving it half-hidden.
+
+Verified in gstack's headless browser against the real compiled CSS at
+the exact reported width (1146px, all 7 tabs + icons): confirmed the
+hard cut reproduces without the fix, confirmed the right-edge fade
+renders correctly with the fix (checked with a tight clip screenshot on
+just the last tab's label), confirmed scrolling the strip to the end
+reveals Refunds fully with the fade correctly flipping to the left
+edge, and confirmed the same fade behavior at tablet (768px) and mobile
+(375px) widths. Build and lint clean. Test artifacts deleted afterward.
