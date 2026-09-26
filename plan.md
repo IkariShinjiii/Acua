@@ -4472,3 +4472,19 @@ identically on a clean load of both localhost and the current
 production site regardless of this change, so it predates this work
 and isn't a regression from it. Build and lint clean. Test screenshots
 and dev server cleaned up afterward.
+
+## 94. Moved §93's Legal card to below Change Password
+
+User follow-up: wanted Legal positioned under Change Password rather
+than above the account section. Moved the Legal card's JSX to after the
+`user ? <AccountSettingsPanel /> : <login prompt>` block instead of
+before it, so the panel now reads Appearance → account (Profile +
+Change Password when signed in, or the login prompt when signed out) →
+Legal at the bottom. Pure reorder, no logic changes.
+
+Verified the signed-out order live (Appearance → login prompt → Legal,
+confirmed in a screenshot) — couldn't verify the signed-in
+Profile/Change-Password/Legal order with a real login (the standing
+no-credentials limitation), but the change is a straightforward JSX
+sibling move with no conditional logic touched, so the signed-in case
+necessarily follows the same order. Build clean.

@@ -97,6 +97,19 @@ export default function SettingsOverlay({ open, onClose, onNavigate }) {
                 </div>
               </div>
 
+              {user ? (
+                <AccountSettingsPanel />
+              ) : (
+                <div className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto">
+                    <LogIn className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm text-on-surface-variant">
+                    Log in to manage your profile, password, and orders.
+                  </p>
+                </div>
+              )}
+
               <div className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 space-y-3">
                 <h3 className="font-serif text-lg text-on-surface">Legal</h3>
                 <div className="space-y-1">
@@ -120,19 +133,6 @@ export default function SettingsOverlay({ open, onClose, onNavigate }) {
                   </button>
                 </div>
               </div>
-
-              {user ? (
-                <AccountSettingsPanel />
-              ) : (
-                <div className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-full bg-chile-rojo/10 text-accent flex items-center justify-center mx-auto">
-                    <LogIn className="w-5 h-5" />
-                  </div>
-                  <p className="text-sm text-on-surface-variant">
-                    Log in to manage your profile, password, and orders.
-                  </p>
-                </div>
-              )}
             </div>
           </motion.div>
         </>
