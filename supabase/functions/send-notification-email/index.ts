@@ -1,11 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Two events, for now: a patron submits a commission brief (notify the
-// admin), and the admin sends a quote on one (notify the patron). Order
-// notifications (new order, shipped) aren't wired yet -- checkout isn't
-// live on main yet, so there's no real path that creates an order row to
-// hang them off. Add those the same way once checkout ships.
+// Three events, for now: a patron submits a commission brief (notify the
+// admin), the admin sends a quote on one (notify the patron), and the
+// admin marks an order shipped (notify the patron). Order-created
+// notifications aren't wired yet -- checkout isn't live on main yet.
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 // Resend's shared test sender -- works with zero setup, but only delivers
 // to the email the Resend account itself was created with. Once a real
@@ -51,6 +50,39 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 const formatPeso = (cents: number) => `₱${Math.round(cents / 100).toLocaleString("en-PH")}`;
 
+// Must stay in sync with src/data/couriers.js -- an edge function can't
+// import from src/, so the ids and J&T's confirmed-live tracking-link
+// pattern are duplicated here on purpose (see that file's own comment
+// for how the J&T pattern was confirmed and why LBC only gets its plain
+// tracking page instead of a guessed deep link).
+const COURIER_INFO: Record<string, { label: string; trackingUrl: ((n: string) => string) | null }> = {
+  jt: {
+    label: "J&T Express",
+    trackingUrl: (n) => `https://www.jtexpress.ph/trajectoryQuery?waybillNo=${encodeURIComponent(n)}`,
+  },
+  lbc: { label: "LBC Express", trackingUrl: () => "https://www.lbcexpress.com/track/" },
+  other: { label: "your courier", trackingUrl: null },
+};
+
+async function requireAdmin(req: Request): Promise<{ ok: true } | { ok: false; response: Response }> {
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+  });
+  const { data: userData, error: userError } = await authClient.auth.getUser();
+  if (userError || !userData?.user) {
+    return { ok: false, response: jsonResponse({ error: "Not authenticated." }, 401) };
+  }
+  const { data: profile } = await authClient
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userData.user.id)
+    .single();
+  if (!profile?.is_admin) {
+    return { ok: false, response: jsonResponse({ error: "Not authorized." }, 403) };
+  }
+  return { ok: true };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -64,19 +96,21 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Email notifications aren't set up yet -- missing RESEND_API_KEY." }, 503);
   }
 
-  let body: { type?: string; briefId?: string };
+  let body: { type?: string; briefId?: string; orderId?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Invalid request body." }, 400);
   }
 
-  const { type, briefId } = body;
-  if (!briefId || typeof briefId !== "string") {
-    return jsonResponse({ error: "briefId is required." }, 400);
-  }
-
+  const { type, briefId, orderId } = body;
   const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  if (type === "new_brief" || type === "quote_sent") {
+    if (!briefId || typeof briefId !== "string") {
+      return jsonResponse({ error: "briefId is required." }, 400);
+    }
+  }
 
   if (type === "new_brief") {
     // Atomic claim, same shape as claim_product_if_available (0001_init.sql):
@@ -129,25 +163,9 @@ Deno.serve(async (req) => {
 
   if (type === "quote_sent") {
     // Admin-only: verify the caller's own session, not just that a JWT was
-    // present (verify_jwt on deploy already guarantees that much). Reads
-    // through the anon-key client under the caller's own token so this
-    // relies on the same "view own profile" RLS policy already in place
-    // (0001_init.sql) rather than trusting anything the client claims.
-    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-    });
-    const { data: userData, error: userError } = await authClient.auth.getUser();
-    if (userError || !userData?.user) {
-      return jsonResponse({ error: "Not authenticated." }, 401);
-    }
-    const { data: profile } = await authClient
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", userData.user.id)
-      .single();
-    if (!profile?.is_admin) {
-      return jsonResponse({ error: "Not authorized." }, 403);
-    }
+    // present (verify_jwt on deploy already guarantees that much).
+    const admin = await requireAdmin(req);
+    if (!admin.ok) return admin.response;
 
     const { data: brief, error } = await serviceClient
       .from("commission_briefs")
@@ -173,6 +191,46 @@ Deno.serve(async (req) => {
       );
     } catch (err) {
       console.error("send-notification-email (quote_sent) failed:", err);
+      return jsonResponse({ sent: false, error: "Email failed to send." }, 502);
+    }
+    return jsonResponse({ sent: true });
+  }
+
+  if (type === "order_shipped") {
+    const admin = await requireAdmin(req);
+    if (!admin.ok) return admin.response;
+
+    if (!orderId || typeof orderId !== "string") {
+      return jsonResponse({ error: "orderId is required." }, 400);
+    }
+
+    const { data: order, error } = await serviceClient
+      .from("orders")
+      .select("tracking_number, courier, patron:profiles(full_name, email), product:products(title)")
+      .eq("id", orderId)
+      .single();
+    if (error || !order || !order.tracking_number || !order.patron?.email) {
+      return jsonResponse({ sent: false, error: "Order not found or missing tracking info." }, 404);
+    }
+
+    const info = COURIER_INFO[order.courier ?? ""] ?? COURIER_INFO.other;
+    const trackingUrl = info.trackingUrl?.(order.tracking_number);
+
+    try {
+      await sendEmail(
+        order.patron.email,
+        "Your ACUA order has shipped",
+        `<h2>Your order is on its way</h2>
+         <p>Hi ${escapeHtml(order.patron.full_name ?? "there")},</p>
+         <p><strong>${escapeHtml(order.product?.title ?? "Your order")}</strong> has shipped via ${escapeHtml(
+          info.label
+        )}.</p>
+         <p>Tracking number: <strong>${escapeHtml(order.tracking_number)}</strong></p>
+         ${trackingUrl ? `<p><a href="${trackingUrl}">Track your package</a></p>` : ""}
+         <p>&mdash; ACUA</p>`
+      );
+    } catch (err) {
+      console.error("send-notification-email (order_shipped) failed:", err);
       return jsonResponse({ sent: false, error: "Email failed to send." }, 502);
     }
     return jsonResponse({ sent: true });

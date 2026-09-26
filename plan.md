@@ -4650,3 +4650,76 @@ scratch files deleted afterward.
 Still genuinely blocked, unchanged: Phase 2 (Payment Failure Recovery)
 and Phase 3 (Admin KPI Dashboard) — both need PayMongo live with real
 transaction volume, which doesn't exist yet on `main`.
+
+## 98. Re-synced feature/paymongo-checkout with main, and fixed a repo/deploy drift found along the way
+
+User asked to re-sync the PayMongo branch (courier also confirmed:
+J&T, final). The branch hadn't been touched since 2026-09-24 and `main`
+had 24 commits since — most of today's admin-panel work (hero,
+tab bar redesign, commission options, refunds, §97's courier/shipping
+feature), much of it in the same files the branch itself rewrites.
+
+**First problem, found before the merge even started**: the local
+`feature/paymongo-checkout` branch had drifted from its own real
+remote — 29 local-only commits (old preloader experiments, old photo-
+upload work, all long superseded) vs. 2 commits actually on
+`origin/feature/paymongo-checkout`. Working tree was clean, so this was
+safe to fix: `git reset --hard origin/feature/paymongo-checkout`
+realigned local to the real branch before touching anything else —
+otherwise the merge would've been built on stale history and produced
+a wrong result on push.
+
+**The merge itself**: `git merge main` produced conflicts in exactly 4
+files, all resolved by combining both sides rather than preferring
+either:
+- `App.jsx` — `DOCUMENT_TITLES` needed both branches' entries
+  (`checkout`, `privacy`, `terms`)
+- `CartDrawer.jsx` — needed both new imports (`useCartAvailability`,
+  `unsplashSrcSet`), each genuinely used elsewhere in the same file
+- `AdminView.jsx` — `OrderFulfillment` now shows the branch's "Confirm
+  Payment Received" fallback button for `awaiting_payment` orders
+  *and* §97's courier/tracking-number ship form for the shipped
+  transition; the branch's own `advance()` signature and
+  `confirmPayment()` helper were kept alongside §97's `shipDetails`
+  parameter
+- `PatronDashboardView.jsx` — two entirely separate new top-level
+  components had landed in the same spot (branch's
+  `CommissionPaymentBanner` for deposit/balance payment polling, main's
+  `RefundControl`); kept both, plus both call sites on the commission
+  card (the deposit/balance button block and the refund control render
+  back to back, since a brief can need either depending on its status)
+
+Every other file (34 more) auto-merged with no conflict — confirmed
+each one actually landed correctly rather than trusting a clean merge
+blindly: spot-checked `commissionBriefs.js` (gained the branch's new
+`awaiting_balance` stage), `sitemap.xml` (kept both privacy/terms
+entries), and that every one of today's session's admin features
+(hero/tab-bar/commission-options/refunds curation) and every one of
+the branch's own files (`CheckoutView.jsx`, the three payment edge
+functions, `vercel.json`, `middleware.js` for link-preview bots) are
+present post-merge.
+
+**Second problem, found while verifying the merge — unrelated to the
+merge itself, but real**: `send-notification-email`'s repo source had
+drifted from what's actually deployed. §97 deployed its `order_shipped`
+addition straight to Supabase via the deploy tool but never wrote the
+updated file back into the git-tracked copy or committed it — so
+`main`'s own source for that function was still the pre-§97 version,
+two features behind the live one. Fixed on both branches: pulled the
+exact deployed source back via `get_edge_function` (not retyped from
+memory) and wrote it into both `main` and the merge commit, so the repo
+now genuinely matches what's running.
+
+**Database schema needs no catch-up either**: `list_migrations`
+confirmed the checkout/commission-payment schema (`awaiting_payment`
+enum value, `shipping_*` columns, deposit/balance columns) has been
+live since 2026-09-23 — built and applied back when the branch was
+originally developed, just never merged into `main`'s git history
+alongside it. So once this branch does get merged to `main`, no new
+migration work is needed to make checkout functional.
+
+Build and lint clean on the merged tree (both while resolving and
+again after the edge-function fix). Pushed `feature/paymongo-checkout`
+as an ordinary push (not force — the merge commit sits cleanly on top
+of the real origin branch after the local realignment). `main` itself
+only changed by the one-file edge-function fix, committed separately.
