@@ -5,7 +5,6 @@ import {
   Package,
   Gem,
   Archive,
-  ChevronRight,
   Truck,
   CheckCircle2,
   Plus,
@@ -1783,24 +1782,33 @@ export default function AdminView({ initialTab }) {
           <StatCard icon={Gem} label="Pieces Marked Sold Out" value={soldOutCount} />
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-outline-variant/30 pb-4">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
-                  isActive ? 'bg-chile-rojo text-white' : 'bg-surface-elevated text-on-surface hover:bg-surface-container shadow-cloud-sm'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-                {isActive && <ChevronRight className="w-3.5 h-3.5" />}
-              </button>
-            );
-          })}
+        <div className="mb-8 border-b border-outline-variant/30">
+          <div className="flex gap-1 overflow-x-auto scrollbar-none -mb-px">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`relative flex-shrink-0 inline-flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-colors border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
+                    isActive ? 'text-accent' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                  {isActive && (
+                    <motion.span
+                      layoutId="adminTabIndicator"
+                      className="absolute left-3 right-3 -bottom-px h-0.5 rounded-full bg-chile-rojo"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {activeTab === 'commissions' &&

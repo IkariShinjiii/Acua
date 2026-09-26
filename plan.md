@@ -4310,3 +4310,32 @@ viewport widths — the same visual bug the user reported, reproduced and
 then shown resolved, rather than trusted by code-reading alone. Test
 artifacts (scratch HTML, screenshots, the temporary prod build) deleted
 afterward.
+
+## 89. Redesigned the admin dashboard's tab bar
+
+User request with a screenshot: the 7 admin section buttons (Commission
+Pipeline, Order Fulfillment, Inventory & Site Curation, The Archive,
+Homepage Hero, Commission Options, Refunds) were uniform filled pill
+chips that wrapped unevenly into two rows (5 then 2) as more tabs were
+added over the session — functional but visually busy, with no clear
+scanning order.
+
+Replaced the pill row with a single-line underline tab bar (the
+Stripe/Linear pattern): icon + label per tab, muted text for inactive
+tabs, accent-colored text plus a thin animated underline bar for the
+active one. The underline uses framer-motion's `layoutId` (motion was
+already an import in this file) so it slides between tabs on click
+instead of just appearing. The whole strip sits in `overflow-x-auto
+scrollbar-none` (an existing utility class from `index.css`, already
+used for horizontal carousels elsewhere) so on narrow viewports it
+scrolls horizontally with a peeking next-tab as the affordance, instead
+of wrapping into uneven rows. Removed the now-unused `ChevronRight`
+import that the old pill's active-state chevron needed.
+
+Verified by rendering the exact new markup against the project's own
+compiled Tailwind CSS in gstack's headless browser (no admin login
+available to click through live) at desktop, tablet, and mobile widths:
+desktop shows all 7 tabs in one clean row with the underline correctly
+under the active tab; mobile confirms the horizontal-scroll behavior
+works as intended rather than silently clipping. Build and lint clean
+(only pre-existing warnings). Test artifacts deleted afterward.
