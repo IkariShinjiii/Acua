@@ -4371,3 +4371,38 @@ just the last tab's label), confirmed scrolling the strip to the end
 reveals Refunds fully with the fade correctly flipping to the left
 edge, and confirmed the same fade behavior at tablet (768px) and mobile
 (375px) widths. Build and lint clean. Test artifacts deleted afterward.
+
+## 91. Full alignment audit of the admin dashboard (desktop/tablet/mobile) — no further bugs found
+
+User asked to double-check all the admin dashboard's alignments across
+desktop, tablet, and mobile, following the two tab-bar fixes above.
+Scoped the audit to this session's actual new/changed surfaces —
+Commission Options and Refunds (the two tabs added this session and
+never yet stress-tested at multiple widths) — since the older tabs
+(Commission Pipeline, Order Fulfillment, Inventory & Site Curation, The
+Archive) have been live and exercised across many earlier sessions.
+
+Rendered both tabs' real JSX (copied verbatim from source, including
+icons — §90's note about an earlier icon-less miss made this a
+deliberate step this time) against the actual compiled Tailwind CSS,
+with deliberately awkward sample data chosen to stress wrapping: a
+long multi-word category label, a material with a long name AND a long
+note, and refund cards with varying content length including the
+inline approve/decline forms. Checked at 1280px, 768px, and 375px. All
+three widths held up cleanly — long labels wrap instead of overflowing,
+the refund card's status badge drops to its own line via `flex-wrap`
+once the header row gets tight instead of colliding with the title, and
+the edit/delete icon buttons on a wrapped multi-line material entry
+stay pinned top-right via `items-start` + `flex-shrink-0` instead of
+drifting to vertical-center. No bugs found in either tab.
+
+Also grepped the whole file for every other `col-span`/`grid-cols`
+pairing (the exact bug class fixed in §88's Homepage Hero form) to rule
+out a repeat elsewhere: the two other forms using `ImagePicker`
+(Inventory's product form, Archive's piece form) both correctly pair it
+with a matching `grid-cols-1 sm:grid-cols-2` container, and every other
+`col-span-2` in the file pairs the same way. §88 was an isolated case,
+not a pattern.
+
+No code changes this round — a clean audit. Build output and scratch
+HTML deleted afterward.
