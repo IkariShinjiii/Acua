@@ -4406,3 +4406,36 @@ not a pattern.
 
 No code changes this round — a clean audit. Build output and scratch
 HTML deleted afterward.
+
+## 92. Rescaled the live seed products to ACUA's real ₱100–800 pricing
+
+The 11 live `products` rows were still priced at the placeholder
+₱7,200–₱16,000 range noted back in the pricing-correction memory
+(§~76-ish territory) — never actually updated on the live table itself,
+just flagged. User asked directly to fix the live data now.
+
+Rescaled every product's `price_cents` with a straight linear map from
+the old range (₱7,200 low / ₱16,000 high) onto the real range (₱100
+low / ₱800 high), then rounded to a clean number — so the *relative*
+ordering and spread of the catalog is unchanged (Woven Sand Bracelet
+was priced highest before and still is, Driftwood Bead Bracelet was
+lowest and still is), only the absolute numbers move into the range the
+user confirmed is real. This is still placeholder data, not the
+client's real per-item prices (those aren't in hand yet) — just
+placeholder data that's finally believable instead of off by ~20x.
+
+No `products` schema change needed (`price_cents` already just an
+integer column), so this was a plain `UPDATE`, not a migration. No
+static fallback price data exists anywhere in the frontend (`products.js`
+holds no prices, checked by grep) — the DB is the only source, so
+nothing else needed touching. Verified live immediately after (DB
+writes need no deploy): re-fetched the `products` table to confirm the
+new range, then loaded the live production site and read back its
+rendered text — the homepage carousel, the full Shop grid, and each
+product's `Offer.price` in its JSON-LD (added in §85) all show the new
+₱100–800 numbers with no stale caching anywhere.
+
+Still separately true, not touched here: the commission budget tiers
+(`BUDGET_TIERS` in `src/data/commissionOptions.js`) are placeholder too
+and still need real numbers from the client — a different table/feature
+than the Shop's `products`, out of scope for what was asked.
