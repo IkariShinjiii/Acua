@@ -4488,3 +4488,35 @@ Profile/Change-Password/Legal order with a real login (the standing
 no-credentials limitation), but the change is a straightforward JSX
 sibling move with no conditional logic touched, so the signed-in case
 necessarily follows the same order. Build clean.
+
+## 95. Site-wide alignment sweep (public pages) — clean, no bugs found
+
+Following the run of admin-panel alignment fixes (§88-§91), did the
+same live-render sweep across the public-facing site to check for the
+same bug classes elsewhere, at mobile/tablet/desktop: Home (hero,
+New Release carousel row, Available Pieces grid, The Archive), the
+Custom Commission form (all 4 sections, budget tiers, file upload),
+a Product Detail page ("You may also like" grid included), FAQ, Terms,
+the mobile hamburger nav, Search overlay results, the Cart drawer, and
+the My Account login gate. All clean — no cut-off text, no stray
+implicit-grid columns, no broken wraps.
+
+Two apparent bugs surfaced during the sweep and were both ruled out as
+tooling artifacts, not real issues, after checking the actual DOM:
+- A full-page "hero missing, just a green gradient" capture turned out
+  to be the Preloader mid-animation — the capture fired before its
+  ~2.2s minimum display time elapsed, not a rendering bug.
+- A full-page mobile capture appeared to show a second navbar
+  duplicated mid-page. `document.querySelectorAll('nav, header')`
+  confirmed only one real header, correctly `position: fixed` at the
+  true top. The "duplicate" was the fixed header getting re-captured at
+  each stitched frame boundary of the screenshot tool's full-page
+  stitching — confirmed by retaking the same view as a true single-
+  frame viewport screenshot, which showed the header once, in the
+  right place. Worth remembering for future audits on this site: use a
+  single-frame `--viewport` capture, not full-page, whenever checking
+  a `position: fixed` element (the navbar, the ConciergeChat FAB) for
+  overlap with real content — full-page stitching produces this exact
+  false positive.
+
+No code changes this round.
