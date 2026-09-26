@@ -4271,3 +4271,42 @@ throughout: **ACUA — Status Brief** (client-facing, for the Wednesday
 meeting) and **ACUA — Engineering Backlog** (the trimmed-to-reality
 version of the outside doc, in the client's own requested checklist
 format, with a table explaining what was cut and why).
+
+## 88. Fixed the Homepage Hero admin form's cramped subtext box
+
+User-reported bug with a screenshot: on the Homepage Hero tab, the
+caption input and details/subtext textarea rendered side by side, with
+the subtext box squeezed into a narrow column with a scrollbar — barely
+usable to type into.
+
+Root cause was a CSS Grid quirk, not a sizing tweak: `HeroCuration`'s
+form used `grid grid-cols-1`, but `ImagePicker` (a shared component,
+also used in two other admin forms that really are `grid-cols-2`)
+carries a baked-in `sm:col-span-2` class. In a grid with only 1 explicit
+column, a child spanning 2 forces the browser to create an *implicit*
+2nd column sized to content — and the next two items in source order
+(the caption input, then the subtext textarea) auto-placed into that
+new row's two cells side by side instead of each stacking full-width,
+exactly matching the screenshot. Confirmed the mechanism by rendering
+the exact before/after markup against the real built Tailwind CSS in
+gstack's headless browser at desktop, tablet, and mobile widths — the
+"before" reproduced the bug precisely at tablet/desktop (mobile was
+never affected, since the `sm:` prefix doesn't apply below that
+breakpoint), and the "after" confirmed the fix.
+
+Fix: changed the form's container from `grid grid-cols-1` to a plain
+`flex flex-col`, so `ImagePicker`'s span class becomes a no-op and every
+field stacks full-width regardless of viewport. Also bumped the subtext
+textarea from `rows={3}` to `rows={5}` and switched it from
+`resize-none` to `resize-y` so the admin can make it taller if the copy
+runs long. `ImagePicker` itself wasn't touched, since its span class is
+correct for the two grid-cols-2 forms that already use it.
+
+Build and lint clean. No admin-account login was available to click
+through the live page, so verification was done by isolating the exact
+JSX classes against the project's own compiled CSS output and
+screenshotting both the broken and fixed versions side by side at three
+viewport widths — the same visual bug the user reported, reproduced and
+then shown resolved, rather than trusted by code-reading alone. Test
+artifacts (scratch HTML, screenshots, the temporary prod build) deleted
+afterward.

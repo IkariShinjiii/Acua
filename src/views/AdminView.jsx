@@ -1034,7 +1034,7 @@ function HeroCuration({ hero, onUpdated, showToast }) {
 
       <form
         onSubmit={save}
-        className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 grid grid-cols-1 gap-4"
+        className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 flex flex-col gap-4"
       >
         <ImagePicker
           value={draft.image}
@@ -1048,16 +1048,16 @@ function HeroCuration({ hero, onUpdated, showToast }) {
           aria-label="Hero caption"
           value={draft.heading}
           onChange={(e) => setDraft((d) => ({ ...d, heading: e.target.value }))}
-          className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
+          className="w-full rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset"
         />
         <textarea
           required
-          rows={3}
+          rows={5}
           placeholder="Details (subtext below the caption) *"
           aria-label="Hero details"
           value={draft.subtext}
           onChange={(e) => setDraft((d) => ({ ...d, subtext: e.target.value }))}
-          className="rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset resize-none"
+          className="w-full rounded-xl bg-surface-container-low px-4 py-2.5 text-sm border-none outline-none focus:bg-surface-elevated shadow-input-inset resize-y"
         />
         <button
           type="submit"
