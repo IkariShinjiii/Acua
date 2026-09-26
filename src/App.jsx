@@ -441,7 +441,7 @@ export default function App() {
         onSelectProduct={handleViewProduct}
         onRequestSimilar={handleRequestSimilar}
       />
-      <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onNavigate={navigateTo} />
       <Toast toast={toast} onDismiss={dismissToast} />
 
       {currentView === 'home' && (

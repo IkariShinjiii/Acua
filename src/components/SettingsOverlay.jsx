@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sun, Moon, LogIn } from 'lucide-react';
+import { X, Sun, Moon, LogIn, FileText, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -16,11 +16,16 @@ import AccountSettingsPanel from './AccountSettingsPanel';
 // This replaces both dashboard "settings" tabs (patron and admin) and the
 // standalone theme-toggle icon with one panel: Appearance always shows,
 // Profile/Password show only once signed in.
-export default function SettingsOverlay({ open, onClose }) {
+export default function SettingsOverlay({ open, onClose, onNavigate }) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const dialogRef = useRef(null);
   useFocusTrap(dialogRef, open);
+
+  const goToLegal = (view) => {
+    onNavigate(view);
+    onClose();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -89,6 +94,30 @@ export default function SettingsOverlay({ open, onClose }) {
                       {label}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 space-y-3">
+                <h3 className="font-serif text-lg text-on-surface">Legal</h3>
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => goToLegal('privacy')}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-on-surface bg-transparent border-none cursor-pointer hover:bg-surface-container-low transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-on-surface-variant flex-shrink-0" />
+                    <span className="flex-1 text-left">Privacy Policy</span>
+                    <ChevronRight className="w-4 h-4 text-on-surface-variant flex-shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => goToLegal('terms')}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-on-surface bg-transparent border-none cursor-pointer hover:bg-surface-container-low transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo"
+                  >
+                    <FileText className="w-4 h-4 text-on-surface-variant flex-shrink-0" />
+                    <span className="flex-1 text-left">Terms of Service</span>
+                    <ChevronRight className="w-4 h-4 text-on-surface-variant flex-shrink-0" />
+                  </button>
                 </div>
               </div>
 

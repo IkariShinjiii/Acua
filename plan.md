@@ -4439,3 +4439,36 @@ Still separately true, not touched here: the commission budget tiers
 (`BUDGET_TIERS` in `src/data/commissionOptions.js`) are placeholder too
 and still need real numbers from the client — a different table/feature
 than the Shop's `products`, out of scope for what was asked.
+
+## 93. Privacy Policy and Terms of Service links added to the Settings panel
+
+User asked for Privacy/Terms to be reachable from Settings too — until
+now they only existed in the footer (`Footer.jsx`), so a signed-in user
+deep in the dashboard, or anyone who'd scrolled past the footer, had no
+way to find them without scrolling all the way down.
+
+`SettingsOverlay` (the slide-out panel opened from the navbar's account
+dropdown → Settings, holding Appearance and, when signed in,
+`AccountSettingsPanel`) gained a new "Legal" card between the two,
+always visible regardless of sign-in state — matching Appearance's own
+always-visible placement, since legal pages are exactly as relevant to
+a signed-out visitor as a signed-in patron. Two row buttons ("Privacy
+Policy", "Terms of Service", each with an icon and a trailing chevron)
+call a new `goToLegal(view)` helper that navigates via the same
+`navigateTo` function the footer's own Privacy/Terms links already use,
+then closes the settings panel — so the overlay doesn't linger open
+behind the page it just navigated to. Wired `onNavigate={navigateTo}`
+through as a new `SettingsOverlay` prop from `App.jsx`; the overlay
+previously had no navigation capability at all, only `onClose`.
+
+Verified live in the browser end to end: opened the account dropdown →
+Settings, confirmed the new Legal card renders between Appearance and
+the login prompt, clicked "Privacy Policy," and confirmed the URL
+changed to `/privacy`, the settings panel closed, and the real Privacy
+Policy page rendered underneath — not just that the button exists.
+Noted one pre-existing, unrelated console error (an SVG `<path>` "d"
+warning from the homepage Preloader's crest animation) that reproduces
+identically on a clean load of both localhost and the current
+production site regardless of this change, so it predates this work
+and isn't a regression from it. Build and lint clean. Test screenshots
+and dev server cleaned up afterward.
