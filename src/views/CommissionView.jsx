@@ -95,7 +95,7 @@ export default function CommissionView({ prefill }) {
     timeline: 'Flexible (4-6 Weeks)',
     category: prefill?.category ?? 'Necklace / Choker',
     material: prefillMaterialId ?? 'non-tarnish-gold-tone',
-    budget: '₱45,000 – ₱84,000',
+    budget: '₱200 – ₱400',
     narrative: prefill
       ? `Inspired by "${prefill.title}" from ${prefillSourceLabel}${
           prefillMaterialId ? '' : ` (similar material: ${prefill.material})`

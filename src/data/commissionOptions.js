@@ -17,11 +17,17 @@ export const MATERIAL_OPTIONS = [
   { id: 'natural-synthetic-mix', label: 'Natural & Synthetic Mix', note: 'Premium beads, natural stone, and resin combined' },
 ];
 
+// Rescaled (plan.md §96) to line up with the real Shop price range
+// (₱100-800, see plan.md §92) -- a linear map of the old placeholder
+// boundaries (₱22,000/45,000/84,000/168,000) onto the real one, same as
+// how the product catalog itself was fixed. Still placeholder, not the
+// client's real commission pricing -- just no longer contradicting the
+// Shop by two orders of magnitude in the meantime.
 export const BUDGET_TIERS = [
-  { id: 'tier-1', range: '₱22,000 – ₱45,000', label: 'Single Stone / Band' },
-  { id: 'tier-2', range: '₱45,000 – ₱84,000', label: 'Handcrafted Assembly' },
-  { id: 'tier-3', range: '₱84,000 – ₱168,000', label: 'Raw Pearl / Gem' },
-  { id: 'tier-4', range: '₱168,000+', label: 'Heirloom Suite' },
+  { id: 'tier-1', range: '₱100 – ₱200', label: 'Single Stone / Band' },
+  { id: 'tier-2', range: '₱200 – ₱400', label: 'Handcrafted Assembly' },
+  { id: 'tier-3', range: '₱400 – ₱800', label: 'Raw Pearl / Gem' },
+  { id: 'tier-4', range: '₱800+', label: 'Heirloom Suite' },
 ];
 
 // A dropdown, not free text — a patron typing their own timeline had no

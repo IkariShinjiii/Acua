@@ -4520,3 +4520,50 @@ tooling artifacts, not real issues, after checking the actual DOM:
   false positive.
 
 No code changes this round.
+
+## 96. Rescaled the commission budget tiers to match the real ₱100–800 pricing
+
+Flagged as the natural next fix after §92: with the Shop's real product
+prices now ₱100–800, the Custom Commission form's budget tiers were
+still ₱22,000 – ₱168,000+ — a patron who'd just seen ₱100–800 pieces in
+the Shop would open Custom Request and see numbers 30-200x higher for
+what's supposed to be a *more* personal version of the same kind of
+piece. Recommended fixing this to the user directly (this was a
+self-directed suggestion, not a user-reported bug) and they agreed to
+proceed.
+
+Applied the same linear rescale technique as §92: mapped the old tier
+boundaries (₱22,000/45,000/84,000/168,000) onto the real range
+(₱100/800), same shape, same relative spacing, same labels:
+
+| Tier | Old | New |
+|---|---|---|
+| Single Stone / Band | ₱22,000 – ₱45,000 | ₱100 – ₱200 |
+| Handcrafted Assembly | ₱45,000 – ₱84,000 | ₱200 – ₱400 |
+| Raw Pearl / Gem | ₱84,000 – ₱168,000 | ₱400 – ₱800 |
+| Heirloom Suite | ₱168,000+ | ₱800+ |
+
+Still placeholder, not the client's real commission pricing (that's
+still pending, same as before) — just no longer visibly contradicting
+the Shop's own real numbers in the meantime.
+
+Updated every place the old numbers actually appeared, found by
+grepping the whole `src/` tree for the four dollar figures rather than
+trusting `BUDGET_TIERS` was the only source: the tiers array itself
+(`src/data/commissionOptions.js`), the Commission form's default
+pre-selected budget (`CommissionView.jsx` — had to match one of the
+tier strings exactly, since that's how the "selected" highlight is
+matched), an FAQ answer that quoted the old range in prose
+(`src/data/faqs.js`), and one comment in `currency.js` that used the
+old range as its example (cosmetic, but left stale would mislead the
+next reader). `commission_briefs.budget_range` is plain `text` with no
+check constraint tying it to these exact strings, so no migration
+needed.
+
+Build and lint clean. Verified live in the browser: opened Custom
+Request, read all four tier buttons' rendered text directly from the
+DOM to confirm the real numbers (not just checking the source), verified
+the default tier (₱200 – ₱400) actually carries the "selected"
+`bg-chile-rojo` class instead of silently falling out of sync with
+BUDGET_TIERS, and expanded the FAQ's "What can I customize?" answer to
+confirm its prose updated too.
