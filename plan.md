@@ -3867,3 +3867,786 @@ then added a `unique` constraint on `profiles.email`
 still creates a profile row fine, and a genuine duplicate attempt is
 rejected (by Supabase's own `auth.users` constraint even before reaching
 this one, confirming the redundancy is real and harmless either way).
+
+## 81. Wave preloader shipped to main
+
+Built on its own branch (`preloader-wave-experiment`) and iterated with the
+owner over several rounds of phone screenshots before being approved for
+main. Final design (`src/components/Preloader.jsx`, mounted in `main.jsx`
+as a sibling of `App`): opaque teal water comes down from the top in
+advance/retreat/advance surges until it covers the screen, over a beige
+sand background with the logo centered. The water's bottom edge is an
+irregular wave that morphs on a loop, traced by a translucent foam line;
+the logo disappears once the wave passes over it. Fades out once both the
+fill has finished and the page's `load` event has fired (with a 1.8s
+minimum), then unmounts.
+
+Things learned along the way that the code comments also record:
+- Animating the panel's `height` through a multi-keyframe array froze
+  partway in Framer Motion and never finished, which would have blocked the
+  site. It animates `y` on a fixed-height panel instead.
+- The crest fill and the foam line were two independent animations and
+  drifted out of phase. The fill now mirrors the foam path's live `d` via
+  `onUpdate`, so there is one source of truth.
+- The crest was originally filled *below* its curve, which made it a
+  separate band hanging under the water. It now fills above the curve, so
+  the foam line is the water's leading edge. The panel is one crest-height
+  taller than the screen so no strip of sand remains at full coverage.
+
+Verified before merging: the preloader unmounts after roughly 2.5s and the
+site is clickable, both normally and with `prefers-reduced-motion: reduce`
+emulated (the app's `MotionConfig reducedMotion="user"` skips the slide
+for those visitors), with no page errors.
+
+## 82. Speed, SEO, accessibility, mobile QA, back button, and admin editing
+
+A day of no-input improvements, each verified in a real browser (Playwright,
+throttled mobile profiles where relevant) before shipping:
+
+- **Speed**: index.html loaded six Google Font families plus Material
+  Symbols but only Fraunces, Inter and Unica One render; the rest were
+  render-blocking delay. Unsplash images get a width-capped `srcset`
+  (`lib/responsiveImage.js`), and `handleImageError` drops `srcset` so the
+  fallback still works.
+- **Search & sharing**: branded 1200x630 `public/og-image.jpg`, canonical
+  URL, Organization JSON-LD, sitemap. Product pages got their own URL
+  (`/?product=<id>`) and a Share button. `middleware.js` (Vercel Routing
+  Middleware) serves link-preview bots each product's own title, price and
+  photo; everyone else gets the static site.
+- **Accessibility**: axe-core over every page in both themes → zero
+  violations. Prices use `terracota-deep` (#9a5e1a) in light mode (plain
+  terracota was ~2.8:1); `<main>` landmarks; underlined inline links.
+- **Mobile QA** (390px/360px sweep): Add to Cart was a 16px bar on phones
+  (`flex-1` in a `flex-col`), the chat launcher covered the cart's checkout
+  button and vanished into the footer, and many tap targets were 18-28px.
+  All fixed. Available Pieces is two per row on phones (7.3 → 2.2 screens
+  of scrolling).
+- **Loaders**: the pre-JS loader in index.html is now a copy of the wave
+  preloader's first frame, and views can hold the preloader until their
+  data is ready (`lib/preloaderGate.js`, capped at 4s) so it never fades
+  onto HomeView's own splash.
+- **Back button**: every view change pushes a history entry; popstate
+  restores the view and scroll position. HomeView's data is kept in
+  `lib/homeCache.js` so returning home is instant, no splash.
+- **"You may also like"** on product pages (`components/RelatedPieces.jsx`);
+  ProductDetailView is keyed by id so quantity doesn't carry between pieces.
+- **Admin**: photo upload (`components/ImagePicker.jsx`, resized to 1600px
+  JPEG in the browser), a description field, and Edit on every product.
+  **Needs `0016_product_images_storage.sql` run on the project** before
+  uploads work; until then the admin sees a plain message and can paste a
+  link.
+
+Still open: PayMongo checkout (`feature/paymongo-checkout`, waiting on test
+keys; it touches App.jsx's history effects and needs a re-sync before
+merging), the 0016 migration, and a personal admin account for the owner's
+developer.
+
+## 83. Closed out §82's open items, resynced the PayMongo branch, and a real bug found auditing the legal pages
+
+Picked up the three items §82 left open, plus a self-directed audit pass once
+those were settled.
+
+- **Migration 0016** turned out to already be live on the project (bucket,
+  file-size cap, MIME allowlist and all three admin policies verified via
+  direct query) — applied in an earlier, undocumented session. Checked the
+  security advisor while there: `admin_confirm_order_payment` is flagged as
+  callable by any `authenticated` user, but its body calls
+  `private.is_admin()` and raises before doing anything, so it's the same
+  "flagged but required" shape as `is_admin()` itself (admins are
+  authenticated too, so the grant can't be revoked without locking admins
+  out) — not a real hole.
+- **`feature/paymongo-checkout` resynced with main.** The branch's own
+  history had drifted from its pushed copy on origin (rebased locally onto a
+  main that already had the wave preloader, never pushed), so `main` vs
+  `feature/paymongo-checkout` and local vs `origin/feature/paymongo-checkout`
+  were three different points. Merged main into the branch locally, resolved
+  two conflicts — `App.jsx` (`DOCUMENT_TITLES`: both sides had added their
+  own key, kept both) and `CartDrawer.jsx` (both sides had added their own
+  import, kept both, confirmed the availability-check UI and the responsive
+  `srcSet` image genuinely coexist in the same render loop) — build and lint
+  clean. **Not pushed to origin**: it needs `--force-with-lease` (origin's
+  copy predates the rebase), which Claude Code's auto-mode safety layer
+  blocks outright. The owner will push it by hand when needed; with PayMongo
+  still undecided there's no rush either way.
+- **Developer admin account**: the requested email
+  (`kervinsarmiento2.0@gmail.com`) turned out to already be a confirmed
+  `is_admin` account, created 9/22 — the same email behind every commit in
+  this repo. Nothing to provision.
+- **`testuser@acua.ph`**: a patron (non-admin) test account found live,
+  undocumented anywhere, created the same session as the 0016 migration.
+  Reported its details; a password reset was attempted but blocked by
+  auto-mode's secret-store-write guard (direct writes to
+  `auth.users.encrypted_password`). Deferred — moot for now since PayMongo
+  checkout testing is on hold anyway.
+
+**Self-directed audit, verified live against a real production build in a
+browser** (not just reading code): reviewed the previous session's
+Privacy-Policy/Terms commit end to end — content cross-checked against
+`faqs.js` and the concierge's own fact list (response times, shipping
+window, return window all matched exactly), every `localStorage` key in the
+codebase cross-checked against the privacy policy's storage disclosure
+(exactly the 5 disclosed: session, cart, theme, remember-me, commission
+draft — nothing undisclosed), footer/signup/commission-form links and the
+`/privacy`↔`/terms` cross-link and browser Back all confirmed working
+end-to-end. One real bug found in the process, unrelated to the legal pages
+themselves: the wave preloader's crest-fill path
+(`components/Preloader.jsx`) mirrors the foam path's live `d` via
+`onUpdate` on every animation frame, but on an early frame — before Framer
+Motion's string interpolation for the `d` keyframes has produced a value —
+`latest.d` was `undefined`, briefly rendering an invalid `d="undefined"`
+SVG attribute and throwing a real console error on *every single homepage
+load*. Confirmed via a before/after production build + preview: 3 errors
+every load before the fix, zero after guarding the `setState` to only fire
+on an actual string. Also added `/privacy` and `/terms` (both real,
+externally-linkable paths as of the previous commit) to `sitemap.xml`,
+which had been left out.
+
+Both fixes committed and pushed to main.
+
+**Follow-up same night**: the owner asked how to reach the admin dashboard
+after logging in with the account this session had confirmed was already
+`is_admin`. There's no separate admin URL or menu item — the navbar's
+"My Account" is the one entry point for every account, and `AccountGate`
+(`App.jsx`) decides between `AdminView` and `PatronDashboardView` based on
+the signed-in account's `is_admin`, per §4E/§6. Pointed to that, plus the
+two likely gotchas (mobile keeps the same entry inside the hamburger menu,
+not a separate icon; signing in via Google could land on a different
+account than the one actually flagged admin).
+
+Also added, same night: **admin can now edit the homepage hero** (image,
+caption, details) — previously fully hardcoded in `HomeView.jsx`, so
+changing the photo or copy meant a code deploy. A new singleton
+`hero_content` table (`0017_hero_content.sql`, public read / admin-only
+write via the same `private.is_admin()` RLS shape as every other
+admin-writable table) is seeded with the content that used to be
+hardcoded; a new "Homepage Hero" tab in `AdminView` reuses `ImagePicker`
+for the photo plus a caption input and a details textarea; `HomeView`
+fetches the row but falls back to that same seeded content by default, so
+there's no loading state of its own — same idea as pieces/archive's
+background refresh. Verified live against the real project: the homepage
+renders the DB row's actual content, and a direct anonymous REST call
+confirmed RLS genuinely blocks a non-admin write (0 rows affected, heading
+unchanged) rather than trusting the policy by inspection alone.
+
+## 84. Email notifications: new brief → admin, quote sent → patron
+
+Asked to find standalone work; surveyed the app for real gaps before
+picking one rather than guessing. Confirmed by grep, not assumption:
+`ReviewReel` (despite its name) is just the "New Release" product
+marquee — there's no actual customer-review/testimonial feature anywhere;
+no wishlist/favorites exists; and, the one picked, **no transactional
+email exists in the codebase at all** — a new commission brief or a quote
+sent only ever showed up if someone happened to check the right
+dashboard.
+
+Added one edge function, `send-notification-email` (Resend), covering the
+two events that are actually reachable in production today:
+
+- **New brief → admin.** Fires from `CommissionView` right after a
+  successful insert. Guarded server-side by a new `admin_notified_at`
+  column on `commission_briefs`, claimed atomically (`UPDATE ... WHERE
+  admin_notified_at IS NULL`) — the same shape as
+  `claim_product_if_available` (§5.2) — so replaying the call for the
+  same brief can never double-email the admin.
+- **Quote sent → patron.** Fires from `AdminView`'s "Send Quote" action,
+  but only once the status update itself actually succeeds — `advance()`
+  (the shared helper every pipeline action calls) now returns whether it
+  did, since a failed DB update was otherwise still going to fire the
+  email. The function verifies the caller is a real admin via their own
+  session plus the existing "view own profile" RLS policy, not just that
+  a JWT was present at all (`verify_jwt: true` alone only proves *some*
+  valid token, not that it belongs to an admin).
+
+Both are deliberately best-effort on top of already-durable writes: a
+failed brief insert or status update still shows its own real error same
+as before, and a failed *notification* never blocks or reverts either
+one — the brief/status change already succeeded — it's just an extra
+toast on the admin side (quote path), and a plain `console.error` on the
+anonymous new-brief path (nothing meaningful to show a patron who never
+sees this call at all).
+
+**Order notifications (new order, shipped) aren't wired.** Checkout isn't
+live on main (`feature/paymongo-checkout` is still unmerged, §83), so
+there's no real path that creates an `orders` row for one to hang off
+yet — building that now would be against dead code. Add it the same way
+once checkout ships.
+
+Deployed and verified live against the real project: submitted a real
+test brief through a production build, confirmed the expected "not set
+up yet" 503 (no `RESEND_API_KEY` configured yet), confirmed the brief
+still saved correctly regardless and `admin_notified_at` stayed `null`
+(no false claim on a send that never actually attempted, since the
+missing-key check happens before the DB claim) — then deleted the test
+brief.
+
+**Needs one manual step before emails actually go out**: a Resend account
++ API key, set as the `RESEND_API_KEY` project secret (Supabase Dashboard
+→ Edge Functions → Manage secrets — no MCP tool can write a secret, and
+Claude Code's own auto-mode safety layer blocks that kind of write
+outright regardless). Resend's shared test sender works with zero
+DNS setup but only delivers to the email the Resend account itself was
+created with; verifying a real sending domain (Resend → Domains) and
+setting `RESEND_FROM_EMAIL` lifts that limit to real recipients.
+
+**Follow-up once `RESEND_API_KEY` was actually set**: verified live end to
+end rather than just trusting the secret was there — confirmed the 503
+was gone, then triggered a real send against a real test brief. That
+surfaced Resend's test-mode restriction exactly as expected (only
+delivers to the account's own signup address until a domain is
+verified), and, more importantly, a real bug it exposed: the
+`admin_notified_at` claim fired *before* the Resend call, so a failed
+send still permanently marked the brief "notified" — it would never get
+its email even after Resend was properly configured, since the
+idempotency guard already believed it had fired. Fixed by rolling the
+claim back to `null` on a failed send; verified by re-triggering the same
+still-failing send and confirming the brief came back eligible for retry
+instead of stuck. `ADMIN_NOTIFICATION_EMAIL` currently defaults to
+`acuavibe@gmail.com`, which won't receive anything until the Resend
+domain is verified — worth pointing it at a deliverable address in the
+meantime if testing before that's done.
+
+## 85. Search now covers The Archive, and product pages get Product JSON-LD
+
+Continued the same night's standalone-work audit. Checked, rather than
+guessed, three candidate gaps: whether `SearchOverlay` covers The Archive
+(it didn't), whether product pages carry any structured data beyond the
+site-wide Organization schema (they didn't), and whether order tracking
+numbers are clickable courier links (they're plain text, and there's no
+courier field stored anywhere to build a real link from — that one needs
+the owner's input on which courier(s) are actually used, not code, so it
+was left alone).
+
+**Search**: `SearchOverlay` fetches `archive_items` alongside `products`
+now, tags each result by type, and an archive result triggers the same
+`onRequestSimilar` flow (`source: 'archive'`) the Archive section itself
+already uses — clicking it opens a correctly pre-filled Commission form
+instead of trying to open a product page that doesn't exist for a piece
+that was never purchasable. Product results are unaffected (still open
+the product page, still show price).
+
+**Product JSON-LD**: `ProductDetailView` now renders a per-product
+`schema.org/Product` block (name, description, image, category,
+material, and an `Offer` with price/currency/availability/url) alongside
+the page, so an individual piece can actually qualify for a price/
+availability rich result in Google Search rather than only the generic
+Organization card. `mapProductRow` gained a raw `priceCents` field next
+to the already-formatted price string, since JSON-LD needs a bare numeric
+price ("9800.00"), not "₱9,800".
+
+Verified live against a production build: searched an archive-only term
+("Sea Glass"), confirmed both a product result (with price) and an
+archive result (labeled "1-of-1 · Archive") appear together, and clicking
+the archive one lands on a correctly pre-filled Commission form. Opened a
+real product page and confirmed the JSON-LD parses and matches
+(`"price":"9800.00"`, `availability: InStock`); opened the one seeded
+sold-out product and confirmed its JSON-LD correctly reports
+`OutOfStock` instead. Zero new console errors in either case.
+
+## 86. Admin can manage the Custom Commission form's categories and materials
+
+Requested directly by the owner: the accessory categories ("Necklace /
+Choker", etc.) and material options on the Custom Commission form were
+hardcoded in `src/data/commissionOptions.js` — changing either meant a
+code deploy.
+
+Added two admin-editable tables, `commission_categories` and
+`commission_materials` (`0019_commission_options.sql`; public read,
+admin-only write, the same `private.is_admin()` RLS shape as every other
+admin-writable table), seeded with exactly what was already hardcoded so
+the live form doesn't change until an admin actually edits something. A
+category has no separate id — its label is its own primary key, so
+"renaming" one is really delete-and-add, which the admin tab's
+add/remove-only UI matches honestly rather than pretending to support an
+edit that isn't really safe. A material keeps a stable, slugified id
+generated from its label on add (e.g. "non-tarnish-gold-tone") precisely
+so *its* label/note CAN be edited in place afterward without consequence —
+`commission_briefs.material`/`archive_items.material` reference the id,
+never the label, so relabeling an existing material is always safe; a
+delete of one an existing request already used is survivable too, via
+CommissionView's existing "unknown material id" fallback from §6.5 (falls
+back to the default material and keeps the real value in the narrative
+text instead of leaving the form looking broken).
+
+A new **Commission Options** tab in AdminView handles both: category
+chips with a remove button plus an add-new input, and material cards
+(label + note) with inline edit and remove, plus an add-new form.
+`CommissionView`, `PatronDashboardView`, and AdminView's own
+`ArchiveCuration`/`CommissionPipeline` all fetch these two tables now
+(via the new shared `lib/commissionOptionsFetch.js`) instead of importing
+the static arrays — each still starts from those same hardcoded values as
+an instant-render fallback, then swaps in the real lists once the fetch
+resolves, the same "default now, upgrade once loaded" shape §85's hero
+editor already established.
+
+Verified live against the real project, not just by inspection: confirmed
+anon can read both tables but a real write is genuinely blocked by RLS
+(an anon `DELETE` returns `204` either way in PostgREST, so the row's
+continued existence was checked directly rather than trusting the status
+code); added a real test category and material via SQL — content-
+identical to what the admin UI itself sends — loaded the live production
+Commission form and confirmed both appear, render correctly (note
+included), and are genuinely selectable, not just displayed; removed them
+and confirmed they're gone on reload while the real seeded options stay
+untouched; re-ran the existing "Request Similar" archive-prefill flow
+end to end to confirm it still resolves a material id correctly against
+the new DB-backed list instead of the old static one. Zero console errors
+throughout. Test rows deleted; both tables back to the original 3
+categories / 3 materials afterward.
+
+## 87. Refunds: patron request flow + admin approve/reject/process
+
+The client shared an outside "ACUA Enhancement Plan" document (17 phases,
+generic e-commerce/webhook-hardening advice) and asked to work through it.
+Cross-checked every item against the real, live system before acting on
+any of it, rather than assuming it was accurate:
+
+- **Several items described a different business entirely** — commission
+  tiers priced in USD ("Icon $50", "Character Sheet $150") and "PHP
+  100–800 products" describe an illustration-commission marketplace, not
+  ACUA (real commissions run ₱22,000–₱168,000+; the client separately
+  confirmed the live site's own placeholder prices are also not real —
+  ACUA's actual products are priced ₱100–800). Multi-artist payment
+  splits / paying out co-artists don't apply either — ACUA is one owner.
+- **Several "problems" the doc named are already solved**, just
+  differently than it assumed: `paymongo-webhook` already does real
+  HMAC-SHA256 signature verification (item 14's biggest ask); its
+  handlers only ever set absolute state (never increment), so a PayMongo
+  retry replaying the same event is already a harmless no-op without a
+  dedup table (item 2); the 1-of-1 double-sale protection is a
+  deliberate first-payment-wins design (§5.2), not an oversight the
+  doc's proposed 10-minute reservation lock should reverse.
+- **Two phases were flagged premature**: payment-failure recovery and an
+  admin KPI dashboard both explicitly depend on PayMongo actually being
+  live and real transaction volume existing — building either now would
+  be against dead code or fake seed-data numbers.
+- **Shipping/tracking remains blocked** on the client confirming which
+  courier(s) ACUA ships with.
+
+The one phase that was both real and actually buildable *now*:
+**refunds**. Nothing tracked a refund request anywhere before this —
+checkout and commission payments are both still fully manual (a QR code
+sent directly), so a refund meant handling it entirely outside the app
+with no system record at all.
+
+Added a `refunds` table (`0020_refunds.sql`): `order_id` XOR
+`commission_brief_id`, `reason`, `status`
+(pending/approved/rejected/processed), `admin_notes`, `amount_cents` —
+public-insert-with-ownership-check (a patron can only file a refund
+against an order or commission that's actually theirs, verified server-
+side, not trusted from the client), admin-only update, the same shape as
+every other patron-writable table in this schema. The patron dashboard
+gained a "Request a Refund" control on each order/commission card;
+AdminView gained a new Refunds tab to approve (sets the amount),
+decline (with a note the patron sees), or mark one refunded once the
+money's actually been sent back by hand.
+
+Deliberately smaller than the original doc's version: no percentage-
+based partial refunds, no automated payment reversal (there's nothing to
+reverse yet), no multi-party splits — a tracked request/approval
+workflow for an already-real process (the Terms of Service's 1-week
+return window), not a payment-processor integration ACUA doesn't have
+yet.
+
+**Verified without login credentials for either a patron or admin
+account** (the standing limitation from earlier tonight — password
+resets are blocked by auto-mode's secret-store-write guard): simulated
+the RLS policies directly instead, with real role/JWT-claim substitution
+in SQL. Created a real test order and commission brief owned by a real
+patron account, then confirmed that patron's own INSERT against their
+own order succeeds (status lands `pending`) while an INSERT against an
+order that isn't theirs is genuinely rejected (`42501`, row-level
+security violation) — not just trusted by inspection. Confirmed the
+three new foreign keys (`order_id`/`commission_brief_id`/`user_id`)
+exist, so AdminView's embedded query can actually resolve them, matching
+the exact embed pattern already proven working for `orders`' own
+product/patron joins. Build and lint clean; loaded the live production
+site through to the auth gate and confirmed zero console errors —
+proof both new components load without a runtime error before auth even
+applies, the closest thing to a live check achievable without real
+credentials. Test order and brief deleted afterward; `refunds` confirmed
+empty.
+
+Two docs came out of this session, both created and kept up to date
+throughout: **ACUA — Status Brief** (client-facing, for the Wednesday
+meeting) and **ACUA — Engineering Backlog** (the trimmed-to-reality
+version of the outside doc, in the client's own requested checklist
+format, with a table explaining what was cut and why).
+
+## 88. Fixed the Homepage Hero admin form's cramped subtext box
+
+User-reported bug with a screenshot: on the Homepage Hero tab, the
+caption input and details/subtext textarea rendered side by side, with
+the subtext box squeezed into a narrow column with a scrollbar — barely
+usable to type into.
+
+Root cause was a CSS Grid quirk, not a sizing tweak: `HeroCuration`'s
+form used `grid grid-cols-1`, but `ImagePicker` (a shared component,
+also used in two other admin forms that really are `grid-cols-2`)
+carries a baked-in `sm:col-span-2` class. In a grid with only 1 explicit
+column, a child spanning 2 forces the browser to create an *implicit*
+2nd column sized to content — and the next two items in source order
+(the caption input, then the subtext textarea) auto-placed into that
+new row's two cells side by side instead of each stacking full-width,
+exactly matching the screenshot. Confirmed the mechanism by rendering
+the exact before/after markup against the real built Tailwind CSS in
+gstack's headless browser at desktop, tablet, and mobile widths — the
+"before" reproduced the bug precisely at tablet/desktop (mobile was
+never affected, since the `sm:` prefix doesn't apply below that
+breakpoint), and the "after" confirmed the fix.
+
+Fix: changed the form's container from `grid grid-cols-1` to a plain
+`flex flex-col`, so `ImagePicker`'s span class becomes a no-op and every
+field stacks full-width regardless of viewport. Also bumped the subtext
+textarea from `rows={3}` to `rows={5}` and switched it from
+`resize-none` to `resize-y` so the admin can make it taller if the copy
+runs long. `ImagePicker` itself wasn't touched, since its span class is
+correct for the two grid-cols-2 forms that already use it.
+
+Build and lint clean. No admin-account login was available to click
+through the live page, so verification was done by isolating the exact
+JSX classes against the project's own compiled CSS output and
+screenshotting both the broken and fixed versions side by side at three
+viewport widths — the same visual bug the user reported, reproduced and
+then shown resolved, rather than trusted by code-reading alone. Test
+artifacts (scratch HTML, screenshots, the temporary prod build) deleted
+afterward.
+
+## 89. Redesigned the admin dashboard's tab bar
+
+User request with a screenshot: the 7 admin section buttons (Commission
+Pipeline, Order Fulfillment, Inventory & Site Curation, The Archive,
+Homepage Hero, Commission Options, Refunds) were uniform filled pill
+chips that wrapped unevenly into two rows (5 then 2) as more tabs were
+added over the session — functional but visually busy, with no clear
+scanning order.
+
+Replaced the pill row with a single-line underline tab bar (the
+Stripe/Linear pattern): icon + label per tab, muted text for inactive
+tabs, accent-colored text plus a thin animated underline bar for the
+active one. The underline uses framer-motion's `layoutId` (motion was
+already an import in this file) so it slides between tabs on click
+instead of just appearing. The whole strip sits in `overflow-x-auto
+scrollbar-none` (an existing utility class from `index.css`, already
+used for horizontal carousels elsewhere) so on narrow viewports it
+scrolls horizontally with a peeking next-tab as the affordance, instead
+of wrapping into uneven rows. Removed the now-unused `ChevronRight`
+import that the old pill's active-state chevron needed.
+
+Verified by rendering the exact new markup against the project's own
+compiled Tailwind CSS in gstack's headless browser (no admin login
+available to click through live) at desktop, tablet, and mobile widths:
+desktop shows all 7 tabs in one clean row with the underline correctly
+under the active tab; mobile confirms the horizontal-scroll behavior
+works as intended rather than silently clipping. Build and lint clean
+(only pre-existing warnings). Test artifacts deleted afterward.
+
+## 90. Fixed §89's tab bar: clipped-looking alignment at narrower widths
+
+User reported (with a screenshot) that §89's new tab bar looked broken
+at their actual window width: the active tab's label ("Commission
+Options") was cut off mid-word with no ellipsis or fade, and "Refunds"
+was missing from view entirely, with nothing on screen suggesting the
+strip was scrollable. Reproduced exactly by rendering the real markup
+against the built CSS at the same ~1146px width with the icons included
+(an earlier icon-less check of mine had missed this, since the icons'
+width is what pushes 7 tabs past the fold at that width) — confirmed
+the hard clip.
+
+Root cause: `overflow-x-auto` genuinely was scrollable, but a scrollable
+region with no visual affordance just looks cut off/misaligned, not
+"scroll me." Fixed with the standard pattern: an edge-fade overlay
+(`bg-gradient-to-l/r from-sand to-transparent`) that appears on
+whichever side still has hidden content, computed from `scrollLeft` /
+`scrollWidth` / `clientWidth` on mount, on resize, and on scroll, so the
+last visible label now fades into the background instead of stopping
+abruptly. Also made clicking a tab call `scrollIntoView` on itself, so
+selecting a tab near the edge (like Commission Options in the report)
+scrolls it fully into view instead of leaving it half-hidden.
+
+Verified in gstack's headless browser against the real compiled CSS at
+the exact reported width (1146px, all 7 tabs + icons): confirmed the
+hard cut reproduces without the fix, confirmed the right-edge fade
+renders correctly with the fix (checked with a tight clip screenshot on
+just the last tab's label), confirmed scrolling the strip to the end
+reveals Refunds fully with the fade correctly flipping to the left
+edge, and confirmed the same fade behavior at tablet (768px) and mobile
+(375px) widths. Build and lint clean. Test artifacts deleted afterward.
+
+## 91. Full alignment audit of the admin dashboard (desktop/tablet/mobile) — no further bugs found
+
+User asked to double-check all the admin dashboard's alignments across
+desktop, tablet, and mobile, following the two tab-bar fixes above.
+Scoped the audit to this session's actual new/changed surfaces —
+Commission Options and Refunds (the two tabs added this session and
+never yet stress-tested at multiple widths) — since the older tabs
+(Commission Pipeline, Order Fulfillment, Inventory & Site Curation, The
+Archive) have been live and exercised across many earlier sessions.
+
+Rendered both tabs' real JSX (copied verbatim from source, including
+icons — §90's note about an earlier icon-less miss made this a
+deliberate step this time) against the actual compiled Tailwind CSS,
+with deliberately awkward sample data chosen to stress wrapping: a
+long multi-word category label, a material with a long name AND a long
+note, and refund cards with varying content length including the
+inline approve/decline forms. Checked at 1280px, 768px, and 375px. All
+three widths held up cleanly — long labels wrap instead of overflowing,
+the refund card's status badge drops to its own line via `flex-wrap`
+once the header row gets tight instead of colliding with the title, and
+the edit/delete icon buttons on a wrapped multi-line material entry
+stay pinned top-right via `items-start` + `flex-shrink-0` instead of
+drifting to vertical-center. No bugs found in either tab.
+
+Also grepped the whole file for every other `col-span`/`grid-cols`
+pairing (the exact bug class fixed in §88's Homepage Hero form) to rule
+out a repeat elsewhere: the two other forms using `ImagePicker`
+(Inventory's product form, Archive's piece form) both correctly pair it
+with a matching `grid-cols-1 sm:grid-cols-2` container, and every other
+`col-span-2` in the file pairs the same way. §88 was an isolated case,
+not a pattern.
+
+No code changes this round — a clean audit. Build output and scratch
+HTML deleted afterward.
+
+## 92. Rescaled the live seed products to ACUA's real ₱100–800 pricing
+
+The 11 live `products` rows were still priced at the placeholder
+₱7,200–₱16,000 range noted back in the pricing-correction memory
+(§~76-ish territory) — never actually updated on the live table itself,
+just flagged. User asked directly to fix the live data now.
+
+Rescaled every product's `price_cents` with a straight linear map from
+the old range (₱7,200 low / ₱16,000 high) onto the real range (₱100
+low / ₱800 high), then rounded to a clean number — so the *relative*
+ordering and spread of the catalog is unchanged (Woven Sand Bracelet
+was priced highest before and still is, Driftwood Bead Bracelet was
+lowest and still is), only the absolute numbers move into the range the
+user confirmed is real. This is still placeholder data, not the
+client's real per-item prices (those aren't in hand yet) — just
+placeholder data that's finally believable instead of off by ~20x.
+
+No `products` schema change needed (`price_cents` already just an
+integer column), so this was a plain `UPDATE`, not a migration. No
+static fallback price data exists anywhere in the frontend (`products.js`
+holds no prices, checked by grep) — the DB is the only source, so
+nothing else needed touching. Verified live immediately after (DB
+writes need no deploy): re-fetched the `products` table to confirm the
+new range, then loaded the live production site and read back its
+rendered text — the homepage carousel, the full Shop grid, and each
+product's `Offer.price` in its JSON-LD (added in §85) all show the new
+₱100–800 numbers with no stale caching anywhere.
+
+Still separately true, not touched here: the commission budget tiers
+(`BUDGET_TIERS` in `src/data/commissionOptions.js`) are placeholder too
+and still need real numbers from the client — a different table/feature
+than the Shop's `products`, out of scope for what was asked.
+
+## 93. Privacy Policy and Terms of Service links added to the Settings panel
+
+User asked for Privacy/Terms to be reachable from Settings too — until
+now they only existed in the footer (`Footer.jsx`), so a signed-in user
+deep in the dashboard, or anyone who'd scrolled past the footer, had no
+way to find them without scrolling all the way down.
+
+`SettingsOverlay` (the slide-out panel opened from the navbar's account
+dropdown → Settings, holding Appearance and, when signed in,
+`AccountSettingsPanel`) gained a new "Legal" card between the two,
+always visible regardless of sign-in state — matching Appearance's own
+always-visible placement, since legal pages are exactly as relevant to
+a signed-out visitor as a signed-in patron. Two row buttons ("Privacy
+Policy", "Terms of Service", each with an icon and a trailing chevron)
+call a new `goToLegal(view)` helper that navigates via the same
+`navigateTo` function the footer's own Privacy/Terms links already use,
+then closes the settings panel — so the overlay doesn't linger open
+behind the page it just navigated to. Wired `onNavigate={navigateTo}`
+through as a new `SettingsOverlay` prop from `App.jsx`; the overlay
+previously had no navigation capability at all, only `onClose`.
+
+Verified live in the browser end to end: opened the account dropdown →
+Settings, confirmed the new Legal card renders between Appearance and
+the login prompt, clicked "Privacy Policy," and confirmed the URL
+changed to `/privacy`, the settings panel closed, and the real Privacy
+Policy page rendered underneath — not just that the button exists.
+Noted one pre-existing, unrelated console error (an SVG `<path>` "d"
+warning from the homepage Preloader's crest animation) that reproduces
+identically on a clean load of both localhost and the current
+production site regardless of this change, so it predates this work
+and isn't a regression from it. Build and lint clean. Test screenshots
+and dev server cleaned up afterward.
+
+## 94. Moved §93's Legal card to below Change Password
+
+User follow-up: wanted Legal positioned under Change Password rather
+than above the account section. Moved the Legal card's JSX to after the
+`user ? <AccountSettingsPanel /> : <login prompt>` block instead of
+before it, so the panel now reads Appearance → account (Profile +
+Change Password when signed in, or the login prompt when signed out) →
+Legal at the bottom. Pure reorder, no logic changes.
+
+Verified the signed-out order live (Appearance → login prompt → Legal,
+confirmed in a screenshot) — couldn't verify the signed-in
+Profile/Change-Password/Legal order with a real login (the standing
+no-credentials limitation), but the change is a straightforward JSX
+sibling move with no conditional logic touched, so the signed-in case
+necessarily follows the same order. Build clean.
+
+## 95. Site-wide alignment sweep (public pages) — clean, no bugs found
+
+Following the run of admin-panel alignment fixes (§88-§91), did the
+same live-render sweep across the public-facing site to check for the
+same bug classes elsewhere, at mobile/tablet/desktop: Home (hero,
+New Release carousel row, Available Pieces grid, The Archive), the
+Custom Commission form (all 4 sections, budget tiers, file upload),
+a Product Detail page ("You may also like" grid included), FAQ, Terms,
+the mobile hamburger nav, Search overlay results, the Cart drawer, and
+the My Account login gate. All clean — no cut-off text, no stray
+implicit-grid columns, no broken wraps.
+
+Two apparent bugs surfaced during the sweep and were both ruled out as
+tooling artifacts, not real issues, after checking the actual DOM:
+- A full-page "hero missing, just a green gradient" capture turned out
+  to be the Preloader mid-animation — the capture fired before its
+  ~2.2s minimum display time elapsed, not a rendering bug.
+- A full-page mobile capture appeared to show a second navbar
+  duplicated mid-page. `document.querySelectorAll('nav, header')`
+  confirmed only one real header, correctly `position: fixed` at the
+  true top. The "duplicate" was the fixed header getting re-captured at
+  each stitched frame boundary of the screenshot tool's full-page
+  stitching — confirmed by retaking the same view as a true single-
+  frame viewport screenshot, which showed the header once, in the
+  right place. Worth remembering for future audits on this site: use a
+  single-frame `--viewport` capture, not full-page, whenever checking
+  a `position: fixed` element (the navbar, the ConciergeChat FAB) for
+  overlap with real content — full-page stitching produces this exact
+  false positive.
+
+No code changes this round.
+
+## 96. Rescaled the commission budget tiers to match the real ₱100–800 pricing
+
+Flagged as the natural next fix after §92: with the Shop's real product
+prices now ₱100–800, the Custom Commission form's budget tiers were
+still ₱22,000 – ₱168,000+ — a patron who'd just seen ₱100–800 pieces in
+the Shop would open Custom Request and see numbers 30-200x higher for
+what's supposed to be a *more* personal version of the same kind of
+piece. Recommended fixing this to the user directly (this was a
+self-directed suggestion, not a user-reported bug) and they agreed to
+proceed.
+
+Applied the same linear rescale technique as §92: mapped the old tier
+boundaries (₱22,000/45,000/84,000/168,000) onto the real range
+(₱100/800), same shape, same relative spacing, same labels:
+
+| Tier | Old | New |
+|---|---|---|
+| Single Stone / Band | ₱22,000 – ₱45,000 | ₱100 – ₱200 |
+| Handcrafted Assembly | ₱45,000 – ₱84,000 | ₱200 – ₱400 |
+| Raw Pearl / Gem | ₱84,000 – ₱168,000 | ₱400 – ₱800 |
+| Heirloom Suite | ₱168,000+ | ₱800+ |
+
+Still placeholder, not the client's real commission pricing (that's
+still pending, same as before) — just no longer visibly contradicting
+the Shop's own real numbers in the meantime.
+
+Updated every place the old numbers actually appeared, found by
+grepping the whole `src/` tree for the four dollar figures rather than
+trusting `BUDGET_TIERS` was the only source: the tiers array itself
+(`src/data/commissionOptions.js`), the Commission form's default
+pre-selected budget (`CommissionView.jsx` — had to match one of the
+tier strings exactly, since that's how the "selected" highlight is
+matched), an FAQ answer that quoted the old range in prose
+(`src/data/faqs.js`), and one comment in `currency.js` that used the
+old range as its example (cosmetic, but left stale would mislead the
+next reader). `commission_briefs.budget_range` is plain `text` with no
+check constraint tying it to these exact strings, so no migration
+needed.
+
+Build and lint clean. Verified live in the browser: opened Custom
+Request, read all four tier buttons' rendered text directly from the
+DOM to confirm the real numbers (not just checking the source), verified
+the default tier (₱200 – ₱400) actually carries the "selected"
+`bg-chile-rojo` class instead of silently falling out of sync with
+BUDGET_TIERS, and expanded the FAQ's "What can I customize?" answer to
+confirm its prose updated too.
+
+## 97. Engineering Backlog Phase 4: real courier tracking links + ship notification email
+
+User confirmed the courier candidates directly (J&T, corrected from an
+earlier mis-transcription; LBC still possible, to be confirmed later)
+and asked to pick the Engineering Backlog back up. Phase 4 ("Shipping &
+Order Tracking") was blocked on exactly one thing per its own notes —
+"needs an answer, not more engineering" — but its checklist actually
+had two courier-agnostic items (a `courier` field, an auto-send ship
+email) alongside the one genuinely courier-specific item (the tracking
+link's URL pattern). Rather than wait on a single final courier name,
+built it to support *either* candidate the client is choosing between,
+which resolves the blocker without needing to wait further — whichever
+one wins, the system already handles it.
+
+**Real tracking links, not another placeholder.** Discovered along the
+way that AdminView's existing "auto-generate a tracking number on ship"
+behavior was itself fake — a random `PHLPOST-XXXXXXXX` string, not a
+real courier waybill number (ACUA ships by hand-dropping packages at a
+courier counter, so nothing in this system could generate one). Wiring
+up a real clickable link against a fake number would have been actively
+misleading, so this replaced the auto-generation with a small inline
+form: marking an order "Shipped" now opens a courier dropdown + a
+required tracking-number field for the admin to type in the real
+waybill number the courier's counter gave them, before the status
+actually advances. Advancing shipped → delivered is unchanged, still a
+single click.
+
+**Researched both couriers' real tracking-link formats instead of
+guessing.** J&T Express's `https://www.jtexpress.ph/trajectoryQuery?
+waybillNo=<number>` was confirmed genuinely live — loaded it in
+gstack's headless browser with a real number and watched the field
+pre-fill on their own site. LBC Express's site blocks automated
+requests entirely (403, bot-check) before any query-param pattern could
+be confirmed the same way, so LBC only links to its plain tracking page
+(`lbcexpress.com/track/`, the real official URL) rather than shipping a
+guessed deep-link parameter that might silently 404 or get ignored —
+that would look more broken to a patron than no deep link at all.
+
+**New shared file** `src/data/couriers.js` — `COURIERS` (id, label,
+`trackingUrl` function or null) and `courierById()`, ids matching a new
+`orders.courier` check constraint (`0021_order_courier.sql`,
+`'jt' | 'lbc' | 'other'`) exactly.
+
+**AdminView's OrderFulfillment**: `advance()` now takes an optional
+`{courier, trackingNumber}` and only applies it on the shipped
+transition; `startShipping()`/`confirmShipping()` manage the inline
+form's open/closed state (mirrors RefundsCuration's existing
+approve/reject inline-form pattern rather than inventing a new one).
+Every order card's tracking display now renders as a real link when the
+courier has one, plain text otherwise.
+
+**PatronDashboardView**: the order card's tracking line renders the
+same courier-aware link.
+
+**Ship notification email**: extended `send-notification-email`
+(deployed as version 5) with a third `order_shipped` type, admin-
+authenticated the same way `quote_sent` already is. Its courier info
+(ids, J&T's link pattern) is deliberately duplicated from
+`src/data/couriers.js` in a comment explaining why — an edge function
+can't import from `src/`. `confirmShipping()` fires this
+fire-and-forget after a successful ship update, same pattern as the
+brief/quote notifications: a slow or failed email never blocks or fails
+the shipment update that already succeeded.
+
+**Verified without admin login credentials** (the standing limitation):
+created a real test order, then proved the new `courier` column's RLS
+end to end with real role/JWT substitution in SQL — the real admin
+account's UPDATE (status/courier/tracking_number) succeeds, the same
+UPDATE from the *patron's own* account matches zero rows (blocked by
+"Admins can update orders"), and an invalid courier value
+(`'fedex'`) is rejected by the check constraint before RLS even gets
+involved. Confirmed the edge function's join path
+(`patron:profiles(...)`, `product:products(...)`) resolves correctly
+against real rows. Rendered the new inline ship form and both
+courier-link states (J&T's real deep link, LBC's page-only fallback)
+against the actual compiled CSS in gstack's headless browser at desktop
+and mobile widths — clean at both. Build and lint clean. Test order and
+scratch files deleted afterward.
+
+Still genuinely blocked, unchanged: Phase 2 (Payment Failure Recovery)
+and Phase 3 (Admin KPI Dashboard) — both need PayMongo live with real
+transaction volume, which doesn't exist yet on `main`.

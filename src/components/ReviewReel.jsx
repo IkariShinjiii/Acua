@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useAnimationFrame, useReducedMotion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
+import { homeCache } from '../lib/homeCache';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
 
@@ -22,7 +23,7 @@ function wrap(value, lapWidth) {
 }
 
 export default function ReviewReel({ onSelectProduct, onLoaded }) {
-  const [pieces, setPieces] = useState(null);
+  const [pieces, setPieces] = useState(homeCache.reel);
   // HomeView passes a fresh arrow function every render — a ref (rather than
   // a dependency-array entry) means this fetch effect still only ever runs
   // once on mount instead of re-firing on every parent re-render.
@@ -33,6 +34,10 @@ export default function ReviewReel({ onSelectProduct, onLoaded }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Cached from an earlier visit this session (see lib/homeCache): already
+    // showing, so report ready now and just refresh in the background.
+    const hadCache = homeCache.reel !== null;
+    if (hadCache) onLoadedRef.current?.();
     // Sold-out items excluded deliberately: this is a "click through and buy
     // it" highlight reel, not an archive of what used to be available.
     supabase
@@ -43,7 +48,12 @@ export default function ReviewReel({ onSelectProduct, onLoaded }) {
       .limit(REEL_LIMIT)
       .then(({ data, error }) => {
         if (cancelled) return;
-        setPieces(error || !data ? [] : data.map(mapProductRow));
+        if (error || !data) {
+          if (!hadCache) setPieces([]);
+        } else {
+          homeCache.reel = data.map(mapProductRow);
+          setPieces(homeCache.reel);
+        }
         // Resolved either way — HomeView's full-page preloader waits on
         // this alongside its own two fetches, and a permanent fetch error
         // here shouldn't be the one thing that leaves that preloader stuck
@@ -193,7 +203,7 @@ export default function ReviewReel({ onSelectProduct, onLoaded }) {
                   {item.material}
                 </p>
               </div>
-              <span className="font-sans text-base text-terracota font-semibold">
+              <span className="font-sans text-base text-terracota-deep dark:text-terracota font-semibold">
                 {item.price}
               </span>
             </div>

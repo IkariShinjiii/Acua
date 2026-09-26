@@ -273,7 +273,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
 
         {mode === 'login' && (
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-xs font-medium text-on-surface-variant cursor-pointer select-none">
+            <label className="flex items-center gap-2 py-3 -my-3 text-xs font-medium text-on-surface-variant cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={rememberMe}
@@ -288,7 +288,7 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
                 setMode('forgot');
                 setError('');
               }}
-              className="text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+              className="text-xs font-medium text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer px-0 py-3 -my-3 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
             >
               Forgot password?
             </button>
@@ -311,6 +311,20 @@ export default function AuthForm({ mode: initialMode = 'login', allowSignup = tr
             ? 'Log In'
             : 'Create Account'}
         </button>
+
+        {mode === 'signup' && (
+          <p className="text-[11px] text-on-surface-variant text-center leading-relaxed">
+            By creating an account, you agree to our{' '}
+            <a href="/terms" target="_blank" rel="noopener" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" target="_blank" rel="noopener" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        )}
 
         {mode === 'forgot' && (
           <button

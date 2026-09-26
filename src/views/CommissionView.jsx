@@ -10,6 +10,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { JEWELRY_CATEGORIES, MATERIAL_OPTIONS, BUDGET_TIERS, TIMELINE_OPTIONS } from '../data/commissionOptions';
+import { fetchCommissionOptions } from '../lib/commissionOptionsFetch';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,8 +32,6 @@ function isAcceptedFileType(file) {
   return ACCEPTED_EXTENSIONS.test(file.name);
 }
 
-const VALID_MATERIAL_IDS = new Set(MATERIAL_OPTIONS.map((option) => option.id));
-
 // The commission brief is a long form (contact details, category,
 // material, budget, timeline, a multi-sentence narrative) — losing all of
 // it to an accidental refresh or back-button press would be a real,
@@ -50,19 +49,44 @@ function readDraft() {
 
 export default function CommissionView({ prefill }) {
   const { user } = useAuth();
+  // Admin-editable (see AdminView's Commission Options tab), backed by
+  // commission_categories/commission_materials. Start from the hardcoded
+  // defaults (identical to what those tables are seeded with) so the form
+  // renders instantly rather than waiting on a fetch, then swap in the
+  // real lists once it resolves — see lib/commissionOptionsFetch.js.
+  const [categories, setCategories] = useState(JEWELRY_CATEGORIES);
+  const [materials, setMaterials] = useState(MATERIAL_OPTIONS);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCommissionOptions().then((result) => {
+      if (cancelled || !result) return;
+      setCategories(result.categories);
+      setMaterials(result.materials);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // "Request Similar" fires from three places: a sold-out storefront piece
   // (HomeView's grid, ProductDetailView) or an actual past Archive piece
   // (HomeView's Archive section) — only the latter is really "from The
   // Archive," so the copy below can't hardcode that phrase.
   const prefillSourceLabel = prefill?.source === 'archive' ? 'The Archive' : 'Available Pieces';
-  // archive_items.material holds a MATERIAL_OPTIONS id, but products.material
-  // holds free descriptive text for the storefront card (e.g. "Non-Tarnish
-  // Gold-Tone Chain & Freshwater Pearl") — matching neither option id here
-  // would otherwise leave every material card silently unselected while the
-  // banner claims it was pre-filled. Fall back to the default id and keep
-  // the real description in the narrative instead.
+  // archive_items.material holds a commission_materials id, but
+  // products.material holds free descriptive text for the storefront card
+  // (e.g. "Non-Tarnish Gold-Tone Chain & Freshwater Pearl") — matching
+  // neither option id here would otherwise leave every material card
+  // silently unselected while the banner claims it was pre-filled. Fall
+  // back to the default id and keep the real description in the
+  // narrative instead. Checked against whatever `materials` currently
+  // holds (the hardcoded defaults on first render, same as the id below
+  // this depends on), not a fixed set, so a prefill still resolves
+  // correctly once the real admin-edited list has loaded.
+  const validMaterialIds = new Set(materials.map((option) => option.id));
   const prefillMaterialId =
-    prefill?.material && VALID_MATERIAL_IDS.has(prefill.material) ? prefill.material : undefined;
+    prefill?.material && validMaterialIds.has(prefill.material) ? prefill.material : undefined;
 
   const getBlankFormData = () => ({
     fullName: '',
@@ -71,7 +95,7 @@ export default function CommissionView({ prefill }) {
     timeline: 'Flexible (4-6 Weeks)',
     category: prefill?.category ?? 'Necklace / Choker',
     material: prefillMaterialId ?? 'non-tarnish-gold-tone',
-    budget: '₱45,000 – ₱84,000',
+    budget: '₱200 – ₱400',
     narrative: prefill
       ? `Inspired by "${prefill.title}" from ${prefillSourceLabel}${
           prefillMaterialId ? '' : ` (similar material: ${prefill.material})`
@@ -265,6 +289,13 @@ export default function CommissionView({ prefill }) {
         setSubmitError(error.message);
         return;
       }
+
+      // Best-effort: the brief is already durably saved above regardless of
+      // whether this succeeds, so a slow or failed email notification
+      // should never hold up the confirmation screen or be treated as the
+      // submission itself failing.
+      supabase.functions.invoke('send-notification-email', { body: { type: 'new_brief', briefId } })
+        .catch((err) => console.error('send-notification-email (new_brief) failed:', err));
 
       // Successfully uploaded to storage now, so the local blob previews
       // are no longer needed — reclaim their memory instead of waiting for
@@ -491,7 +522,7 @@ export default function CommissionView({ prefill }) {
                       Accessory Category
                     </label>
                     <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                      {JEWELRY_CATEGORIES.map((cat) => {
+                      {categories.map((cat) => {
                         const isSelected = formData.category === cat;
                         return (
                           <button
@@ -517,7 +548,7 @@ export default function CommissionView({ prefill }) {
                       Material Selection
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Material Selection">
-                      {MATERIAL_OPTIONS.map((option) => {
+                      {materials.map((option) => {
                         const isSelected = formData.material === option.id;
                         return (
                           <button
@@ -723,6 +754,13 @@ export default function CommissionView({ prefill }) {
                   </button>
                 </div>
 
+                <p className="text-[11px] text-on-surface-variant text-center sm:text-right leading-relaxed -mt-4">
+                  We use your details and reference images only to quote and make your piece. See our{' '}
+                  <a href="/privacy" target="_blank" rel="noopener" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
               </form>
             )}
           </AnimatePresence>

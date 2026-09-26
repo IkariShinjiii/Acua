@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check, AlertCircle } from 'lucide-react';
 import ReviewReel from '../components/ReviewReel';
 import { handleImageError } from '../lib/imageFallback';
+import { unsplashSrcSet } from '../lib/responsiveImage';
+import { holdPreloader } from '../lib/preloaderGate';
+import { homeCache } from '../lib/homeCache';
 import { FILTER_TABS } from '../data/products';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
@@ -23,12 +26,30 @@ const MIN_SPLASH_MS = 500;
 // existed before this splash did, rather than blocking indefinitely.
 const MAX_SPLASH_MS = 4000;
 
+// Matches the row seeded by 0017_hero_content.sql — used until that table's
+// fetch resolves (or if it ever fails), so the hero never has a loading
+// state of its own: it just silently upgrades in place, same as a
+// background refresh of pieces/archive already does.
+const DEFAULT_HERO = {
+  imageUrl:
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85',
+  heading: 'Naturally rooted, intentionally designed.',
+  subtext:
+    'Handcrafted accessories inspired by the tides — non-tarnish finishes, natural stones, and salvaged sea glass for coastal permanence.',
+};
+
 export default function HomeView({ setCurrentView, onRequestSimilar, onViewProduct }) {
   const { items: cartItems, addItem } = useCart();
   const [activeFilter, setActiveFilter] = useState('All');
   const [addedItem, setAddedItem] = useState(null);
-  const [pieces, setPieces] = useState(null);
-  const [archiveItems, setArchiveItems] = useState(null);
+  const [pieces, setPieces] = useState(homeCache.pieces);
+  const [archiveItems, setArchiveItems] = useState(homeCache.archive);
+  const [hero, setHero] = useState(homeCache.hero ?? DEFAULT_HERO);
+  // Returning to a homepage whose data is already cached: render it right
+  // away and skip the splash entirely (see lib/homeCache).
+  const [warmStart] = useState(
+    () => homeCache.pieces !== null && homeCache.archive !== null && homeCache.reel !== null
+  );
   // A failed fetch and a genuinely empty catalog used to look identical —
   // both just left `pieces`/`archiveItems` as []. That meant an actual
   // Supabase outage or an expired API key would show visitors "no pieces
@@ -49,11 +70,19 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
   // holds one unified splash over the whole view until all three of those
   // fetches (not just the two HomeView owns) have resolved, so there's
   // nothing left to pop in once it lifts.
-  const [reelReady, setReelReady] = useState(false);
-  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
+  const [reelReady, setReelReady] = useState(homeCache.reel !== null);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(warmStart);
   const [maxSplashElapsed, setMaxSplashElapsed] = useState(false);
   const contentReady = pieces !== null && archiveItems !== null && reelReady;
   const showSplash = !minSplashElapsed || (!contentReady && !maxSplashElapsed);
+
+  // On a first visit the wave preloader covers this view; holding it until
+  // the same content-ready point means it fades straight onto the finished
+  // page, rather than fading out onto this view's own splash below it.
+  useEffect(() => {
+    if (contentReady || maxSplashElapsed) return undefined;
+    return holdPreloader();
+  }, [contentReady, maxSplashElapsed]);
 
   useEffect(() => {
     const minTimer = setTimeout(() => setMinSplashElapsed(true), MIN_SPLASH_MS);
@@ -82,9 +111,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
     };
   }, [showSplash]);
 
-  const loadPieces = useCallback(() => {
-    setPieces(null);
-    setPiecesFailed(false);
+  // { background: true } refreshes cached data in place: no loading state,
+  // and a failed refresh keeps showing what's cached instead of an error.
+  // (The Try Again buttons call these with a click event, which never has
+  // background === true, so they always do a full visible reload.)
+  const loadPieces = useCallback((opts) => {
+    const background = opts?.background === true;
+    if (!background) {
+      setPieces(null);
+      setPiecesFailed(false);
+    }
     return supabase
       .from('products')
       .select('*')
@@ -92,26 +128,31 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       .then(({ data, error }) => {
         if (unmountedRef.current) return;
         if (error || !data) {
+          if (background) return;
           setPiecesFailed(true);
           setPieces([]);
           return;
         }
-        setPieces(data.map(mapProductRow));
+        homeCache.pieces = data.map(mapProductRow);
+        setPieces(homeCache.pieces);
       })
       .catch(() => {
         // A genuine network failure (not a resolved { error }) rejects
         // instead of resolving — without this, it would otherwise leave
         // pieces stuck on "Loading pieces…" forever rather than showing
         // the same error state as a resolved { error } does.
-        if (unmountedRef.current) return;
+        if (unmountedRef.current || background) return;
         setPiecesFailed(true);
         setPieces([]);
       });
   }, []);
 
-  const loadArchive = useCallback(() => {
-    setArchiveItems(null);
-    setArchiveFailed(false);
+  const loadArchive = useCallback((opts) => {
+    const background = opts?.background === true;
+    if (!background) {
+      setArchiveItems(null);
+      setArchiveFailed(false);
+    }
     return supabase
       .from('archive_items')
       .select('*')
@@ -119,17 +160,37 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
       .then(({ data, error }) => {
         if (unmountedRef.current) return;
         if (error || !data) {
+          if (background) return;
           setArchiveFailed(true);
           setArchiveItems([]);
           return;
         }
-        setArchiveItems(data.map(mapArchiveRow));
+        homeCache.archive = data.map(mapArchiveRow);
+        setArchiveItems(homeCache.archive);
       })
       .catch(() => {
-        if (unmountedRef.current) return;
+        if (unmountedRef.current || background) return;
         setArchiveFailed(true);
         setArchiveItems([]);
       });
+  }, []);
+
+  // No loading/failed state of its own on purpose: `hero` already starts as
+  // either the cached or the hardcoded default, both of which are valid
+  // things to show, so a failed or slow fetch here just leaves whichever of
+  // those already showing instead of needing its own error UI.
+  const loadHero = useCallback(() => {
+    return supabase
+      .from('hero_content')
+      .select('image_url, heading, subtext')
+      .eq('id', 1)
+      .single()
+      .then(({ data, error }) => {
+        if (unmountedRef.current || error || !data) return;
+        homeCache.hero = { imageUrl: data.image_url, heading: data.heading, subtext: data.subtext };
+        setHero(homeCache.hero);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -140,12 +201,13 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
     // silently discarding every fetch's result for the rest of the
     // component's life.
     unmountedRef.current = false;
-    loadPieces();
-    loadArchive();
+    loadPieces({ background: homeCache.pieces !== null });
+    loadArchive({ background: homeCache.archive !== null });
+    loadHero();
     return () => {
       unmountedRef.current = true;
     };
-  }, [loadPieces, loadArchive]);
+  }, [loadPieces, loadArchive, loadHero]);
 
   const handleAdd = (piece) => {
     addItem(piece);
@@ -206,10 +268,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
         <section className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-ink">
           <div
             className="absolute inset-0 bg-cover bg-center w-full h-full"
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85')",
-            }}
+            style={{ backgroundImage: `url('${hero.imageUrl}')` }}
           />
           {/* Warm Overlay Gradient — darkens the photo for white text, so it
               stays fixed-dark regardless of theme (bg-ink, not the
@@ -219,14 +278,11 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
 
           <div className="relative z-10 flex h-full flex-col items-center justify-center text-center px-6">
             <h1 className="font-serif text-white text-[2.75rem] leading-[1.05] sm:text-6xl md:text-7xl tracking-tight max-w-3xl drop-shadow-[0_2px_20px_rgba(0,0,0,0.25)]">
-              Naturally rooted,
-              <br />
-              intentionally <span className="italic text-sunset">designed</span>.
+              {hero.heading}
             </h1>
 
             <p className="mt-7 max-w-md text-white/80 text-base sm:text-lg font-sans font-light drop-shadow-[0_1px_12px_rgba(0,0,0,0.3)]">
-              Handcrafted accessories inspired by the tides — non-tarnish finishes, natural
-              stones, and salvaged sea glass for coastal permanence.
+              {hero.subtext}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
@@ -278,7 +334,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </div>
 
             <a
-              className="font-sans text-xs font-semibold text-accent hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase"
+              className="font-sans text-xs font-semibold text-accent hover:text-terracota transition-colors underline underline-offset-4 tracking-wider uppercase py-3 -my-3"
               href="#available-pieces"
             >
               VIEW ALL
@@ -348,8 +404,9 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
             </p>
           )}
 
-          {/* 3-Column Bento Cloud Product Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Product grid: two per row on phones (one per row meant a full
+              screen of scrolling per piece), three on large screens. */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 md:gap-8">
             <AnimatePresence mode="popLayout">
               {filteredPieces.map((piece) => (
                 <motion.div
@@ -359,7 +416,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35 }}
-                  className="group relative cursor-pointer rounded-[24px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-5 sm:p-6"
+                  className="group relative cursor-pointer rounded-[20px] sm:rounded-[32px] bg-surface-elevated shadow-[0_12px_35px_-8px_rgba(38,28,20,0.06)] hover:shadow-[0_20px_45px_-10px_rgba(38,28,20,0.12)] transition-all duration-500 overflow-hidden flex flex-col border-none p-3 sm:p-6"
                 >
                   {/* A card that's itself a button, wrapping the real Add to
                       Cart/Request Similar buttons, is an ARIA anti-pattern —
@@ -376,14 +433,16 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                     type="button"
                     onClick={() => onViewProduct?.(piece.id)}
                     aria-label={`View ${piece.title}`}
-                    className="absolute inset-0 z-0 rounded-[24px] sm:rounded-[32px] border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
+                    className="absolute inset-0 z-0 rounded-[20px] sm:rounded-[32px] border-none bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container-low"
                   />
 
                   {/* Square Aspect Ratio Product Thumbnail */}
-                  <div className="relative z-10 pointer-events-none w-full aspect-square rounded-2xl overflow-hidden bg-surface-container-low mb-5">
+                  <div className="relative z-10 pointer-events-none w-full aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-surface-container-low mb-3 sm:mb-5">
                     <img
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       src={piece.image}
+                      srcSet={unsplashSrcSet(piece.image)}
+                      sizes="(min-width: 1024px) 33vw, 50vw"
                       alt={piece.title}
                       loading="lazy"
                       onError={(e) => handleImageError(e, piece.fallback)}
@@ -396,7 +455,7 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                       </div>
                     )}
                     {piece.isOneOfOne && !piece.soldOut && (
-                      <span className="absolute top-3 left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                      <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-chile-rojo text-white text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-sm">
                         1-of-1
                       </span>
                     )}
@@ -405,22 +464,22 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   {/* Card Description & Action Row */}
                   <div className="relative z-10 pointer-events-none flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="font-sans text-base sm:text-lg text-on-surface font-medium mb-1.5 group-hover:text-accent transition-colors">
+                      <h3 className="font-sans text-sm sm:text-lg text-on-surface font-medium mb-2 sm:mb-1.5 leading-snug line-clamp-2 group-hover:text-accent transition-colors">
                         {piece.title}
                       </h3>
-                      <p className="font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
+                      <p className="max-sm:hidden font-sans text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed font-light">
                         {piece.description}
                       </p>
                     </div>
 
-                    <div className="flex justify-between items-center pt-3 border-t border-surface-container">
-                      <span className="font-sans text-base text-terracota font-semibold">
+                    <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-1 pt-2 sm:pt-3 border-t border-surface-container">
+                      <span className="font-sans text-sm sm:text-base text-terracota-deep dark:text-terracota font-semibold">
                         {piece.price}
                       </span>
                       {piece.soldOut ? (
                         <button
                           onClick={() => onRequestSimilar?.({ ...piece, source: 'catalog' })}
-                          className="pointer-events-auto text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                          className="pointer-events-auto py-2 -my-2 text-[11px] font-semibold uppercase tracking-wider text-accent hover:text-terracota transition-colors border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         >
                           Request Similar
                         </button>
@@ -500,6 +559,8 @@ export default function HomeView({ setCurrentView, onRequestSimilar, onViewProdu
                   <img
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 filter grayscale-[20%] group-hover:grayscale-0"
                     src={item.image}
+                    srcSet={unsplashSrcSet(item.image)}
+                    sizes="(min-width: 768px) 25vw, 50vw"
                     alt={item.alt}
                     loading="lazy"
                     onError={(e) => handleImageError(e, item.fallback)}

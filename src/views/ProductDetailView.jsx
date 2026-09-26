@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Check, ShieldCheck, Truck, AlertCircle, Share2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { mapProductRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 import { useCart } from '../context/CartContext';
+import RelatedPieces from '../components/RelatedPieces';
 
 // PostgREST's code for ".single() matched zero rows" — the one case that
 // actually means "this product doesn't exist," as opposed to any other
@@ -12,10 +14,11 @@ import { useCart } from '../context/CartContext';
 // visitor as if the piece they clicked on was never real.
 const NOT_FOUND_CODE = 'PGRST116';
 
-export default function ProductDetailView({ productId, setCurrentView, onRequestSimilar }) {
+export default function ProductDetailView({ productId, setCurrentView, onRequestSimilar, onViewProduct }) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [product, setProduct] = useState(undefined); // undefined = loading, null = not found
   const [loadFailed, setLoadFailed] = useState(false);
   // Bumped on every load attempt (a productId change or a manual "Try
@@ -109,15 +112,63 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
     setTimeout(() => setAdded(false), 1600);
   };
 
+  // Phones get the native share sheet (Messenger, IG, etc.); anywhere
+  // without it, the link is copied instead.
+  const handleShare = async () => {
+    const url = `${window.location.origin}/?product=${product.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${product.title} | ACUA`, url });
+      } catch {
+        // Dismissing the share sheet rejects too; nothing to do either way.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      window.prompt('Copy this link:', url);
+    }
+  };
+
+  // Product rich-result markup (Google Search / Shopping) — the site-wide
+  // Organization schema in index.html says nothing about individual
+  // pieces, so nothing here ever qualified for a price/availability rich
+  // result. `<` is escaped defensively since this is admin-entered content
+  // (title/description) landing inside a <script> tag, however unlikely a
+  // literal "</script>" in there actually is.
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || undefined,
+    image: product.image,
+    category: product.category,
+    material: product.material,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'PHP',
+      price: (product.priceCents / 100).toFixed(2),
+      availability: `https://schema.org/${product.soldOut ? 'OutOfStock' : 'InStock'}`,
+      url: `${window.location.origin}/?product=${product.id}`,
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-sand text-on-surface font-sans antialiased">
+    <main className="min-h-screen bg-sand text-on-surface font-sans antialiased">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd).replace(/</g, '\\u003c') }}
+      />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-24">
         <button
           onClick={() => {
             setCurrentView('home');
             setTimeout(() => document.getElementById('available-pieces')?.scrollIntoView(), 50);
           }}
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors mb-8 border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors pt-3 -mt-3 pb-3 mb-5 border-none bg-transparent cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Available Pieces
         </button>
@@ -131,6 +182,8 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
           >
             <img
               src={product.image}
+              srcSet={unsplashSrcSet(product.image)}
+              sizes="(min-width: 768px) 50vw, 100vw"
               alt={product.title}
               className="w-full h-full object-cover"
               fetchPriority="high"
@@ -152,7 +205,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             <h1 className="font-serif text-3xl sm:text-4xl text-on-surface leading-tight">
               {product.title}
             </h1>
-            <p className="text-2xl font-semibold text-terracota mt-4">{product.price}</p>
+            <p className="text-2xl font-semibold text-terracota-deep dark:text-terracota mt-4">{product.price}</p>
             {product.isOneOfOne && !product.soldOut && (
               <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent bg-chile-rojo/10 rounded-full px-3 py-1 mt-3">
                 One of one — once it's gone, it's gone
@@ -185,7 +238,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                     <div className="flex items-center gap-3 bg-surface-elevated rounded-full px-4 py-2.5 shadow-cloud-sm w-fit">
                       <button
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         aria-label="Decrease quantity"
                       >
                         <Minus className="w-3.5 h-3.5" />
@@ -193,7 +246,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                       <span className="text-sm w-5 text-center">{quantity}</span>
                       <button
                         onClick={() => setQuantity((q) => q + 1)}
-                        className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         aria-label="Increase quantity"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -203,7 +256,7 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
 
                   <button
                     onClick={handleAddToCart}
-                    className={`flex-1 sm:flex-none font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center gap-2 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
+                    className={`sm:flex-none font-sans text-xs uppercase font-semibold tracking-[0.18em] h-14 px-9 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 inline-flex items-center justify-center gap-2 border-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-sand ${
                       added ? 'bg-olive text-white' : 'bg-chile-rojo hover:brightness-90 text-white'
                     }`}
                   >
@@ -217,6 +270,13 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
                   </button>
                 </div>
               )}
+              <button
+                onClick={handleShare}
+                className="mt-5 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant hover:text-accent transition-colors bg-transparent border-none cursor-pointer rounded-sm py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+              >
+                {linkCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                <span aria-live="polite">{linkCopied ? 'Link copied' : 'Share this piece'}</span>
+              </button>
             </div>
 
             <div className="mt-8 pt-6 border-t border-outline-variant/30 space-y-3">
@@ -231,7 +291,9 @@ export default function ProductDetailView({ productId, setCurrentView, onRequest
             </div>
           </div>
         </div>
+
+        {onViewProduct && <RelatedPieces product={product} onViewProduct={onViewProduct} />}
       </div>
-    </div>
+    </main>
   );
 }

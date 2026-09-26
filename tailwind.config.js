@@ -77,6 +77,10 @@ export default {
         "error": "#ba1a1a",
         "chile-rojo": "#ae431e",
         "terracota": "#d68224",
+        // Same hue, deep enough for body-size text on the light cream/white
+        // surfaces (4.9:1 / 5.3:1; plain terracota is ~2.8:1, below WCAG
+        // AA's 4.5:1). Used for prices in light mode, `dark:text-terracota`.
+        "terracota-deep": "#9a5e1a",
         "olive": "#8a8b35",
         "sunset": "#eac891",
         "gradient-primary-start": "#ae431e",

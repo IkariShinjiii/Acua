@@ -21,7 +21,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
   };
 
   const linkClass =
-    'text-left text-sm text-white/90 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-0 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo';
+    'text-left text-sm text-white/90 hover:text-white transition-colors bg-transparent border-none cursor-pointer px-0 py-1.5 -my-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo';
   // Not the shared `sunset` token (#eac891) — at this small 11px size it
   // measures 3.63:1 against the footer's chile-rojo background, short of
   // WCAG AA's 4.5:1 for text. This is a one-off, slightly lighter tint
@@ -49,13 +49,13 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
             <p className="text-xs text-white/90 leading-relaxed max-w-[220px]">
               Handmade coastal accessories, hand-assembled in Iloilo City, Philippines.
             </p>
-            <div className="flex items-center gap-4 mt-1">
+            <div className="flex items-center gap-1 mt-1 -ml-2.5">
               <a
                 href="https://www.instagram.com/acua_ph/"
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label="ACUA on Instagram"
-                className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+                className="p-2.5 text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
               >
                 <InstagramIcon className="w-[18px] h-[18px]" />
               </a>
@@ -64,7 +64,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label="ACUA on Facebook"
-                className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+                className="p-2.5 text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
               >
                 <FacebookIcon className="w-[18px] h-[18px]" />
               </a>
@@ -73,7 +73,7 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label="ACUA on TikTok"
-                className="text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
+                className="p-2.5 text-white/90 hover:text-sunset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo rounded-full"
               >
                 <TiktokIcon className="w-[18px] h-[18px]" />
               </a>
@@ -125,6 +125,24 @@ export default function Footer({ setCurrentView, onTrackCommission }) {
 
         <div className="mt-12 pt-6 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/85 uppercase tracking-wider">
           <span>© {new Date().getFullYear()} ACUA. Handcrafted by the coast.</span>
+          <nav aria-label="Legal" className="flex items-center gap-5">
+            {[
+              ['privacy', '/privacy', 'Privacy'],
+              ['terms', '/terms', 'Terms'],
+            ].map(([view, href, label]) => (
+              <a
+                key={view}
+                href={href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCurrentView(view);
+                }}
+                className="py-2 -my-2 text-white/85 hover:text-white transition-colors rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-chile-rojo"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
           <span className="text-[#f9e6c2] normal-case tracking-widest">
             Naturally rooted. Intentionally designed.
           </span>

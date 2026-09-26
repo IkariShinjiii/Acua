@@ -13,6 +13,11 @@ export function mapProductRow(row) {
     material: row.material,
     description: row.description,
     price: formatPeso(row.price_cents / 100),
+    // Kept alongside the formatted string above rather than re-parsing it
+    // back out later -- needed as a plain number for Product JSON-LD's
+    // offers.price (see ProductDetailView), which per schema.org must be a
+    // bare numeric string, not "₱22,000".
+    priceCents: row.price_cents,
     soldOut: row.sold_out,
     isOneOfOne: row.is_one_of_one,
     image: row.image_url,

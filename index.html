@@ -26,9 +26,9 @@
 
   <!-- Open Graph / Twitter Card: without these, a link shared in Messenger,
        Instagram DMs, WhatsApp, or iMessage — the channels this business
-       actually sells through — shows as a bare, imageless link. Reuses the
-       hero photo as a placeholder social preview image until dedicated
-       branded artwork exists. -->
+       actually sells through — shows as a bare, imageless link.
+       public/og-image.jpg is a 1200x630 branded card (hero photo, cream
+       logo mark, wordmark, tagline). -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ACUA" />
   <meta property="og:title" content="ACUA | Handcrafted by the Coast" />
@@ -36,7 +36,7 @@
     content="Handmade coastal accessories brand featuring singular 1-of-1 pieces, non-tarnish finishes, natural pearls, and bespoke commissions." />
   <meta property="og:url" content="https://acua-three.vercel.app/" />
   <meta property="og:image"
-    content="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&h=630&q=85" />
+    content="https://acua-three.vercel.app/og-image.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -44,15 +44,16 @@
   <meta name="twitter:description"
     content="Handmade coastal accessories brand featuring singular 1-of-1 pieces, non-tarnish finishes, natural pearls, and bespoke commissions." />
   <meta name="twitter:image"
-    content="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&h=630&q=85" />
+    content="https://acua-three.vercel.app/og-image.jpg" />
 
-  <!-- Google Fonts: Libre Caslon Text, Manrope, Playfair Display & Inter -->
+  <!-- Google Fonts: only the three families the site actually renders —
+       Fraunces (font-serif), Inter (font-sans), Unica One (font-wordmark).
+       Every stylesheet here blocks first paint, so unused families and the
+       unused Material Symbols icon font were pure delay. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Libre+Caslon+Text:wght@400;700&family=Manrope:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Unica+One&display=swap"
-    rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&family=Unica+One&display=swap"
     rel="stylesheet">
   <script>
     // Runs before any stylesheet paints, so there's no flash of the wrong
@@ -69,68 +70,57 @@
     })();
   </script>
 
-  <!-- Preloader styling lives here, inline, rather than in the Tailwind
-       bundle it's meant to cover the wait for — it has to be visible the
-       instant HTML parses, with no dependency on the JS/CSS it's masking
-       the load time of. -->
+  <!-- Shown the instant HTML parses, before any JS/CSS has loaded, so it's
+       styled inline. It's an exact copy of the wave preloader's first frame
+       (src/components/Preloader.jsx: SAND_BEIGE background, olive mark at
+       56px / 64px from 640px up), so React swapping it for the real
+       preloader is invisible rather than a jump between two loaders. -->
   <style>
     #initial-loader {
       position: fixed;
       inset: 0;
       z-index: 9999;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 22px;
-      background: #F9F6F0;
-    }
-    html.dark #initial-loader {
-      background: #1A1815;
+      background: #E4D3AE;
     }
     #initial-loader .mark {
+      width: 56px;
       height: 56px;
-      width: auto;
-      animation: initial-loader-pulse 1.6s ease-in-out infinite;
     }
-    /* Ink mark on the light (default) background, cream mark once dark
-       mode's class is present — same fixed-vs-theme-aware split the rest
-       of the site's logo usages follow (see Navbar/HomeView footer). */
-    #initial-loader .mark-dark { display: none; }
-    html.dark #initial-loader .mark-light { display: none; }
-    html.dark #initial-loader .mark-dark { display: block; }
-    #initial-loader .bar {
-      position: relative;
-      width: 120px;
-      height: 2px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: rgba(174, 67, 30, 0.15);
-    }
-    #initial-loader .bar::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      width: 40%;
-      border-radius: 999px;
-      background: #AE431E;
-      animation: initial-loader-slide 1.2s ease-in-out infinite;
-    }
-    @keyframes initial-loader-pulse {
-      0%, 100% { opacity: 0.35; }
-      50% { opacity: 1; }
-    }
-    @keyframes initial-loader-slide {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(350%); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      #initial-loader .mark,
-      #initial-loader .bar::after {
-        animation: none;
+    @media (min-width: 640px) {
+      #initial-loader .mark {
+        width: 64px;
+        height: 64px;
       }
     }
   </style>
+
+  <link rel="canonical" href="https://acua-three.vercel.app/" />
+  <!-- Lets Google show the brand's name, logo and social profiles in
+       search results instead of guessing them from page text. -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ACUA",
+      "url": "https://acua-three.vercel.app/",
+      "logo": "https://acua-three.vercel.app/apple-touch-icon.png",
+      "description": "Handmade coastal accessories from Iloilo City, Philippines: 1-of-1 pieces, non-tarnish finishes, natural stones, and bespoke commissions.",
+      "email": "acuavibe@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Iloilo City",
+        "addressCountry": "PH"
+      },
+      "sameAs": [
+        "https://www.instagram.com/acua_ph/",
+        "https://www.tiktok.com/@acua_ph",
+        "https://www.facebook.com/profile.php?id=61577296311917"
+      ]
+    }
+  </script>
 </head>
 
 <body class="bg-sand text-on-surface antialiased selection:bg-chile-rojo selection:text-white">
@@ -138,9 +128,7 @@
     <!-- React's first render replaces everything inside #root, so this
          disappears the instant the app mounts — no removal code needed. -->
     <div id="initial-loader" aria-hidden="true">
-      <img class="mark mark-light" src="/src/assets/logo-mark-ink.png" alt="" />
-      <img class="mark mark-dark" src="/src/assets/logo-mark-cream.png" alt="" />
-      <div class="bar"></div>
+      <img class="mark" src="/src/assets/logo-mark-olive.png" alt="" />
     </div>
   </div>
   <script type="module" src="/src/main.jsx"></script>

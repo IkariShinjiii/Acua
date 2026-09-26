@@ -23,6 +23,7 @@ const CommissionView = lazy(() => import('./views/CommissionView'));
 const CheckoutView = lazy(() => import('./views/CheckoutView'));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 const FAQView = lazy(() => import('./views/FAQView'));
+const LegalView = lazy(() => import('./views/LegalView'));
 // Not on the critical path — most visitors never open it, and it has no
 // loading state worth showing (it just pops in once ready).
 const ConciergeChat = lazy(() => import('./components/ConciergeChat'));
@@ -62,6 +63,8 @@ const DOCUMENT_TITLES = {
   dashboard: 'My Account | ACUA',
   faq: 'FAQ | ACUA',
   checkout: 'Checkout | ACUA',
+  privacy: 'Privacy Policy | ACUA',
+  terms: 'Terms of Service | ACUA',
 };
 
 // The one login gate for every account — "My Account" and "Admin Login"
@@ -236,12 +239,44 @@ function ResetPasswordGate() {
  * Supports distinct view architecture (AppView, ProductDetailView, CommissionView).
  * Currently rendering Layout 3 (CommissionView) as the initial rectification milestone.
  */
+// A shared product link (/?product=<id>, from the product page's Share
+// button) opens straight to that piece.
+function productIdFromUrl() {
+  return new URLSearchParams(window.location.search).get('product');
+}
+
+// Views with their own real path (linkable, e.g. from PayMongo's merchant
+// application or the sign-up form); vercel.json rewrites them to index.html.
+// Every other view lives on /.
+const VIEW_PATHS = { privacy: '/privacy', terms: '/terms' };
+function viewFromPath() {
+  return Object.keys(VIEW_PATHS).find((view) => VIEW_PATHS[view] === window.location.pathname);
+}
+
+// Scrolls back to where a Back/Forward entry was left, once the restored
+// view has rendered tall enough. Home is the slow case: it locks scrolling
+// under its own splash and fills in as its data arrives. Gives up after 3s
+// and scrolls as far as it can.
+function restoreScroll(y) {
+  const deadline = Date.now() + 3000;
+  const attempt = () => {
+    const locked = document.documentElement.style.overflow === 'hidden';
+    const reachable = document.documentElement.scrollHeight - window.innerHeight >= y;
+    if ((!locked && reachable) || Date.now() > deadline) {
+      window.scrollTo({ top: y, behavior: 'instant' });
+      return;
+    }
+    setTimeout(attempt, 50);
+  };
+  setTimeout(attempt, 0);
+}
+
 export default function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'commission' | 'story'
+  const [currentView, setCurrentView] = useState(() => (productIdFromUrl() ? 'product' : viewFromPath() ?? 'home'));
   // Set only via handleRequestSimilar below, so a plain nav click into the
   // Commission view never carries over a stale "inspired by" reference.
   const [commissionPrefill, setCommissionPrefill] = useState(null);
-  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(productIdFromUrl);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -278,7 +313,8 @@ export default function App() {
       description ? description.replace(/\+/g, ' ') : "Google sign-in didn't go through. Please try again.",
       'error'
     );
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    // Keeps the entry's in-app navigation state (see the history effects below).
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -331,6 +367,66 @@ export default function App() {
     }
     document.title = DOCUMENT_TITLES[currentView] ?? DEFAULT_TITLE;
   }, [currentView, showingAdmin]);
+
+  // Browser history for in-app navigation. There's no router, so each view
+  // change pushes an entry carrying { acuaView, productId }, and the phone's
+  // Back/Forward (popstate) restore the view from it — before this, Back
+  // from any page left the site entirely. Leaving an entry records its
+  // scroll position so Back returns to the same spot. Only product pages
+  // change the visible URL (/?product=<id>, so a copied link is shareable);
+  // every other view stays on /.
+  const lastScrollYRef = useRef(0);
+  const historyInitializedRef = useRef(false);
+
+  useEffect(() => {
+    window.history.scrollRestoration = 'manual';
+    // Read by the push below: by the time that effect runs, the new view
+    // has committed and the page may already have been clamped shorter.
+    const onScroll = () => {
+      lastScrollYRef.current = window.scrollY;
+    };
+    const onPopState = (e) => {
+      const fromUrl = productIdFromUrl();
+      const entry = e.state?.acuaView
+        ? e.state
+        : { acuaView: fromUrl ? 'product' : viewFromPath() ?? 'home', productId: fromUrl };
+      setCommissionPrefill(null);
+      setDashboardInitialTab(undefined);
+      setSelectedProductId(entry.productId ?? null);
+      setCurrentView(entry.acuaView);
+      restoreScroll(entry.scrollY ?? 0);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const productId = currentView === 'product' ? selectedProductId : null;
+    const params = new URLSearchParams(window.location.search);
+    if (productId) params.set('product', productId);
+    else params.delete('product');
+    const query = params.toString();
+    const url = (VIEW_PATHS[currentView] ?? '/') + (query ? `?${query}` : '') + window.location.hash;
+    const entry = { acuaView: currentView, productId };
+
+    if (!historyInitializedRef.current) {
+      // Label the entry the visitor landed on rather than adding one.
+      historyInitializedRef.current = true;
+      window.history.replaceState(entry, '', url);
+      return;
+    }
+    const current = window.history.state;
+    // Already on this entry: the change came from Back/Forward (or a
+    // StrictMode re-run), so there's nothing to push.
+    if (current?.acuaView === currentView && (current.productId ?? null) === productId) return;
+    window.history.replaceState({ ...current, scrollY: lastScrollYRef.current }, '');
+    window.history.pushState(entry, '', url);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentView, selectedProductId]);
 
   if (passwordRecovery) {
     return <ResetPasswordGate />;
@@ -398,8 +494,9 @@ export default function App() {
         open={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectProduct={handleViewProduct}
+        onRequestSimilar={handleRequestSimilar}
       />
-      <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsOverlay open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onNavigate={navigateTo} />
       <Toast toast={toast} onDismiss={dismissToast} />
 
       {currentView === 'home' && (
@@ -424,10 +521,17 @@ export default function App() {
       {currentView === 'product' && (
         <Suspense fallback={<ViewLoadingFallback />}>
           <ProductDetailView
+            key={selectedProductId}
             productId={selectedProductId}
             setCurrentView={navigateTo}
             onRequestSimilar={handleRequestSimilar}
+            onViewProduct={handleViewProduct}
           />
+        </Suspense>
+      )}
+      {(currentView === 'privacy' || currentView === 'terms') && (
+        <Suspense fallback={<ViewLoadingFallback />}>
+          <LegalView doc={currentView} setCurrentView={navigateTo} />
         </Suspense>
       )}
       {currentView === 'faq' && (
@@ -452,7 +556,7 @@ export default function App() {
           no place in the internal admin tool. */}
       {!showingAdmin && (
         <Suspense fallback={null}>
-          <ConciergeChat />
+          <ConciergeChat hidden={isCartOpen || isSearchOpen} />
         </Suspense>
       )}
     </div>

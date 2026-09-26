@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { formatPeso } from '../lib/currency';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useCartAvailability } from '../hooks/useCartAvailability';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 
 export default function CartDrawer({ open, onClose, onViewProduct, onCheckout }) {
   const { items, removeItem, setQuantity } = useCart();
@@ -85,7 +86,14 @@ export default function CartDrawer({ open, onClose, onViewProduct, onCheckout })
                         }}
                         className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low border-none cursor-pointer p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                       >
-                        <img src={product.image} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
+                        <img
+                          src={product.image}
+                          srcSet={unsplashSrcSet(product.image)}
+                          sizes="64px"
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       </button>
                       <div className="flex-1 min-w-0">
                         <button
@@ -102,13 +110,13 @@ export default function CartDrawer({ open, onClose, onViewProduct, onCheckout })
                             <AlertCircle className="w-3 h-3 flex-shrink-0" /> No longer available
                           </p>
                         ) : (
-                          <p className="text-xs text-terracota font-semibold mt-0.5">{product.price}</p>
+                          <p className="text-xs text-terracota-deep dark:text-terracota font-semibold mt-0.5">{product.price}</p>
                         )}
                         {!isSoldOut && (
                           <div className="flex items-center gap-2 mt-2">
                             <button
                               onClick={() => setQuantity(product.id, quantity - 1)}
-                              className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                              className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                               aria-label="Decrease quantity"
                             >
                               <Minus className="w-3 h-3" />
@@ -117,7 +125,7 @@ export default function CartDrawer({ open, onClose, onViewProduct, onCheckout })
                             {!product.isOneOfOne && (
                               <button
                                 onClick={() => setQuantity(product.id, quantity + 1)}
-                                className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center border-none cursor-pointer text-on-surface hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                                 aria-label="Increase quantity"
                               >
                                 <Plus className="w-3 h-3" />
@@ -128,7 +136,7 @@ export default function CartDrawer({ open, onClose, onViewProduct, onCheckout })
                       </div>
                       <button
                         onClick={() => removeItem(product.id)}
-                        className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-1 h-fit rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                        className="text-on-surface-variant hover:text-accent transition-colors border-none bg-transparent cursor-pointer p-2.5 -m-1.5 h-fit rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                         aria-label={`Remove ${product.title}`}
                       >
                         <Trash2 className="w-4 h-4" />

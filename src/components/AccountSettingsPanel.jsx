@@ -112,7 +112,7 @@ export default function AccountSettingsPanel() {
               of silently doing nothing or half-implementing it. */}
           <p className="text-xs text-on-surface-variant mt-1">
             Signed in as {user?.email}. To change your email, contact{' '}
-            <a href="mailto:acuavibe@gmail.com" className="text-accent hover:text-terracota transition-colors">
+            <a href="mailto:acuavibe@gmail.com" className="text-accent underline underline-offset-2 hover:text-terracota transition-colors">
               acuavibe@gmail.com
             </a>
             .

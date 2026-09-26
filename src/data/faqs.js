@@ -40,7 +40,7 @@ export const FAQ_CATEGORIES = [
       {
         question: 'What can I customize?',
         answer:
-          'Category (Necklace/Choker, Statement Cuff, or Ceremonial/Suite), material (non-tarnish gold-tone, silver-tone, or a natural & synthetic mix), and your desired timeline. Commission budgets typically run from ₱22,000 up to ₱168,000+ depending on scope.',
+          'Category (Necklace/Choker, Statement Cuff, or Ceremonial/Suite), material (non-tarnish gold-tone, silver-tone, or a natural & synthetic mix), and your desired timeline. Commission budgets typically run from ₱100 up to ₱800+ depending on scope.',
       },
     ],
   },

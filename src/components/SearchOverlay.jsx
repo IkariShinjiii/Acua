@@ -2,13 +2,19 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { mapProductRow } from '../lib/mapProduct';
+import { mapProductRow, mapArchiveRow } from '../lib/mapProduct';
 import { handleImageError } from '../lib/imageFallback';
+import { unsplashSrcSet } from '../lib/responsiveImage';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
-export default function SearchOverlay({ open, onClose, onSelectProduct }) {
+export default function SearchOverlay({ open, onClose, onSelectProduct, onRequestSimilar }) {
   const [query, setQuery] = useState('');
   const [pieces, setPieces] = useState([]);
+  // Past sold 1-of-1 pieces (The Archive) — searchable so a visitor who
+  // saw one on Instagram can find it, same as they'd find it by scrolling
+  // to that section on the homepage. Not purchasable, so results render
+  // and behave differently below (Request Similar, not Add to Cart).
+  const [archiveItems, setArchiveItems] = useState([]);
   // A failed catalog fetch used to look exactly like "no pieces match
   // that search" — a real outage would read as "this term doesn't exist"
   // rather than "something's wrong," and since it happens before anyone's
@@ -25,18 +31,20 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
   const loadPieces = useCallback(() => {
     const thisRequestId = ++requestIdRef.current;
     setLoadFailed(false);
-    return supabase
-      .from('products')
-      .select('*')
-      .then(({ data, error }) => {
-        if (requestIdRef.current !== thisRequestId) return;
-        if (error || !data) {
-          setLoadFailed(true);
-          setPieces([]);
-          return;
-        }
-        setPieces(data.map(mapProductRow));
-      });
+    return Promise.all([
+      supabase.from('products').select('*'),
+      supabase.from('archive_items').select('*').order('created_at', { ascending: true }),
+    ]).then(([productsRes, archiveRes]) => {
+      if (requestIdRef.current !== thisRequestId) return;
+      if (productsRes.error || !productsRes.data || archiveRes.error || !archiveRes.data) {
+        setLoadFailed(true);
+        setPieces([]);
+        setArchiveItems([]);
+        return;
+      }
+      setPieces(productsRes.data.map(mapProductRow));
+      setArchiveItems(archiveRes.data.map(mapArchiveRow));
+    });
   }, []);
 
   useEffect(() => {
@@ -58,10 +66,12 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
   }, [open, onClose]);
 
   const q = query.trim().toLowerCase();
+  const matches = (p) => [p.title, p.category, p.material].some((field) => field.toLowerCase().includes(q));
   const results = q
-    ? pieces.filter((p) =>
-        [p.title, p.category, p.material].some((field) => field.toLowerCase().includes(q))
-      )
+    ? [
+        ...pieces.filter(matches).map((p) => ({ ...p, type: 'product' })),
+        ...archiveItems.filter(matches).map((a) => ({ ...a, type: 'archive' })),
+      ]
     : [];
 
   return (
@@ -94,11 +104,11 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, category, or material…"
                 aria-label="Search by name, category, or material"
-                className="flex-1 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/60 text-sm"
+                className="flex-1 py-3 -my-3 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/60 text-sm"
               />
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+                className="p-2.5 rounded-full hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-on-surface flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
                 aria-label="Close search"
               >
                 <X className="w-4 h-4" />
@@ -129,16 +139,20 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                   )}
                   {!q && (
                     <p className="text-center text-sm text-on-surface-variant py-12">
-                      Start typing to search Available Pieces.
+                      Start typing to search Available Pieces and The Archive.
                     </p>
                   )}
                 </>
               )}
               {results.map((piece) => (
                 <button
-                  key={piece.id}
+                  key={`${piece.type}-${piece.id}`}
                   onClick={() => {
-                    onSelectProduct(piece.id);
+                    if (piece.type === 'archive') {
+                      onRequestSimilar?.({ ...piece, source: 'archive' });
+                    } else {
+                      onSelectProduct(piece.id);
+                    }
                     onClose();
                   }}
                   className="w-full flex items-center gap-4 p-4 hover:bg-surface-container transition-colors border-none bg-transparent cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-chile-rojo"
@@ -146,6 +160,8 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                   <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container-low">
                     <img
                       src={piece.image}
+                      srcSet={unsplashSrcSet(piece.image)}
+                      sizes="56px"
                       alt={piece.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -156,9 +172,15 @@ export default function SearchOverlay({ open, onClose, onSelectProduct }) {
                     <p className="text-sm font-medium text-on-surface truncate">{piece.title}</p>
                     <p className="text-xs text-on-surface-variant">{piece.category} • {piece.material}</p>
                   </div>
-                  <span className="text-sm font-semibold text-terracota flex-shrink-0">
-                    {piece.price}
-                  </span>
+                  {piece.type === 'archive' ? (
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant flex-shrink-0 bg-surface-container px-2.5 py-1 rounded-full">
+                      1-of-1 · Archive
+                    </span>
+                  ) : (
+                    <span className="text-sm font-semibold text-terracota-deep dark:text-terracota flex-shrink-0">
+                      {piece.price}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
