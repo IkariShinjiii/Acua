@@ -30,6 +30,7 @@ import { parseDeepLinkTab } from '../lib/dashboardTabs';
 import { COMMISSION_STAGES } from '../data/commissionBriefs';
 import { ORDER_STAGES } from '../data/orders';
 import { FILTER_TABS } from '../data/products';
+import { COURIERS, courierById } from '../data/couriers';
 
 const TABS = [
   { id: 'commissions', label: 'Commission Pipeline', icon: Hammer },
@@ -357,6 +358,14 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
   // see the effect below for why. Tracked here so it survives across the
   // parent's refetch.
   const previousOrdersRef = useRef(orders);
+  // The order currently showing its courier/tracking-number form (id, or
+  // null) -- advancing to "shipped" specifically needs the admin to type
+  // in the real waybill number the courier's counter gave them, since
+  // nothing here talks to a courier's API to generate one. Every other
+  // transition (shipped -> delivered) still advances on a single click.
+  const [shippingId, setShippingId] = useState(null);
+  const [courierChoice, setCourierChoice] = useState(COURIERS[0].id);
+  const [trackingInput, setTrackingInput] = useState('');
 
   // onUpdated() (called on success, below) triggers AdminView's own
   // top-level refetch of all four datasets, which is what actually updates
@@ -378,32 +387,55 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
     }
   }, [orders]);
 
-  const advance = async (order) => {
+  const advance = async (order, shipDetails) => {
     const idx = stageIndex(ORDER_STAGES, order.status);
     const next = ORDER_STAGES[idx + 1];
     if (!next) return;
-    const trackingNumber =
-      next.id === 'shipped' && !order.tracking_number
-        ? `PHLPOST-${Math.floor(10000000 + Math.random() * 89999999)}`
-        : order.tracking_number;
+
+    const update = { status: next.id };
+    if (shipDetails) {
+      update.courier = shipDetails.courier;
+      update.tracking_number = shipDetails.trackingNumber;
+    }
 
     setSaving(order.id);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: next.id, tracking_number: trackingNumber })
-        .eq('id', order.id);
+      const { error } = await supabase.from('orders').update(update).eq('id', order.id);
       if (error) {
         showToast(`Couldn't update that order: ${error.message}`, 'error');
         setSaving(null); // failure: no refetch is coming to clear this otherwise
         return;
       }
       showToast(`Order marked as ${next.label.toLowerCase()}.`, 'success');
+      if (shipDetails) {
+        // Fire-and-forget, same pattern as the brief/quote notifications --
+        // a slow or failed email shouldn't hold up or fail the shipment
+        // update, which already succeeded.
+        supabase.functions.invoke('send-notification-email', {
+          body: { type: 'order_shipped', orderId: order.id },
+        });
+      }
       onUpdated(); // saving clears once the refetch it triggers actually lands (see effect above)
     } catch (err) {
       showToast(`Couldn't update that order: ${err?.message || 'check your connection and try again.'}`, 'error');
       setSaving(null);
     }
+  };
+
+  const startShipping = (order) => {
+    setShippingId(order.id);
+    setCourierChoice(COURIERS[0].id);
+    setTrackingInput('');
+  };
+
+  const confirmShipping = (order) => {
+    const trackingNumber = trackingInput.trim();
+    if (!trackingNumber) {
+      showToast('Enter the tracking number the courier gave you.', 'error');
+      return;
+    }
+    setShippingId(null);
+    advance(order, { courier: courierChoice, trackingNumber });
   };
 
   return (
@@ -412,38 +444,98 @@ function OrderFulfillment({ orders, onUpdated, showToast }) {
         const idx = stageIndex(ORDER_STAGES, order.status);
         const next = ORDER_STAGES[idx + 1];
         const isSaving = saving === order.id;
+        const isShippingForm = shippingId === order.id;
+        const courier = courierById(order.courier);
+        const trackingUrl = courier?.trackingUrl?.(order.tracking_number ?? '');
         return (
-          <div
-            key={order.id}
-            className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-          >
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-serif text-lg text-on-surface">#{order.id.slice(0, 8)}</h3>
-                <StatusBadge label={ORDER_STAGES[idx].label} tone={idx === ORDER_STAGES.length - 1 ? 'done' : 'active'} />
+          <div key={order.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-serif text-lg text-on-surface">#{order.id.slice(0, 8)}</h3>
+                  <StatusBadge label={ORDER_STAGES[idx].label} tone={idx === ORDER_STAGES.length - 1 ? 'done' : 'active'} />
+                </div>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  {order.patron?.full_name || order.patron?.email || 'Guest'} •{' '}
+                  {order.product?.title ?? 'Item unavailable'}
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-on-surface-variant">
+                  <span>Total: {formatPeso(order.total_cents / 100)}</span>
+                  <span>Placed {new Date(order.created_at).toLocaleDateString()}</span>
+                  {order.tracking_number && (
+                    <span>
+                      {courier?.label ?? 'Tracking'}:{' '}
+                      {trackingUrl ? (
+                        <a
+                          href={trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent underline underline-offset-2 hover:text-terracota transition-colors"
+                        >
+                          {order.tracking_number}
+                        </a>
+                      ) : (
+                        order.tracking_number
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-on-surface-variant mt-1">
-                {order.patron?.full_name || order.patron?.email || 'Guest'} •{' '}
-                {order.product?.title ?? 'Item unavailable'}
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-on-surface-variant">
-                <span>Total: {formatPeso(order.total_cents / 100)}</span>
-                <span>Placed {new Date(order.created_at).toLocaleDateString()}</span>
-                {order.tracking_number && <span>Tracking: {order.tracking_number}</span>}
-              </div>
+              {next && !isShippingForm ? (
+                <button
+                  onClick={() => (next.id === 'shipped' ? startShipping(order) : advance(order))}
+                  disabled={isSaving}
+                  className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                >
+                  {next.id === 'shipped' ? <Truck className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                  Mark as {next.label}
+                </button>
+              ) : !next ? (
+                <div className="flex items-center gap-1.5 text-olive text-xs font-semibold uppercase tracking-wider">
+                  <CheckCircle2 className="w-4 h-4" /> Complete
+                </div>
+              ) : null}
             </div>
-            {next ? (
-              <button
-                onClick={() => advance(order)}
-                disabled={isSaving}
-                className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
-              >
-                {next.id === 'shipped' ? <Truck className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                Mark as {next.label}
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-olive text-xs font-semibold uppercase tracking-wider">
-                <CheckCircle2 className="w-4 h-4" /> Complete
+
+            {isShippingForm && (
+              <div className="bg-surface-container-low rounded-2xl p-4 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <select
+                    value={courierChoice}
+                    onChange={(e) => setCourierChoice(e.target.value)}
+                    aria-label="Courier"
+                    className="rounded-xl bg-surface-elevated px-4 py-2.5 text-sm border-none outline-none shadow-input-inset"
+                  >
+                    {COURIERS.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Tracking / waybill number *"
+                    aria-label="Tracking number"
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
+                    className="rounded-xl bg-surface-elevated px-4 py-2.5 text-sm border-none outline-none shadow-input-inset"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => confirmShipping(order)}
+                    disabled={isSaving}
+                    className="px-5 py-2.5 rounded-full bg-chile-rojo text-white text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:brightness-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    Confirm Shipment
+                  </button>
+                  <button
+                    onClick={() => setShippingId(null)}
+                    className="px-5 py-2.5 rounded-full bg-surface-container text-on-surface text-xs font-semibold uppercase tracking-wider border-none cursor-pointer hover:bg-surface-container-high focus:outline-none focus-visible:ring-2 focus-visible:ring-chile-rojo focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>

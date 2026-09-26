@@ -4567,3 +4567,86 @@ the default tier (₱200 – ₱400) actually carries the "selected"
 `bg-chile-rojo` class instead of silently falling out of sync with
 BUDGET_TIERS, and expanded the FAQ's "What can I customize?" answer to
 confirm its prose updated too.
+
+## 97. Engineering Backlog Phase 4: real courier tracking links + ship notification email
+
+User confirmed the courier candidates directly (J&T, corrected from an
+earlier mis-transcription; LBC still possible, to be confirmed later)
+and asked to pick the Engineering Backlog back up. Phase 4 ("Shipping &
+Order Tracking") was blocked on exactly one thing per its own notes —
+"needs an answer, not more engineering" — but its checklist actually
+had two courier-agnostic items (a `courier` field, an auto-send ship
+email) alongside the one genuinely courier-specific item (the tracking
+link's URL pattern). Rather than wait on a single final courier name,
+built it to support *either* candidate the client is choosing between,
+which resolves the blocker without needing to wait further — whichever
+one wins, the system already handles it.
+
+**Real tracking links, not another placeholder.** Discovered along the
+way that AdminView's existing "auto-generate a tracking number on ship"
+behavior was itself fake — a random `PHLPOST-XXXXXXXX` string, not a
+real courier waybill number (ACUA ships by hand-dropping packages at a
+courier counter, so nothing in this system could generate one). Wiring
+up a real clickable link against a fake number would have been actively
+misleading, so this replaced the auto-generation with a small inline
+form: marking an order "Shipped" now opens a courier dropdown + a
+required tracking-number field for the admin to type in the real
+waybill number the courier's counter gave them, before the status
+actually advances. Advancing shipped → delivered is unchanged, still a
+single click.
+
+**Researched both couriers' real tracking-link formats instead of
+guessing.** J&T Express's `https://www.jtexpress.ph/trajectoryQuery?
+waybillNo=<number>` was confirmed genuinely live — loaded it in
+gstack's headless browser with a real number and watched the field
+pre-fill on their own site. LBC Express's site blocks automated
+requests entirely (403, bot-check) before any query-param pattern could
+be confirmed the same way, so LBC only links to its plain tracking page
+(`lbcexpress.com/track/`, the real official URL) rather than shipping a
+guessed deep-link parameter that might silently 404 or get ignored —
+that would look more broken to a patron than no deep link at all.
+
+**New shared file** `src/data/couriers.js` — `COURIERS` (id, label,
+`trackingUrl` function or null) and `courierById()`, ids matching a new
+`orders.courier` check constraint (`0021_order_courier.sql`,
+`'jt' | 'lbc' | 'other'`) exactly.
+
+**AdminView's OrderFulfillment**: `advance()` now takes an optional
+`{courier, trackingNumber}` and only applies it on the shipped
+transition; `startShipping()`/`confirmShipping()` manage the inline
+form's open/closed state (mirrors RefundsCuration's existing
+approve/reject inline-form pattern rather than inventing a new one).
+Every order card's tracking display now renders as a real link when the
+courier has one, plain text otherwise.
+
+**PatronDashboardView**: the order card's tracking line renders the
+same courier-aware link.
+
+**Ship notification email**: extended `send-notification-email`
+(deployed as version 5) with a third `order_shipped` type, admin-
+authenticated the same way `quote_sent` already is. Its courier info
+(ids, J&T's link pattern) is deliberately duplicated from
+`src/data/couriers.js` in a comment explaining why — an edge function
+can't import from `src/`. `confirmShipping()` fires this
+fire-and-forget after a successful ship update, same pattern as the
+brief/quote notifications: a slow or failed email never blocks or fails
+the shipment update that already succeeded.
+
+**Verified without admin login credentials** (the standing limitation):
+created a real test order, then proved the new `courier` column's RLS
+end to end with real role/JWT substitution in SQL — the real admin
+account's UPDATE (status/courier/tracking_number) succeeds, the same
+UPDATE from the *patron's own* account matches zero rows (blocked by
+"Admins can update orders"), and an invalid courier value
+(`'fedex'`) is rejected by the check constraint before RLS even gets
+involved. Confirmed the edge function's join path
+(`patron:profiles(...)`, `product:products(...)`) resolves correctly
+against real rows. Rendered the new inline ship form and both
+courier-link states (J&T's real deep link, LBC's page-only fallback)
+against the actual compiled CSS in gstack's headless browser at desktop
+and mobile widths — clean at both. Build and lint clean. Test order and
+scratch files deleted afterward.
+
+Still genuinely blocked, unchanged: Phase 2 (Payment Failure Recovery)
+and Phase 3 (Admin KPI Dashboard) — both need PayMongo live with real
+transaction volume, which doesn't exist yet on `main`.

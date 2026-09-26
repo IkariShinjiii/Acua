@@ -7,6 +7,7 @@ import { ORDER_STAGES } from '../data/orders';
 import { MATERIAL_OPTIONS } from '../data/commissionOptions';
 import { fetchCommissionOptions } from '../lib/commissionOptionsFetch';
 import { parseDeepLinkTab } from '../lib/dashboardTabs';
+import { courierById } from '../data/couriers';
 
 function stageIndex(stages, id) {
   const i = stages.findIndex((s) => s.id === id);
@@ -354,6 +355,8 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
             )}
             {orders?.map((order) => {
               const idx = stageIndex(ORDER_STAGES, order.status);
+              const courier = courierById(order.courier);
+              const trackingUrl = courier?.trackingUrl?.(order.tracking_number ?? '');
               return (
                 <div key={order.id} className="bg-surface-elevated rounded-2xl shadow-cloud-sm p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -373,8 +376,24 @@ export default function PatronDashboardView({ setCurrentView, initialTab }) {
                         <p className="text-xs text-on-surface-variant mt-0.5">
                           ₱{(order.total_cents / 100).toLocaleString()} • Placed{' '}
                           {new Date(order.created_at).toLocaleDateString()}
-                          {order.tracking_number && ` • Tracking: ${order.tracking_number}`}
                         </p>
+                        {order.tracking_number && (
+                          <p className="text-xs text-on-surface-variant mt-0.5">
+                            {courier?.label ?? 'Tracking'}:{' '}
+                            {trackingUrl ? (
+                              <a
+                                href={trackingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-accent underline underline-offset-2 hover:text-terracota transition-colors"
+                              >
+                                {order.tracking_number}
+                              </a>
+                            ) : (
+                              order.tracking_number
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <StatusBadge
